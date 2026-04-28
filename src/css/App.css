@@ -1,0 +1,255 @@
+/* ── Start overlay ── */
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+}
+
+.start-btn {
+  padding: 16px 48px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.start-btn:hover {
+  background: #1d4ed8;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  text-align: left;
+}
+
+/* ── Presenter panel ── */
+.presenter-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 24px 0px 0px;
+  background: #fff;
+  border-bottom: 2px solid #e5e4e7;
+}
+
+.presenter-stage {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 680px;
+  max-width: 100%;
+  flex: 1;
+  min-height: 0;
+}
+
+
+.panel-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.piece-card {
+  flex-shrink: 0;
+  width: 260px;
+  margin-left: -40px;
+  margin-top: 24px;
+  z-index: 10;
+  background: rgba(249, 250, 251, 0.93);
+  backdrop-filter: blur(6px);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+}
+
+.step-indicator {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0 0 8px;
+}
+
+.piece-heading {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px;
+}
+
+.piece-body {
+  font-size: 15px;
+  line-height: 1.65;
+  color: #4b5563;
+  margin: 0;
+}
+
+.next-btn {
+  margin-top: 16px;
+  padding: 10px 28px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.next-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.next-btn:disabled {
+  background: #9ca3af;
+  cursor: default;
+}
+
+/* ── Chat panel ── */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+}
+
+.chat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: 16px;
+}
+
+.chat-content .panel-label {
+  padding: 0 24px 8px;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  display: flex;
+  flex-direction: column;
+  max-width: 72%;
+}
+
+.message.agent {
+  align-self: flex-start;
+}
+
+.message.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.msg-sender {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.msg-text {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.message.agent .msg-text {
+  background: #eff6ff;
+  color: #1e3a8a;
+  border-bottom-left-radius: 4px;
+}
+
+.message.user .msg-text {
+  background: #2563eb;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+/* ── Input row ── */
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 24px 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.chat-input-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff;
+  color: #111827;
+}
+
+.chat-input-row input:focus {
+  border-color: #2563eb;
+}
+
+.chat-input-row button {
+  padding: 10px 22px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chat-input-row button:hover {
+  background: #1d4ed8;
+}
+
+/* ── Virtual characters ── */
+.virtual-doctor {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.virtual-companion {
+  width: 280px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+}
+
+#virtualdoctor > canvas,
+#virtualcompanion > canvas {
+  transition: filter 0.5s ease-in-out;
+}
