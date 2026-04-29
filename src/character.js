@@ -50,8 +50,7 @@ export async function initCompanionCharacter(containerNode) {
     avatarSpeakingHeadMove: 1,
     cameraRotateEnable: false,
     cameraPanEnable: false,
-    cameraZoomEnable: false,
-    cameraDistance: -1,
+    cameraZoomEnable: false
   });
 
   await head1.showAvatar({

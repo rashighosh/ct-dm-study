@@ -11,15 +11,22 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --primary-blue: 0 38 87;
+  --primary-purple: 59 15 130;
+  --primary-orange: 250 132 22;
+  --primary-yellow: 242 194 0;
+  --background-gradient: linear-gradient(135deg, rgba(var(--primary-orange) / 7%) 0%, rgba(var(--primary-yellow) / 1%) 50%, rgba(var(--primary-orange) / 7%) 100%);
+  --grey: 47 47 47;
+
+  /* background: var(--background-gradient); */
+
+  --sans: "Funnel Sans", sans-serif;
+  --heading: "Funnel Sans", sans-serif;
+  --mono: "Epilogue", sans-serif;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
   color: var(--text);
-  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -104,4 +111,16 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+button {
+  font-family: var(--mono);
+  transition:.2s ease-in-out all;
+  box-shadow: #5d5d5d 0 10px 20px -10px;
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+
+button:hover {
+  transform: scale(1.05);
 }

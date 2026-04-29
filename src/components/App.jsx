@@ -1,41 +1,45 @@
 import { useState, useRef, useEffect } from 'react'
 import '../css/App.css'
 import { initDoctorCharacter, initCompanionCharacter } from '../character.js';
+import logo from '../assets/logo-transparent.png'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowRight, faPaperPlane, faCheck } from '@fortawesome/free-solid-svg-icons'
+
 
 const TRIAL_PIECES = [
   {
-    label: 'What is this study?',
+    label: 'What is this study and what will you have to do?',
     content:
-      'This is a Phase II randomized controlled trial evaluating Drug X versus placebo in adults with moderate-to-severe rheumatoid arthritis.',
+      `This is a Phase II randomized, open-label trial evaluating using two drugs instead of one to treat your tumor. You will have to: provide a small tissue sample (biopsy) to read your tumor's DNA, take targed drugs (pill or IV), and do regular blood tests and scans to see how you're doing.`,
   },
   {
-    label: 'Who can participate?',
+    label: 'What is the time and visit commitment?',
     content:
-      'Adults aged 18–65 with a confirmed RA diagnosis for at least 6 months who have not responded adequately to at least one DMARD. Exclusion criteria include pregnancy, severe kidney disease, or active infection.',
+      `You will have to first visit a cancer center for biopsies and scans. Then, you'll have to wait a few weeks to get your tumor's DNA results. Then, you will start a drug combination and visit the center at least once a week when you first start. You'll be on the drug in 4-week cycles as long as they are helping.`
   },
   {
-    label: 'What will happen to you?',
+    label: 'What are the costs and compensation?',
     content:
-      'You will be randomly assigned to receive either Drug X or a placebo as a weekly injection over 24 weeks, with 6 clinic visits for assessments.',
+      `The initial testing and drugs are free for you. However, there is no additional compensation. That being said, some sites may help you pay for parking and gas.`
   },
   {
     label: 'What are the risks?',
     content:
-      'Possible side effects include injection-site reactions, increased infection risk, and in rare cases liver enzyme elevation. All serious adverse events will be monitored and reported.',
+      `Potential side effects from two drugs, minor biopsy risks, and no guarantee of a match.`
   },
   {
     label: 'What are the potential benefits?',
     content:
-      'There is no guarantee of direct benefit. Drug X may reduce joint inflammation. Findings from this study may help future patients with RA.',
+      `Highly personalized treatment, a chance to overcome drug resistance, and free expert genetic mapping of your cancer.`
   },
 ]
 
 const DISCUSSION_PROMPTS = [
-  'Thanks for starting. What are your initial thoughts about this study?',
-  'How do you feel about the eligibility criteria? Does anything concern you?',
-  'What do you think about the procedures involved? Any questions so far?',
-  'How do you feel about those risks? Is there anything that worries you?',
-  "Now that you've heard about the potential benefits — how are you feeling about this study overall?",
+  `How do you feel about what you'd need to do during this trial?`,
+  `Do you have any concerns about the time and visit commitments?`,
+  `Are these costs and compensations do-able for you?`,
+  `How do you feel about those risks? Is there anything that worries you?`,
+  `What do you think about these potential benefits?`,
 ]
 
 export default function App() {
@@ -87,10 +91,15 @@ export default function App() {
     <div className="app">
       {!started && (
         <div className="start-overlay">
-          <button className="start-btn" onClick={handleBegin}>
-            Begin
-          </button>
-        </div>
+          <img src={logo} className="logo" alt="Study logo" />
+          <div className="information">Please click the button below to begin.</div>
+        <button className="cssbuttons-io-button" onClick={handleBegin}>
+          Begin
+          <span className="icon">
+            <FontAwesomeIcon icon={faArrowRight} size="xs" />
+          </span>
+        </button>
+      </div>
       )}
       {/* Presenter panel */}
       <div className="presenter-panel">
@@ -103,9 +112,8 @@ export default function App() {
             </p>
             <h2 className="piece-heading">{piece.label}</h2>
             <p className="piece-body">{piece.content}</p>
-            <button className="next-btn" onClick={handleNext} disabled={isLast}>
-              {isLast ? 'All pieces presented' : 'Next →'}
-            </button>
+              {isLast ? (<button className="next-btn" onClick={handleNext} disabled={isLast}>All information viewed <FontAwesomeIcon icon={faCheck} size="xs" /></button>) : 
+              (<button className="next-btn" onClick={handleNext} disabled={isLast}>Next <FontAwesomeIcon icon={faArrowRight} size="xs" /></button>)}
           </div>
         </div>
       </div>
@@ -133,7 +141,14 @@ export default function App() {
             onChange={e => setInput(e.target.value)}
             placeholder="Share your thoughts…"
           />
-          <button type="submit">Send</button>
+          <button type="submit" className="send-button">
+            <div className="svg-wrapper-1">
+              <div className="svg-wrapper">
+                <FontAwesomeIcon icon={faPaperPlane} />
+              </div>
+            </div>
+            <span>Send</span>
+          </button>
         </form>
         </div>
       </div>
