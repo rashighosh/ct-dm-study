@@ -42,6 +42,54 @@ const DISCUSSION_PROMPTS = [
   `What do you think about these potential benefits?`,
 ]
 
+const NOTE_RULES = [
+  {
+    key: 'invasive',
+    patterns: ['biopsy', 'invasiv', 'needle', 'inject', 'surgery', 'blood draw', "don't like", "not comfortable", 'uncomfortable'],
+    text: 'Prefers non-invasive procedures',
+  },
+  {
+    key: 'time',
+    patterns: ['busy', "can't commit", 'too many visit', 'too often', 'hard to come', 'hard to visit', 'frequent visit'],
+    text: 'Limited availability for frequent visits',
+  },
+  {
+    key: 'travel',
+    patterns: ['far', 'travel', 'drive', 'distance', 'location', 'nearby', 'close to home'],
+    text: 'Needs trial site close to home',
+  },
+  {
+    key: 'cost',
+    patterns: ['afford', 'expens', 'cost', 'money', 'financial', 'pay for'],
+    text: 'Has financial concerns',
+  },
+  {
+    key: 'risk',
+    patterns: ['scared', 'worri', 'afraid', 'risky', 'dangerous', 'side effect', 'nervous about', 'fear'],
+    text: 'Concerned about risks and side effects',
+  },
+  {
+    key: 'oral',
+    patterns: ['pill', 'oral', 'tablet'],
+    text: 'Prefers oral medication',
+  },
+  {
+    key: 'match',
+    patterns: ['no guarantee', 'not match', 'might not work', 'uncertain', 'no match'],
+    text: 'Concerned about treatment match uncertainty',
+  },
+]
+
+function extractNote(text) {
+  const lower = text.toLowerCase()
+  for (const rule of NOTE_RULES) {
+    if (rule.patterns.some(p => lower.includes(p))) {
+      return { key: rule.key, text: rule.text }
+    }
+  }
+  return null
+}
+
 export default function App() {
   const [started, setStarted] = useState(false)
   const [step, setStep] = useState(0)
@@ -49,6 +97,7 @@ export default function App() {
     { role: 'agent', text: DISCUSSION_PROMPTS[0] },
   ])
   const [input, setInput] = useState('')
+  const [notes, setNotes] = useState([])
   const chatEndRef = useRef(null)
   const doctorRef = useRef(null);
   const companionRef = useRef(null);
@@ -79,9 +128,14 @@ export default function App() {
 
   function handleSend(e) {
     e.preventDefault()
-    if (!input.trim()) return
-    setMessages(prev => [...prev, { role: 'user', text: input.trim() }])
+    const trimmed = input.trim()
+    if (!trimmed) return
+    setMessages(prev => [...prev, { role: 'user', text: trimmed }])
     setInput('')
+    const note = extractNote(trimmed)
+    if (note) {
+      setNotes(prev => prev.some(n => n.key === note.key) ? prev : [...prev, note])
+    }
   }
 
   const piece = TRIAL_PIECES[step]
@@ -120,6 +174,20 @@ export default function App() {
 
       {/* Chat panel */}
       <div className="chat-panel">
+        {/* Notes panel */}
+        <div className="notes-panel">
+          <p className="panel-label">Patient Notes</p>
+          {notes.length === 0 ? (
+            <p className="notes-empty">Notes will appear here as you share your thoughts.</p>
+          ) : (
+            <ul className="notes-list">
+              {notes.map(n => (
+                <li key={n.key} className="note-item">{n.text}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="virtual-companion" id="virtualcompanion" ref={companionRef} />
         <div className="chat-content">
         <p className="panel-label">Agent 2 — Discussion Agent</p>

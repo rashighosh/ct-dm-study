@@ -361,6 +361,46 @@
   border-right: 1px solid #e5e7eb;
 }
 
+/* ── Notes panel ── */
+.notes-panel {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #e5e7eb;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(var(--primary-purple) / 2%);
+  overflow-y: auto;
+}
+
+.notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note-item {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #4b5563;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgb(var(--primary-purple) / 6%);
+  border-left: 3px solid rgb(var(--primary-purple) / 35%);
+}
+
+.notes-empty {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* ── Animations ── */
 @keyframes pulse-animation {
   0% {
