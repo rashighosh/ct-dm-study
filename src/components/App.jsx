@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import '../css/App.css'
-import { initDoctorCharacter, initCompanionCharacter } from '../character.js';
+import { initDoctorCharacter, initCompanionCharacter, speakWithLipsync } from '../character.js';
 import logo from '../assets/logo-transparent.png'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowRight, faPaperPlane, faCheck } from '@fortawesome/free-solid-svg-icons'
@@ -107,6 +107,9 @@ export default function App() {
     try {
       await initDoctorCharacter(doctorRef.current);
       await initCompanionCharacter(companionRef.current);
+      await speakWithLipsync(TRIAL_PIECES[0].content, 'doctor', () => {
+       console.log("DONE LIP SYNC")
+      });
     } catch (error) {
       console.error("Init failed:", error);
     }

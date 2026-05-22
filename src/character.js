@@ -1,8 +1,8 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs';
 
 // const BASE_URL = 'https://fastapi-rashi.onrender.com';
-// const BASE_URL = 'http://127.0.0.1:8000';
-const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000';
+// const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 let head = null;
 let head1 = null;
 let onSubtitleCallback = null;
@@ -16,7 +16,7 @@ document.addEventListener('click', () => {
   }
 }, { once: true });
 
-export async function initDoctorCharacter(containerNode, view = 'mid') {
+export async function initDoctorCharacter(containerNode, view = 'upper') {
   head = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: view, // full, mid, upper, head,
@@ -46,11 +46,12 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
 export async function initCompanionCharacter(containerNode) {
   head1 = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
-    cameraView: 'mid', // full, mid, upper, head,
+    cameraView: 'upper', // full, mid, upper, head,
     avatarSpeakingHeadMove: 1,
     cameraRotateEnable: false,
     cameraPanEnable: false,
-    cameraZoomEnable: false
+    cameraZoomEnable: false,
+    cameraDistance: -1
   });
 
   await head1.showAvatar({
@@ -169,8 +170,11 @@ export function setSubtitleCallback(fn) {
   onSubtitleCallback = fn;
 }
 
-export async function speakWithLipsync(text, character = 'doctor', onStart = null) {
+export async function speakWithLipsync(text, character = 'doctor', gesture = null, onStart = null) {
   const activeHead = character === 'companion' ? head1 : head;
+  const body = JSON.stringify({ text, character })
+  console.log(text)
+  console.log("BODY IS", body)
   console.log("IN SPEAK W LIPSYNC")
   const ttsRes = await fetch(`${BASE_URL}/tts`, {
     method: 'POST',
@@ -188,18 +192,29 @@ export async function speakWithLipsync(text, character = 'doctor', onStart = nul
   const words = timestamps.map(t => t.word.trim().replace(/[.,!?;:]/g, ''));
   const wtimes = timestamps.map(t => t.start * 1000);
   const wdurations = timestamps.map(t => (t.end - t.start) * 1000);
-  const subtitleWords = timestamps.map(t => t.word.trim());
+  
+  // const subtitleWords = timestamps.map(t => t.word.trim());
 
-  if (onSubtitleCallback) {
-    const chunkSize = 8;
-    for (let i = 0; i < subtitleWords.length; i += chunkSize) {
-      const chunk = subtitleWords.slice(i, i + chunkSize).join(' ');
-      const triggerTime = wtimes[i];
-      setTimeout(() => onSubtitleCallback(chunk), triggerTime);
-    }
-  }
+  // if (onSubtitleCallback) {
+  //   const chunkSize = 8;
+  //   for (let i = 0; i < subtitleWords.length; i += chunkSize) {
+  //     const chunk = subtitleWords.slice(i, i + chunkSize).join(' ');
+  //     const triggerTime = wtimes[i];
+  //     setTimeout(() => onSubtitleCallback(chunk), triggerTime);
+  //   }
+  // }
+
   activeHead.stopGesture();
   // fire onStart right before audio plays
+  console.log("GOING TO SPEAK AUDIO")
+  if (gesture) {
+    if (character === 'doctor') {
+      console.log("HERE")
+      head?.playGesture('handup', 1)
+    } else {
+      head1.playGesture(gesture)
+    }
+  }
   activeHead.speakAudio(
     {
       audio: audioBuffer,
