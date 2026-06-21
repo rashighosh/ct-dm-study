@@ -12,7 +12,11 @@ import {
   faPenToSquare,
   faCommentMedical,
 } from '@fortawesome/free-solid-svg-icons'
-import { initCompanionCharacter, initDoctorCharacter } from '../character.js'
+import {
+  initCompanionCharacter,
+  initDoctorCharacter,
+  speakWithLipsync,
+} from '../character.js'
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -57,8 +61,7 @@ const INITIAL_ALEX_MESSAGE =
 const MOCK_ALEX_RESPONSE =
   "That's a great question. I'll answer this using the clinical trial information we have."
 
-let nextId = 1
-const uid = () => nextId++
+const uid = () => crypto.randomUUID()
 
 /* -------------------------------------------------------------------------- */
 /* Small helpers                                                              */
@@ -92,6 +95,8 @@ function detectDrift(message, goalLabels) {
 /* -------------------------------------------------------------------------- */
 
 export default function MainInteraction() {
+  const BASE_URL = 'http://127.0.0.1:8000'
+  // const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
   const location = useLocation()
   const goals = location.state ?? { selectedGoals: [], customGoals: [] }
 
@@ -113,6 +118,9 @@ export default function MainInteraction() {
   // null | { type: "query" | "eval", ... }
   const [collabSuggestion, setCollabSuggestion] = useState(null)
 
+  const [goalNotes, setGoalNotes] = useState({})
+  const [alexSources, setAlexSources] = useState([])
+  const [isAlexActive, setIsAlexActive] = useState(false)
   const [proactivity, setProactivity] = useState('passive')
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState('')
@@ -218,21 +226,21 @@ export default function MainInteraction() {
   /* Query support                                                            */
   /* ------------------------------------------------------------------------ */
 
-  useEffect(() => {
-    clearTimeout(queryPauseTimer.current)
+  // useEffect(() => {
+  //   clearTimeout(queryPauseTimer.current)
 
-    if (proactivity !== 'collaborative' && proactivity !== 'passive') return
-    if (!input.trim() || queryNudgeShownForDraft.current) return
+  //   if (proactivity !== 'collaborative' && proactivity !== 'passive') return
+  //   if (!input.trim() || queryNudgeShownForDraft.current) return
 
-    queryPauseTimer.current = setTimeout(() => {
-      pushQueryNudge()
-      queryNudgeShownForDraft.current = true
-    }, 2000)
+  //   queryPauseTimer.current = setTimeout(() => {
+  //     pushQueryNudge()
+  //     queryNudgeShownForDraft.current = true
+  //   }, 2000)
 
-    return () => clearTimeout(queryPauseTimer.current)
-    // pushQueryNudge reads current input/proactivity intentionally.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input, proactivity])
+  //   return () => clearTimeout(queryPauseTimer.current)
+  //   // pushQueryNudge reads current input/proactivity intentionally.
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [input, proactivity])
 
   function makeQueryNudge() {
     const text =
@@ -311,6 +319,23 @@ export default function MainInteraction() {
   /* Evaluation/check-in support                                              */
   /* ------------------------------------------------------------------------ */
 
+  function addGoalNote(goalId, noteText) {
+    if (!noteText) return
+
+    setGoalNotes((prev) => ({
+      ...prev,
+      [goalId]: [
+        ...(prev[goalId] || []),
+        {
+          id: uid(),
+          text: noteText,
+        },
+      ],
+    }))
+
+    setCoveredGoals((prev) => new Set(prev).add(goalId))
+  }
+
   function scheduleEvalNudge(alexMessageId) {
     clearTimeout(evalPauseTimer.current)
 
@@ -326,6 +351,84 @@ export default function MainInteraction() {
     evalPauseTimer.current = setTimeout(() => {
       pushEvalNudge(alexMessageId)
     }, 4000)
+  }
+
+  function handleGoalEvalResult(evalData, alexMsgId) {
+    const matches = evalData.matches || []
+
+    if (matches.length === 0) {
+      if (evalData.all_goals_covered_message) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uid(),
+            from: 'jordan-nudge',
+            nudgeType: evalData.suggested_goal_question ? 'query' : 'eval',
+            text: evalData.all_goals_covered_message,
+            suggestion: evalData.suggested_goal_question,
+            resolved: false,
+            resolution: '',
+            followWithJordan: true,
+            forMessageId: alexMsgId,
+          },
+        ])
+
+        return
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uid(),
+          from: 'jordan-nudge',
+          nudgeType: 'query',
+          text:
+            evalData.no_match_jordan_message ||
+            "That didn't seem connected to your goals yet. You could ask:",
+          suggestion:
+            evalData.suggested_goal_question ||
+            'What else should I know about clinical trials?',
+          resolved: false,
+          followWithJordan: true,
+          forMessageId: alexMsgId,
+        },
+      ])
+
+      return
+    }
+
+    const goodMatches = matches.filter(
+      (match) => match.user_question_relevant && match.alex_answered_question,
+    )
+
+    if (goodMatches.length === 0) return
+
+    const match = goodMatches[0]
+
+    if (proactivity === 'passive' && match.note_to_add) {
+      addGoalNote(match.goal_id, match.note_to_add)
+    }
+
+    const nudgeText =
+      evalData.all_goals_covered_message ||
+      evalData.next_step_message ||
+      match.jordan_message
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: uid(),
+        from: 'jordan-nudge',
+        nudgeType: evalData.suggested_goal_question ? 'query' : 'eval',
+        text: nudgeText,
+        suggestion: evalData.suggested_goal_question,
+        resolved: false,
+        goalId: match.goal_id,
+        noteToAdd: match.note_to_add,
+        followWithJordan: true,
+        forMessageId: alexMsgId,
+      },
+    ])
   }
 
   function pushEvalNudge(forMessageId) {
@@ -430,16 +533,29 @@ export default function MainInteraction() {
     setCoveredGoals((prev) => new Set(prev).add(goalText))
   }
 
+  function makeGoalRelevantSuggestion() {
+    const uncoveredGoal =
+      goalLabels.find((label) => !coveredGoals.has(label)) || goalLabels[0]
+
+    if (!uncoveredGoal) {
+      return 'What should I know first about clinical trials?'
+    }
+
+    return `Can you tell me about ${uncoveredGoal.toLowerCase()}?`
+  }
+
   /* ------------------------------------------------------------------------ */
   /* Message send flow                                                        */
   /* ------------------------------------------------------------------------ */
 
-  function handleSend(e) {
+  async function handleSend(e) {
     e.preventDefault()
 
     const trimmed = input.trim()
     if (!trimmed) return
 
+    setIsAlexActive(true)
+    setAlexSources([])
     clearTimeout(queryPauseTimer.current)
     clearTimeout(evalPauseTimer.current)
     queryNudgeShownForDraft.current = false
@@ -459,35 +575,75 @@ export default function MainInteraction() {
 
     setInput('')
 
-    // Remove any outstanding query-writing suggestions
-    setMessages((prev) =>
-      prev.filter(
-        (message) =>
-          !(
-            message.from === 'jordan-nudge' &&
-            message.nudgeType === 'query' &&
-            !message.resolved
-          ),
-      ),
-    )
-
     handlePossibleGoalDrift(trimmed)
 
     const alexMsgId = uid()
 
-    // Mocked Alex response — replace with API call later.
-    setTimeout(() => {
+    try {
+      const response = await fetch(`${BASE_URL}/rag-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: trimmed,
+        }),
+      })
+
+      const data = await response.json()
+
+      const evalResponse = await fetch(`${BASE_URL}/evaluate-goal-progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_message: trimmed,
+          alex_answer: data.answer,
+          goals: goalLabels.map((label) => ({
+            id: label,
+            title: label,
+            addressed: coveredGoals.has(label),
+            notes: [],
+          })),
+          condition: proactivity,
+        }),
+      })
+
+      const evalData = await evalResponse.json()
+
+      console.log('***EVAL DATA IS', evalData)
+
+      setAlexSources(data.sources || [])
+
       setMessages((prev) => [
         ...prev,
         {
           id: alexMsgId,
           from: 'alex',
-          text: MOCK_ALEX_RESPONSE,
+          text: data.answer,
+          sources: data.sources || [],
+          explanation: data.relevance_explanation,
+          confidence: data.confidence,
         },
       ])
 
-      scheduleEvalNudge(alexMsgId)
-    }, 600)
+      console.log('Sources', data.sources)
+
+      await speakWithLipsync(data.answer, 'doctor')
+      setIsAlexActive(false)
+
+      handleGoalEvalResult(evalData, alexMsgId)
+    } catch (err) {
+      console.error(err)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: alexMsgId,
+          from: 'alex',
+          text: 'Sorry, something went wrong.',
+        },
+      ])
+    }
   }
 
   function clearUnresolvedJordanNudges() {
@@ -563,14 +719,6 @@ export default function MainInteraction() {
         />
       )}
 
-      <Topbar
-        proactivity={proactivity}
-        onChange={(nextProactivity) => {
-          setProactivity(nextProactivity)
-          clearJordanUI()
-        }}
-      />
-
       <main className="mi-main">
         <div
           className={`mi-overlay ${jordanPopupOpen ? 'mi-overlay-open' : ''}`}
@@ -590,16 +738,29 @@ export default function MainInteraction() {
               {goalLabels.map((label) => (
                 <div
                   key={label}
-                  className={`mi-goal-chip${
+                  className={`mi-goal-chip mi-goal-chip-with-notes${
                     coveredGoals.has(label) ? ' mi-goal-chip-covered' : ''
                   }`}
                 >
-                  <span>{label}</span>
-                  {coveredGoals.has(label) && (
-                    <FontAwesomeIcon
-                      icon={faCheck}
-                      className="mi-goal-chip-check"
-                    />
+                  <div className="mi-goal-chip-main">
+                    <span>{label}</span>
+
+                    {coveredGoals.has(label) && (
+                      <FontAwesomeIcon
+                        icon={faCheck}
+                        className="mi-goal-chip-check"
+                      />
+                    )}
+                  </div>
+
+                  {goalNotes[label]?.length > 0 && (
+                    <div className="mi-goal-notes">
+                      {goalNotes[label].map((note) => (
+                        <div key={note.id} className="mi-goal-note">
+                          {note.text}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
@@ -620,7 +781,11 @@ export default function MainInteraction() {
         />
 
         <section className="mi-chat-card fade-in-up">
-          <AlexHeader doctorRef={doctorRef} />
+          <AlexHeader
+            doctorRef={doctorRef}
+            isAlexActive={isAlexActive}
+            sources={alexSources}
+          />
 
           <MessageThread
             messages={messages}
@@ -959,15 +1124,36 @@ function CollaborativeSuggestionCard({
   )
 }
 
-function AlexHeader({ doctorRef }) {
+function AlexHeader({ doctorRef, isAlexActive, sources }) {
   return (
-    <div className="mi-chat-header">
+    <div
+      className={`mi-chat-header ${isAlexActive ? 'mi-alex-area-active' : ''}`}
+    >
       <div className="mi-avatar-alex">
         <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
+
         <div className="alex-title-area">
           <span className="mi-eyebrow">Chatting with</span>
           <h2>Dr. Alex</h2>
         </div>
+
+        {sources.length > 0 && (
+          <div className="alex-source-panel">
+            <span className="alex-source-label">Sources used</span>
+
+            <div className="alex-source-list">
+              {sources.map((source) => (
+                <span
+                  key={`${source.id}-${source.file}-${source.chunk_id}`}
+                  className="alex-source-chip"
+                  title={source.relevance_explanation}
+                >
+                  {source.source}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -990,7 +1176,11 @@ function MessageThread({
 
   const activeNudge = [...messages]
     .reverse()
-    .find((message) => message.from === 'jordan-nudge' && !message.resolved)
+    .find(
+      (message) =>
+        message.from === 'jordan-nudge' &&
+        (message.followWithJordan || !message.resolved),
+    )
 
   useEffect(() => {
     if (proactivity !== 'passive') return
@@ -1096,6 +1286,7 @@ function ChatMessage({ message }) {
       <span className="mi-msg-sender">
         {message.from === 'alex' ? 'Dr. Alex' : 'You'}
       </span>
+
       <div className="mi-msg-bubble">{message.text}</div>
     </div>
   )
@@ -1190,6 +1381,10 @@ function JordanNudge({
 
       <div className="mi-nudge-body">
         <span className="mi-nudge-text">{msg.text}</span>
+
+        {msg.suggestion && (
+          <div className="mi-nudge-suggestion">{msg.suggestion}</div>
+        )}
 
         {!msg.resolved && msg.nudgeType === 'query' && (
           <div className="mi-nudge-actions">
