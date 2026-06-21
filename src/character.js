@@ -1,8 +1,8 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs';
 
 // const BASE_URL = 'https://fastapi-rashi.onrender.com';
-const BASE_URL = 'http://127.0.0.1:8000';
-// const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+// const BASE_URL = 'http://127.0.0.1:8000';
+const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 let head = null;
 let head1 = null;
 let onSubtitleCallback = null;
@@ -147,6 +147,11 @@ export async function lookdown() {
   head1?.playGesture('lookdown', Infinity, false, 1500);
 }
 
+export async function lookright() {
+  head1?.stopGesture(1500);
+  head1?.playGesture('lookright', Infinity, true, 1500);
+}
+
 export async function indexFingerRaise() {
   head1?.stopGesture(1500);
   head1?.playGesture('indexFingerRaise', Infinity, false, 1500);
@@ -159,6 +164,11 @@ export async function rightGesture() {
 
 export async function headNod() {
   head.playGesture('yes', 5, false, 1500);
+  // head.playAnimation('/animations/Looking Around.fbx')
+}
+
+export async function thumbsupQuick() {
+  head1.playGesture('thumbup', 2, false, 1000);
   // head.playAnimation('/animations/Looking Around.fbx')
 }
 
@@ -373,10 +383,12 @@ export async function focusCharacter(character) {
 export const gestures = {
   shrug,
   thumbsup,
+  thumbsupQuick,
   thinking,
   ready,
   lookup,
   lookdown,
+  lookright,
   indexFingerRaise,
   headNod,
   startSwiping,

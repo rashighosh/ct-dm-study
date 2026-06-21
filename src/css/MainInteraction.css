@@ -1,0 +1,963 @@
+/* -------------------------------------------------------------------------- */
+/* Page shell                                                                 */
+/* -------------------------------------------------------------------------- */
+
+#root {
+  background: #f8f7f4;
+}
+
+.mi-root {
+  position: relative;
+  width: 75%;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 25px;
+  box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: #f8f7f4;
+}
+
+.mi-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: stretch;
+  gap: 24px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Top controls                                                               */
+/* -------------------------------------------------------------------------- */
+
+.mi-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.mi-proactivity-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: #fff;
+  border: 1px solid #d4d0c8;
+  border-radius: 999px;
+}
+
+.mi-proactivity-btn {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: #888780;
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.mi-proactivity-btn:hover {
+  color: #2c2c2a;
+}
+
+.mi-proactivity-btn-active {
+  background: rgb(var(--primary-purple) / 12%);
+  color: rgb(var(--primary-purple));
+  font-weight: 500;
+}
+
+.history-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 10px 16px;
+  border: 1px solid #d4d0c8;
+  border-radius: 20px;
+  background: #fff;
+  color: #888780;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+}
+
+.history-btn:hover {
+  background: #f0ede6;
+  color: #2c2c2a;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Overlay for active Jordan popouts                                          */
+/* -------------------------------------------------------------------------- */
+
+.mi-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  transition: opacity 0.3s ease;
+}
+
+.mi-overlay-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Active condition: Jordan dock                                              */
+/* -------------------------------------------------------------------------- */
+
+.mi-jordan-active-area {
+  position: fixed;
+  right: 150px;
+  bottom: 95px;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.mi-jordan-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+
+.mi-jordan-dock-avatar {
+  width: 95px;
+  height: 95px;
+  overflow: hidden;
+  border: 1px solid #9fe1cb;
+  border-radius: 50%;
+  background: rgba(238, 248, 242, 0.9);
+}
+
+.mi-jordan-dock-avatar .virtual-companion {
+  width: 100%;
+  height: 100%;
+}
+
+.mi-jordan-dock-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  width: 120px;
+  padding: 10px;
+  border-radius: 35px;
+  background: #f3fbf7;
+  box-shadow: rgba(100, 100, 111, 0.2) 0 7px 29px 0;
+}
+
+.mi-jordan-action-btn {
+  position: relative;
+  width: 35px;
+  height: 35px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  color: #0f5c38;
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.12s;
+}
+
+.mi-jordan-action-btn:hover {
+  background: #e8f7ef;
+  transform: translateY(-1px);
+}
+
+.mi-jordan-action-btn:active {
+  transform: scale(0.98);
+}
+
+.mi-jordan-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.mi-notes-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #1a7a4a;
+  color: white;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Active dock bubble */
+
+.mi-dock-nudge {
+  width: 260px;
+  overflow: hidden;
+  border: 1px solid #9fe1cb;
+  border-radius: 16px 16px 4px 16px;
+  background: white;
+  box-shadow: 0 10px 28px rgba(60, 70, 90, 0.18);
+  animation: dockNudgeIn 0.25s ease-out;
+}
+
+.mi-dock-nudge-content {
+  padding: 12px 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(238, 248, 242, 0.6) 0%,
+    rgba(238, 248, 242, 0) 55%
+  );
+}
+
+.mi-dock-nudge-text {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f5c38;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mi-dock-nudge-suggestion {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid #d4d0c8;
+  border-radius: 10px;
+  background: #fff;
+  color: #2c2c2a;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.mi-dock-nudge-actions {
+  display: flex;
+  gap: 7px;
+}
+
+@keyframes dockNudgeIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px) translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sidebar / Jordan workspace                                                 */
+/* -------------------------------------------------------------------------- */
+
+.mi-sidebar {
+  width: 35%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Active condition: sidebar behaves as a popout. */
+.mi-root-active .mi-sidebar {
+  position: fixed;
+  right: 150px;
+  bottom: 95px;
+  z-index: 30;
+  width: 330px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(100% + 40px));
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.mi-root-active .mi-sidebar.mi-sidebar-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.mi-goals-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2ddd0;
+  border-radius: 15px 15px 0 15px;
+  background: white;
+}
+
+.goals-area {
+  padding: 20px 26px;
+  background: linear-gradient(
+    180deg,
+    rgba(238, 248, 242, 0.6) 0%,
+    rgba(238, 248, 242, 0) 55%
+  );
+}
+
+.mi-goals-subtext {
+  color: #918f86;
+  font-size: 12px;
+  line-height: normal;
+}
+
+.mi-goals-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #2c2c2a;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.mi-goals-empty {
+  color: #918f86;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.mi-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.mi-goal-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid #e2ddd0;
+  border-radius: 10px;
+  background: #fbfaf8;
+  color: #2c2c2a;
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.mi-goal-chip-covered {
+  opacity: 0.75;
+  border-color: #9fe1cb;
+  background: #eef8f2;
+  color: #0f5c38;
+}
+
+.mi-goal-chip-check {
+  flex-shrink: 0;
+  color: #1a7a4a;
+  font-size: 10px;
+}
+
+/* Collaborative sidebar header */
+
+.mi-collab-jordan-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2ddd0;
+  background: linear-gradient(
+    180deg,
+    rgba(238, 248, 242, 0.85),
+    rgba(255, 255, 255, 0.95)
+  );
+}
+
+.mi-collab-jordan-avatar {
+  flex-shrink: 0;
+  width: 62px;
+  height: 62px;
+  overflow: hidden;
+  border: 1px solid #9fe1cb;
+  border-radius: 50%;
+  background: rgba(238, 248, 242, 0.9);
+}
+
+.mi-collab-jordan-avatar .virtual-companion {
+  width: 100%;
+  height: 100%;
+}
+
+.mi-collab-jordan-header h3 {
+  margin: 0;
+  color: #0f5c38;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mi-collab-jordan-header p {
+  margin: 2px 0 0;
+  color: #918f86;
+  font-size: 12px;
+}
+
+/* Collaborative suggestion/check-in card */
+
+.mi-collab-suggestion-card {
+  margin-top: 16px;
+  padding: 13px;
+  border: 1px solid #9fe1cb;
+  border-radius: 13px;
+  background: #f3fbf7;
+  animation: nudgeIn 0.25s ease-out;
+}
+
+.mi-collab-suggestion-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #0f5c38;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mi-collab-suggestion-card p {
+  margin: 0 0 8px;
+  color: #0f5c38;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.mi-collab-suggestion-quote {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid #d4d0c8;
+  border-radius: 10px;
+  background: #fff;
+  color: #2c2c2a;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.mi-collab-suggestion-actions {
+  display: flex;
+  gap: 7px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chat card + Alex header                                                    */
+/* -------------------------------------------------------------------------- */
+
+.mi-chat-card {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2ddd0;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.mi-chat-header {
+  border-bottom: 1px solid #e2ddd0;
+  background: url('../assets/bg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.mi-avatar-alex {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.alex-title-area {
+  position: absolute;
+  top: 5px;
+  left: 10px;
+}
+
+.mi-eyebrow {
+  color: #2c5f9e;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mi-chat-header h2 {
+  margin: 2px 0 0;
+  color: #2c2c2a;
+  font-size: 21px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chat messages                                                              */
+/* -------------------------------------------------------------------------- */
+
+.mi-messages {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 26px;
+  background: linear-gradient(
+    180deg,
+    rgba(238, 244, 252, 0.75) 0%,
+    rgba(255, 255, 255, 0.85) 55%
+  );
+}
+
+.mi-root-passive .mi-nudge {
+  margin-left: 60px;
+}
+
+.mi-passive-jordan-floating {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  z-index: 6;
+  pointer-events: none;
+
+  opacity: 0.4;
+  filter: grayscale(100%);
+
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}
+
+.mi-passive-jordan-active {
+  opacity: 1;
+  filter: grayscale(0%);
+  box-shadow:
+    0 0 0 2px #8dd9c0,
+    0 0 0 6px rgba(141, 217, 192, 0.18);
+}
+
+.mi-passive-jordan-floating .virtual-companion {
+  width: 100%;
+  height: 100%;
+}
+
+.mi-msg {
+  max-width: 72%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mi-msg-alex {
+  align-self: flex-start;
+}
+
+.mi-msg-user {
+  align-self: flex-end;
+}
+
+.mi-msg-sender {
+  padding: 0 2px;
+  color: #918f86;
+  font-size: 11px;
+}
+
+.mi-msg-bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+.mi-msg-alex .mi-msg-bubble {
+  border-radius: 3px 12px 12px 12px;
+  background: #eef4fc;
+  color: #1a3d6e;
+}
+
+.mi-msg-user .mi-msg-bubble {
+  border: 1px solid #d4d0c8;
+  border-radius: 12px 12px 3px 12px;
+  background: #f5f4f0;
+  color: #2c2c2a;
+}
+
+/* Passive/inline Jordan nudges */
+
+.mi-nudge {
+  align-self: flex-start;
+  max-width: 78%;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px dashed #9fe1cb;
+  border-radius: 10px;
+  background: #f3fbf7;
+  animation: nudgeIn 0.25s ease-out;
+}
+
+.mi-nudge-resolved {
+  opacity: 0.6;
+  border-style: solid;
+}
+
+.mi-nudge-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #1a7a4a;
+  font-size: 12px;
+}
+
+.mi-nudge-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mi-nudge-text {
+  color: #0f5c38;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.mi-nudge-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mi-nudge-btn {
+  padding: 5px 11px;
+  border: 1px solid #9fe1cb;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a7a4a;
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.mi-nudge-btn:hover {
+  background: #eef8f2;
+}
+
+.mi-nudge-btn-primary {
+  border-color: #1a7a4a;
+  background: #1a7a4a;
+  color: #fff;
+}
+
+.mi-nudge-btn-primary:hover {
+  background: #156339;
+}
+
+.mi-nudge-resolution {
+  color: #6e6d66;
+  font-size: 11.5px;
+  font-style: italic;
+}
+
+@keyframes nudgeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mi-root-passive .mi-main {
+  flex-direction: column;
+}
+
+.mi-root-passive .mi-chat-card {
+  width: 100%;
+}
+
+.mi-passive-goals-popover {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+  width: 330px;
+  max-height: 55vh;
+  z-index: 45;
+  background: white;
+  border: 1px solid #e2ddd0;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 14px 36px rgba(60, 70, 90, 0.2);
+  overflow-y: auto;
+}
+
+.mi-passive-goals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: #0f5c38;
+}
+
+.mi-passive-goals-header button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #888780;
+}
+
+.mi-passive-goals-link {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: #1a7a4a;
+  font-size: 11.5px;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Input row                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.mi-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid #e2ddd0;
+  background: #fbfaf8;
+}
+
+.mi-input-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mi-input-row textarea {
+  flex: 1;
+  resize: none;
+  padding: 11px 14px;
+  border: 1px solid #d4d0c8;
+  border-radius: 10px;
+  outline: none;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.mi-input-row textarea:focus {
+  border-color: rgba(var(--primary-blue) / 50%);
+  box-shadow: 0 0 0 3px rgb(var(--primary-blue) / 8%);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Chat history modal                                                         */
+/* -------------------------------------------------------------------------- */
+
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.history-modal {
+  width: 540px;
+  max-width: 92vw;
+  max-height: 70vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 0.5px solid #d4d0c8;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.history-modal-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 0.5px solid #ede9e0;
+  color: #2c2c2a;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.history-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: #888780;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.history-close-btn:hover {
+  background: #f0ede6;
+  color: #2c2c2a;
+}
+
+.history-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+}
+
+.history-empty {
+  margin-top: 24px;
+  color: #888780;
+  font-size: 14px;
+  text-align: center;
+}
+
+.history-msg {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.history-msg-alex,
+.history-msg-jordan {
+  align-self: flex-start;
+}
+
+.history-msg-user {
+  align-self: flex-end;
+}
+
+.history-msg-sender {
+  align-self: flex-end;
+  padding: 0 4px;
+  color: #888780;
+  font-size: 11px;
+}
+
+.history-msg-bubble {
+  padding: 8px 13px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.history-msg-alex .history-msg-bubble {
+  border-radius: 3px 8px 8px 8px;
+  background: #eef4fc;
+  color: #1a3d6e;
+}
+
+.history-msg-jordan .history-msg-bubble {
+  border-radius: 3px 8px 8px 8px;
+  background: #eef8f2;
+  color: #0f5c38;
+}
+
+.history-msg-user .history-msg-bubble {
+  border: 0.5px solid #d4d0c8;
+  border-radius: 8px 8px 3px 8px;
+  background: #f5f4f0;
+  color: #2c2c2a;
+}
+
+.history-msg-resolution {
+  color: #918f86;
+  font-style: italic;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared animations                                                          */
+/* -------------------------------------------------------------------------- */
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive                                                                 */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .mi-main {
+    flex-direction: column;
+  }
+
+  .mi-sidebar {
+    width: 100%;
+  }
+
+  .mi-goals-panel {
+    max-height: 220px;
+  }
+}

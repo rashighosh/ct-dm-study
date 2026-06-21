@@ -1,15 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import logo from '../assets/logo-transparent.png'
-import '../css/TrialsLayout.css'
+import '../css/GuidedInteraction.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowRight, faPaperPlane, faCheck, faCommentDots, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faSquare } from '@fortawesome/free-regular-svg-icons'
 import { initDoctorCharacter, initCompanionCharacter, speakWithLipsync } from '../character.js';
 
 function waitMs(duration) {
   return new Promise(resolve => setTimeout(resolve, duration));
 }
 
-export default function TrialLayout() {
+export default function GuidedInteraction() {
   const [input, setInput] = useState("");
   const [started, setStarted] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -19,6 +20,21 @@ export default function TrialLayout() {
   const sentToastTimer = useRef(null);
   const doctorRef = useRef(null);
   const companionRef = useRef(null);
+  const chatEndRef = useRef(null)
+  const [activeTopic, setActiveTopic] = useState();
+
+  // Define your topics list in an array so you don't have to duplicate HTML
+const topics = [
+  "Safety",
+  "Randomization",
+  "Eligibility",
+  "Logistics",
+  "Benefits & Risks"
+];
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   // Show a bubble, add to history, wait, clear bubble. Returns Promise.
   async function showMessage(from, text, duration = 6000) {
@@ -129,6 +145,43 @@ export default function TrialLayout() {
           <div className="tl-vh-title-area">
             <div className="tl-vh-label">Dr. Alex</div>
             <div className="tl-vh-role">Clinical Trials Expert</div>
+            <hr/>
+            <div className="tl-topics">
+              {topics.map((topic, index) => (
+                <div 
+                  key={index} 
+                  // 💡 If this topic matches state, add the 'active' class
+                  className={`tl-topics-item ${activeTopic === topic ? 'active' : ''}`}
+                  // 💡 On click, update the state to this topic's name
+                  onClick={() => setActiveTopic(topic)}
+                >
+                  <FontAwesomeIcon icon={faSquare} />
+                  <p>{topic}</p>
+                </div>
+              ))}
+            </div>
+            {/* <div className="tl-topics">
+              <div className="tl-topics-item active">
+                <FontAwesomeIcon icon={faSquare} />
+                <p>Safety</p>
+              </div>
+              <div className="tl-topics-item">
+                <FontAwesomeIcon icon={faSquare} />
+                <p>Randomization</p>
+              </div>
+              <div className="tl-topics-item">
+                <FontAwesomeIcon icon={faSquare} />
+                <p>Eligibility</p>
+              </div>
+              <div className="tl-topics-item">
+                <FontAwesomeIcon icon={faSquare} />
+                <p>Logistics</p>
+              </div>
+              <div className="tl-topics-item">
+                <FontAwesomeIcon icon={faSquare} />
+                <p>Benefits & Risks</p>
+              </div>
+            </div> */}
           </div>
           <div className={`speech-bubble speech-bubble-alex${alexBubbleActive ? " speech-bubble-visible" : ""}`}>
             {activeBubble?.from === "alex" ? activeBubble.text : ""}
@@ -138,29 +191,45 @@ export default function TrialLayout() {
         {/* Center: trial card */}
         <div className="tl-card-slot">
           <div className="tl-card-header">
-            <span className="tl-card-tag">trial overview</span>
-            <span className="tl-card-title">NCT Example Trial</span>
+            <span className="tl-card-tag">Chatting with:</span>
+            <span className="tl-card-title">Dr. Alex</span>
           </div>
           <div className="tl-card-body">
-            <div className="tl-trial-section tl-section-visible">
-              <div className="tl-section-label">eligibility</div>
-              <div className="tl-section-content">
-                Adults 18–65 with stage II–III diagnosis. No prior immunotherapy. ECOG performance status 0–1.
-              </div>
+            <div className="history-modal-body">
+              {messages.length === 0 && (
+                <div className="history-empty">No messages yet.</div>
+              )}
+              {messages.map((msg, i) => (
+                <div key={i} className={`history-msg history-msg-${msg.from}`}>
+                  <span className="history-msg-sender">
+                    {msg.from === "alex" ? "Dr. Alex" : msg.from === "jordan" ? "Jordan" : "You"}
+                  </span>
+                  <div className="history-msg-bubble">{msg.text}</div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
             </div>
-            <div className="tl-trial-section tl-section-visible">
-              <div className="tl-section-label">treatment</div>
-              <div className="tl-section-content">
-                Experimental arm: combination immunotherapy every 3 weeks for 6 cycles. Standard arm: current standard of care.
-              </div>
-            </div>
-            <div className="tl-trial-section tl-section-pending">
-              <div className="tl-section-label">side effects</div>
-              <div className="tl-section-content tl-pending-text">Dr. Alex will cover this next...</div>
-            </div>
-            <div className="tl-trial-section tl-section-pending">
-              <div className="tl-section-label">logistics</div>
-              <div className="tl-section-content tl-pending-text">Coming up...</div>
+            {/* ── User input area ── */}
+            <div className="tl-chat-area">
+              
+              <form className="chat-input-row" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+                <textarea
+                  rows="3"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Share your thoughts…"
+                />
+                <button type="submit" className="send-button">
+                  <div className="svg-wrapper-1">
+                    <div className="svg-wrapper">
+                      <FontAwesomeIcon icon={faPaperPlane} />
+                    </div>
+                  </div>
+                  <span>Send</span>
+                </button>
+              </form>
+              <span className="send-btn-subtext">Press Enter to send · Shift+Enter for new line</span>
             </div>
           </div>
         </div>
@@ -184,28 +253,6 @@ export default function TrialLayout() {
         </div>
       </div>
 
-      {/* ── User input area ── */}
-      <div className="tl-chat-area">
-        
-        <form className="chat-input-row" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
-          <textarea
-            rows="3"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            placeholder="Share your thoughts…"
-          />
-          <button type="submit" className="send-button">
-            <div className="svg-wrapper-1">
-              <div className="svg-wrapper">
-                <FontAwesomeIcon icon={faPaperPlane} />
-              </div>
-            </div>
-            <span>Send</span>
-          </button>
-        </form>
-        <span className="send-btn-subtext">Press Enter to send · Shift+Enter for new line</span>
-      </div>
       <button className="history-btn" onClick={() => setShowHistory(true)}>
         <FontAwesomeIcon icon={faCommentDots} size="sm" />
         Chat history

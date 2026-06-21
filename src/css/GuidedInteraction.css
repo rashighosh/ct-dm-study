@@ -31,8 +31,12 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  width: 250px;
+  width: auto;
   position: relative;
+}
+
+.tl-vh-slot.tl-vh-right {
+  display: none;
 }
 
 .tl-vh-circle {
@@ -94,6 +98,66 @@
   font-size: 15px;
   color: #888780;
   letter-spacing: 0.04em;
+}
+
+.tl-vh-title-area hr {
+  width: 100%;
+  height: 1px;                  /* This controls the thickness */
+  background-color: #333333;    /* This controls the color */
+  border: none;
+}
+
+.tl-vh-title-area .tl-topics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+}
+
+.tl-vh-title-area .tl-topics .tl-topics-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  transition: .2s ease-in-out;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+
+.tl-vh-title-area .tl-topics .tl-topics-item:hover {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 3px 5px;
+  border: 1px solid transparent; /* 1. Create space for the border */          /* 2. Round the corners */
+  /* 3. Layer two backgrounds: 
+     The first is your inner content background (e.g., white).
+     The second is your gradient. */
+  background-image: linear-gradient(#f8f7f4,#f8f7f4), 
+                    linear-gradient(135deg, rgba(var(--primary-yellow)) 0%, rgba(var(--primary-orange)) 100%);;
+  /* 4. Magic trick: Clip the first background to the content, 
+     and the second background to the border box. */
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.tl-vh-title-area .tl-topics .tl-topics-item.active {
+  border-radius: 10px;
+  padding: 3px 5px;
+  color: rgb(var(--primary-blue) / 75%);
+  border: 1px solid transparent; /* 1. Create space for the border */          /* 2. Round the corners */
+  /* 3. Layer two backgrounds: 
+     The first is your inner content background (e.g., white).
+     The second is your gradient. */
+  background-image: linear-gradient(#fff, #fff), 
+                    linear-gradient(135deg, rgba(var(--primary-yellow)) 0%, rgba(var(--primary-orange)) 100%);;
+  /* 4. Magic trick: Clip the first background to the content, 
+     and the second background to the border box. */
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 
 /* Caret pointing up toward the VH circle */
@@ -183,7 +247,7 @@
 }
 
 .tl-card-tag {
-  font-size: 15px;
+  font-size: 13px;
   letter-spacing: 0.08em;
   color: #2c2c2a;
   text-transform: uppercase;
@@ -657,6 +721,7 @@
   font-size: 11px;
   color: #888780;
   padding: 0 4px;
+  align-self: flex-end;
 }
  
 .history-msg-bubble {

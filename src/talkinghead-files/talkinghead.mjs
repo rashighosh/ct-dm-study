@@ -346,6 +346,10 @@ class TalkingHead {
         'Neck.rotation':{x:0.027, y:-0.35, z:0}, 'Head.rotation':{x:-0.1, y:-0.065, z:0}, 
         'Spine.rotation':{x:-0.123, y:-0.3, z:-0.018}, 'Spine1.rotation':{x:0.002, y:-0.3, z:0.001}
       },
+      'lookright': {
+        'Neck.rotation':{x:0.027, y:-0.35, z:0}, 
+        'Spine.rotation':{x:-0.123, y:-0.1, z:-0.018}, 'Spine1.rotation':{x:0.002, y:-0.3, z:0.001}
+      },
       'oneQuestion': {
         // Shoulder barely lifts — much less dramatic raise
         // Arm comes up only partway, more relaxed
