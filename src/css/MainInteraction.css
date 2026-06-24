@@ -124,8 +124,8 @@
 
 .mi-jordan-active-area {
   position: fixed;
-  right: 150px;
-  bottom: 95px;
+  right: 35px;
+  bottom: 35px;
   z-index: 40;
   display: flex;
   align-items: flex-end;
@@ -157,7 +157,7 @@
   display: flex;
   flex-direction: row;
   gap: 6px;
-  width: 120px;
+  width: 75px;
   padding: 10px;
   border-radius: 35px;
   background: #f3fbf7;
@@ -282,8 +282,8 @@
 /* Active condition: sidebar behaves as a popout. */
 .mi-root-active .mi-sidebar {
   position: fixed;
-  right: 150px;
-  bottom: 95px;
+  right: 160px;
+  bottom: 100px;
   z-index: 30;
   width: 330px;
   opacity: 0;
@@ -565,6 +565,59 @@
 }
 
 /* -------------------------------------------------------------------------- */
+/* Swipe cards                                                          */
+/* -------------------------------------------------------------------------- */
+
+.swipe-cards {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 210px;
+  overflow: hidden;
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.swipe-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-sizing: border-box;
+  transition: opacity 0.4s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-card__title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+.swipe-card__subtitle {
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 12px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Chat messages                                                              */
 /* -------------------------------------------------------------------------- */
 
@@ -718,18 +771,29 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .mi-nudge-text {
   color: #0f5c38;
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 15px;
+  font-style: italic;
+  line-height: normal;
+}
+
+.mi-nudge-suggestion {
+  color: #0f5c38;
+  font-size: 15px;
+  font-weight: bold;
+  line-height: normal;
 }
 
 .mi-nudge-actions {
   display: flex;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  margin: 5px 0;
 }
 
 .mi-nudge-btn {
@@ -816,14 +880,17 @@
 }
 
 .mi-passive-goals-link {
-  align-self: flex-start;
   border: none;
+  border-left: 1px solid !important;
+  border-radius: 0px;
   background: transparent;
   color: #1a7a4a;
-  font-size: 11.5px;
+  font-size: 13px;
   padding: 0;
+  padding-left: 10px;
   cursor: pointer;
   text-decoration: underline;
+  margin: 0 3px;
 }
 
 .mi-goal-chip-with-notes {

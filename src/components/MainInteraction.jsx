@@ -15,8 +15,10 @@ import {
 import {
   initCompanionCharacter,
   initDoctorCharacter,
+  playGesture,
   speakWithLipsync,
 } from '../character.js'
+import SwipingCards from './SwipingCards'
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -54,9 +56,6 @@ const PROACTIVITY_COPY = {
       `Heads up — that's outside "${name}." Adding it to your goals so we don't lose track of it.`,
   },
 }
-
-const INITIAL_ALEX_MESSAGE =
-  "Hi, I'm Dr. Alex. Ask me anything about clinical trials, and I'll help walk you through it."
 
 const MOCK_ALEX_RESPONSE =
   "That's a great question. I'll answer this using the clinical trial information we have."
@@ -110,28 +109,26 @@ export default function MainInteraction() {
   const evalPauseTimer = useRef(null)
   const queryNudgeShownForDraft = useRef(false)
 
+  const [pendingGoalNotes, setPendingGoalNotes] = useState({})
+  const [activeJordanSuggestion, setActiveJordanSuggestion] = useState(null)
+  const [activeQuerySuggestion, setActiveQuerySuggestion] = useState('')
+  const [activeQueryLoading, setActiveQueryLoading] = useState(false)
+  const [showCards, setShowCards] = useState(false)
   // Active condition only:
   // null | "notes" | "query" | "eval"
   const [openJordanPanel, setOpenJordanPanel] = useState(null)
-
+  const [alexIntroDone, setAlexIntroDone] = useState(false)
   // Collaborative condition only:
   // null | { type: "query" | "eval", ... }
   const [collabSuggestion, setCollabSuggestion] = useState(null)
-
   const [goalNotes, setGoalNotes] = useState({})
   const [alexSources, setAlexSources] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
-  const [proactivity, setProactivity] = useState('passive')
+  const [proactivity, setProactivity] = useState('active')
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState('')
   const [coveredGoals, setCoveredGoals] = useState(new Set())
-  const [messages, setMessages] = useState([
-    {
-      id: uid(),
-      from: 'alex',
-      text: INITIAL_ALEX_MESSAGE,
-    },
-  ])
+  const [messages, setMessages] = useState([])
 
   const goalLabels = [
     ...(goals?.selectedGoals || []).map((id) => GOAL_META[id] || id),
@@ -151,6 +148,71 @@ export default function MainInteraction() {
         if (companionRef.current) {
           await initCompanionCharacter(companionRef.current)
         }
+
+        console.log('GOALS ARE', goals)
+        const triggerFirstAlexResponse = `You are a Dr. Alex, a virtual health assistant n. You are introducing yourself and starting the conversation. Here are their information seeking goals: ${goals.selectedGoals}, ${goals.customGoals}. Briefly acknowledge you received their goals and summarize them. Then, ask the user where they'd like to start. Keep your response to 80 words or less.`
+
+        const firstAlexPrompt = `
+          You are Dr. Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
+          You are starting the conversation.
+
+          The user's information-seeking goals are:
+          Selected goals:
+          ${goals?.selectedGoals?.join(', ') || 'None'}
+
+          Custom goals:
+          ${goals?.customGoals?.join(', ') || 'None'}
+
+          Your role is to:
+          - Help the user understand clinical trials and related topics.
+          - Help find, summarize, and organize information from trusted clinical-trial resources.
+          - Avoid asking for the user's diagnosis or personal medical details.
+          - Avoid providing treatment recommendations or medical advice.
+          - Avoid searching for specific clinical trials.
+          - Avoid determining whether a particular trial is appropriate for the user.
+
+          Write exactly 4 sentences, in this exact order, and keep the full response under 80 words:
+          1. Introduce yourself as Dr. Alex.
+          2. Explain that your goal is to help find, summarize, and organize information about clinical trials from trusted sources. Briefly explain that you do not identify specific trials or determine whether a trial is a good fit because you do not collect personal medical details and those decisions are best discussed with healthcare providers or study teams.
+          3. Show that you reviewed the user's goals. Mention 2–3 examples from their goals, but frame them as examples rather than a complete list. Use language such as "topics like," "including," or "such as" so the user understands you reviewed all of their goals.
+          4. Ask one question about where the user would like to begin.
+
+          Do not use bullet points.
+          Do not list all of the user's goals.
+          Do not repeat the goals word-for-word.
+          Be conversational, supportive, concise, and easy to understand.
+          `
+        try {
+          const response = await fetch(`${BASE_URL}/simple-chat`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              message: firstAlexPrompt,
+            }),
+          })
+          const data = await response.json()
+          console.log('RESPONSE IS', data)
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uid(),
+              from: 'alex',
+              text: data.reply,
+              sources: [],
+              explanation: null,
+              confidence: null,
+            },
+          ])
+          setIsAlexActive(true)
+          // await speakWithLipsync(data.reply, 'doctor')
+          setIsAlexActive(false)
+          setAlexIntroDone(true)
+        } catch (err) {
+          console.log(err)
+        }
       } catch (err) {
         console.error('Main interaction init failed:', err)
       }
@@ -161,8 +223,17 @@ export default function MainInteraction() {
 
   useEffect(() => {
     if (proactivity !== 'passive') return
+    if (!alexIntroDone) return
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
+      let suggestion = 'What should I know first about clinical trials?'
+
+      try {
+        suggestion = await generateJordanOpeningSuggestion()
+      } catch (err) {
+        console.log('Opening Jordan suggestion failed:', err)
+      }
+
       setMessages((prev) => {
         const alreadySuggested = prev.some(
           (message) =>
@@ -182,14 +253,14 @@ export default function MainInteraction() {
             type: 'query',
             isOpeningSuggestion: true,
             text: "Not sure where to start? Here's a question you could ask.",
-            suggestion: 'What should I know first about clinical trials?',
+            suggestion,
           },
         ]
       })
     }, 900)
 
     return () => clearTimeout(timer)
-  }, [proactivity])
+  }, [proactivity, alexIntroDone, goals])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -220,6 +291,40 @@ export default function MainInteraction() {
 
   function getLastAlexMessage() {
     return [...messages].reverse().find((message) => message.from === 'alex')
+  }
+
+  async function generateJordanOpeningSuggestion() {
+    let suggestion = 'What should I know first about clinical trials?'
+
+    try {
+      const firstJordanPrompt = `
+      You are Jordan, a helpful virtual companion helping a patient start a conversation with Dr. Alex about clinical trial participation concepts.
+
+      The user's goals are:
+      Goals: ${goalLabels.join(', ') || 'None'}
+      Already covered goals: ${Array.from(coveredGoals).join(', ') || 'None'}
+
+      Write ONE short question the user could ask Dr. Alex first.
+      Make it specific to one of their goals.
+      The question should be meaningful and related to the goal, not just the goal title turned into a question.
+      The question should ask about a practical detail, concern, tradeoff, or decision the user might actually have.
+      Use the user's voice.
+      Return only the question without any quotations.
+    `
+
+      const response = await fetch(`${BASE_URL}/simple-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: firstJordanPrompt }),
+      })
+
+      const data = await response.json()
+      suggestion = data.reply || suggestion
+    } catch (err) {
+      console.log('Jordan suggestion failed:', err)
+    }
+
+    return suggestion
   }
 
   /* ------------------------------------------------------------------------ */
@@ -275,9 +380,15 @@ export default function MainInteraction() {
     setMessages((prev) => [...prev, nudge])
   }
 
-  function handleManualQueryHelp() {
+  async function handleManualQueryHelp() {
     queryNudgeShownForDraft.current = true
-    toggleJordanPanel('query')
+    setActiveQueryLoading(true)
+    setOpenJordanPanel('query')
+
+    const suggestion = await generateJordanOpeningSuggestion()
+
+    setActiveQuerySuggestion(suggestion)
+    setActiveQueryLoading(false)
   }
 
   function handleInputChange(value) {
@@ -353,47 +464,61 @@ export default function MainInteraction() {
     }, 4000)
   }
 
+  function showJordanSuggestion(suggestion) {
+    if (proactivity === 'active') {
+      setActiveJordanSuggestion(suggestion)
+
+      if (suggestion.type === 'query' && suggestion.suggestion) {
+        setActiveQuerySuggestion(suggestion.suggestion)
+        setOpenJordanPanel('query')
+        return
+      }
+
+      if (suggestion.type === 'eval') {
+        setOpenJordanPanel('eval')
+        return
+      }
+
+      return
+    }
+
+    if (proactivity === 'collaborative') {
+      setCollabSuggestion(suggestion)
+      return
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...suggestion,
+        from: 'jordan-nudge',
+        nudgeType: suggestion.type,
+        resolved: false,
+        followWithJordan: true,
+      },
+    ])
+  }
+
   function handleGoalEvalResult(evalData, alexMsgId) {
     const matches = evalData.matches || []
 
     if (matches.length === 0) {
-      if (evalData.all_goals_covered_message) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid(),
-            from: 'jordan-nudge',
-            nudgeType: evalData.suggested_goal_question ? 'query' : 'eval',
-            text: evalData.all_goals_covered_message,
-            suggestion: evalData.suggested_goal_question,
-            resolved: false,
-            resolution: '',
-            followWithJordan: true,
-            forMessageId: alexMsgId,
-          },
-        ])
+      const text =
+        evalData.all_goals_covered_message ||
+        evalData.no_match_jordan_message ||
+        "That didn't seem connected to your goals yet. You could ask:"
 
-        return
+      const jordanSuggestion = {
+        id: uid(),
+        type: evalData.suggested_goal_question ? 'query' : 'eval',
+        text,
+        suggestion:
+          evalData.suggested_goal_question ||
+          'What else should I know about clinical trials?',
+        forMessageId: alexMsgId,
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uid(),
-          from: 'jordan-nudge',
-          nudgeType: 'query',
-          text:
-            evalData.no_match_jordan_message ||
-            "That didn't seem connected to your goals yet. You could ask:",
-          suggestion:
-            evalData.suggested_goal_question ||
-            'What else should I know about clinical trials?',
-          resolved: false,
-          followWithJordan: true,
-          forMessageId: alexMsgId,
-        },
-      ])
-
+      showJordanSuggestion(jordanSuggestion)
       return
     }
 
@@ -401,9 +526,41 @@ export default function MainInteraction() {
       (match) => match.user_question_relevant && match.alex_answered_question,
     )
 
-    if (goodMatches.length === 0) return
+    if (goodMatches.length === 0) {
+      const jordanSuggestion = {
+        id: uid(),
+        type: evalData.suggested_goal_question ? 'query' : 'eval',
+        text:
+          evalData.next_step_message ||
+          evalData.no_match_jordan_message ||
+          "That didn't fully answer your goal. You could try asking:",
+        suggestion:
+          evalData.suggested_goal_question ||
+          'What should I ask next about my clinical trial goals?',
+        forMessageId: alexMsgId,
+      }
+
+      showJordanSuggestion(jordanSuggestion)
+      return
+    }
 
     const match = goodMatches[0]
+
+    if (proactivity === 'active') {
+      setCoveredGoals((prev) => new Set(prev).add(match.goal_id))
+
+      if (match.note_to_add) {
+        setPendingGoalNotes((prev) => ({
+          ...prev,
+          [match.goal_id]: {
+            id: uid(),
+            text: match.note_to_add,
+          },
+        }))
+      }
+    } else if (match.note_to_add) {
+      addGoalNote(match.goal_id, match.note_to_add)
+    }
 
     if (proactivity === 'passive' && match.note_to_add) {
       addGoalNote(match.goal_id, match.note_to_add)
@@ -414,21 +571,28 @@ export default function MainInteraction() {
       evalData.next_step_message ||
       match.jordan_message
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: uid(),
-        from: 'jordan-nudge',
-        nudgeType: evalData.suggested_goal_question ? 'query' : 'eval',
-        text: nudgeText,
-        suggestion: evalData.suggested_goal_question,
-        resolved: false,
-        goalId: match.goal_id,
-        noteToAdd: match.note_to_add,
-        followWithJordan: true,
-        forMessageId: alexMsgId,
-      },
-    ])
+    const jordanSuggestion = {
+      id: uid(),
+      type: evalData.suggested_goal_question ? 'query' : 'eval',
+      text: nudgeText,
+      suggestion: evalData.suggested_goal_question,
+      goalId: match.goal_id,
+      noteToAdd: match.note_to_add,
+      forMessageId: alexMsgId,
+    }
+
+    showJordanSuggestion(jordanSuggestion)
+  }
+
+  function handleActiveSaveNote() {
+    if (!activeJordanSuggestion?.goalId || !activeJordanSuggestion?.noteToAdd)
+      return
+
+    addGoalNote(activeJordanSuggestion.goalId, activeJordanSuggestion.noteToAdd)
+
+    setActiveJordanSuggestion((prev) =>
+      prev ? { ...prev, noteSaved: true } : prev,
+    )
   }
 
   function pushEvalNudge(forMessageId) {
@@ -555,11 +719,16 @@ export default function MainInteraction() {
     if (!trimmed) return
 
     setIsAlexActive(true)
+    playGesture('startSwiping')
+    setShowCards(true)
     setAlexSources([])
     clearTimeout(queryPauseTimer.current)
     clearTimeout(evalPauseTimer.current)
     queryNudgeShownForDraft.current = false
     clearJordanUI()
+    setActiveJordanSuggestion(null)
+    setActiveQuerySuggestion('')
+    setActiveQueryLoading(false)
     clearUnresolvedJordanNudges()
 
     const userMsgId = uid()
@@ -580,6 +749,12 @@ export default function MainInteraction() {
     const alexMsgId = uid()
 
     try {
+      const history = messages
+        .filter((m) => m.from === 'user' || m.from === 'alex')
+        .map((m) => ({
+          role: m.from === 'user' ? 'user' : 'assistant',
+          content: m.text,
+        }))
       const response = await fetch(`${BASE_URL}/rag-chat`, {
         method: 'POST',
         headers: {
@@ -627,8 +802,10 @@ export default function MainInteraction() {
       ])
 
       console.log('Sources', data.sources)
+      playGesture('stopSwiping')
+      setShowCards(false)
 
-      await speakWithLipsync(data.answer, 'doctor')
+      // await speakWithLipsync(data.answer, 'doctor')
       setIsAlexActive(false)
 
       handleGoalEvalResult(evalData, alexMsgId)
@@ -657,6 +834,27 @@ export default function MainInteraction() {
           ),
       ),
     )
+  }
+
+  function savePendingGoalNote(goalId) {
+    const pendingNote = pendingGoalNotes[goalId]
+    if (!pendingNote) return
+
+    addGoalNote(goalId, pendingNote.text)
+
+    setPendingGoalNotes((prev) => {
+      const next = { ...prev }
+      delete next[goalId]
+      return next
+    })
+  }
+
+  function dismissPendingGoalNote(goalId) {
+    setPendingGoalNotes((prev) => {
+      const next = { ...prev }
+      delete next[goalId]
+      return next
+    })
   }
 
   function handlePossibleGoalDrift(userMessage) {
@@ -708,14 +906,16 @@ export default function MainInteraction() {
         <ActiveJordanDock
           companionRef={companionRef}
           openJordanPanel={openJordanPanel}
-          coveredGoalsCount={coveredGoals.size}
+          coveredGoalsCount={Object.keys(pendingGoalNotes).length}
           getQuerySuggestion={getQuerySuggestion}
-          getLastAlexMessage={getLastAlexMessage}
+          activeQuerySuggestion={activeQuerySuggestion}
+          activeQueryLoading={activeQueryLoading}
           onTogglePanel={toggleJordanPanel}
           onClosePanel={closeJordanPopup}
           onManualQueryHelp={handleManualQueryHelp}
           onAcceptQuerySuggestion={acceptQuerySuggestion}
-          onActiveEvalResponse={handleActiveEvalResponse}
+          activeJordanSuggestion={activeJordanSuggestion}
+          onActiveSaveNote={handleActiveSaveNote}
         />
       )}
 
@@ -778,6 +978,10 @@ export default function MainInteraction() {
           onAcceptCollabSuggestion={acceptCollabSuggestion}
           onDismissCollabSuggestion={dismissCollabSuggestion}
           onCollabEvalResponse={handleCollabEvalResponse}
+          pendingGoalNotes={pendingGoalNotes}
+          onSavePendingGoalNote={savePendingGoalNote}
+          onDismissPendingGoalNote={dismissPendingGoalNote}
+          goalNotes={goalNotes}
         />
 
         <section className="mi-chat-card fade-in-up">
@@ -785,6 +989,7 @@ export default function MainInteraction() {
             doctorRef={doctorRef}
             isAlexActive={isAlexActive}
             sources={alexSources}
+            showCards={showCards}
           />
 
           <MessageThread
@@ -859,12 +1064,14 @@ function ActiveJordanDock({
   openJordanPanel,
   coveredGoalsCount,
   getQuerySuggestion,
-  getLastAlexMessage,
+  activeJordanSuggestion,
+  activeQuerySuggestion,
+  activeQueryLoading,
   onTogglePanel,
   onClosePanel,
   onManualQueryHelp,
   onAcceptQuerySuggestion,
-  onActiveEvalResponse,
+  onActiveSaveNote,
 }) {
   return (
     <div className="mi-jordan-active-area">
@@ -872,18 +1079,29 @@ function ActiveJordanDock({
         <div className="mi-dock-nudge">
           <div className="mi-dock-nudge-content">
             <span className="mi-dock-nudge-text">
-              Want help wording that question?
+              {activeJordanSuggestion?.text ||
+                'Want help wording that question?'}
             </span>
 
             <div className="mi-dock-nudge-suggestion">
-              {getQuerySuggestion()}
+              {activeQueryLoading
+                ? 'Thinking of a helpful question...'
+                : activeJordanSuggestion?.suggestion ||
+                  activeQuerySuggestion ||
+                  getQuerySuggestion()}
             </div>
 
             <div className="mi-dock-nudge-actions">
               <button
                 type="button"
                 className="mi-nudge-btn mi-nudge-btn-primary"
-                onClick={() => onAcceptQuerySuggestion(getQuerySuggestion())}
+                onClick={() =>
+                  onAcceptQuerySuggestion(
+                    activeJordanSuggestion?.suggestion ||
+                      activeQuerySuggestion ||
+                      getQuerySuggestion(),
+                  )
+                }
               >
                 Use this
               </button>
@@ -894,34 +1112,6 @@ function ActiveJordanDock({
                 onClick={onClosePanel}
               >
                 No thanks
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {openJordanPanel === 'eval' && (
-        <div className="mi-dock-nudge">
-          <div className="mi-dock-nudge-content">
-            <span className="mi-dock-nudge-text">
-              Did Dr. Alex's answer help?
-            </span>
-
-            <div className="mi-dock-nudge-actions">
-              <button
-                type="button"
-                className="mi-nudge-btn mi-nudge-btn-primary"
-                onClick={() => onActiveEvalResponse('yes')}
-              >
-                Yes
-              </button>
-
-              <button
-                type="button"
-                className="mi-nudge-btn"
-                onClick={() => onActiveEvalResponse('no')}
-              >
-                Not quite
               </button>
             </div>
           </div>
@@ -958,16 +1148,6 @@ function ActiveJordanDock({
           >
             <FontAwesomeIcon icon={faPenToSquare} />
           </button>
-
-          <button
-            type="button"
-            className="mi-jordan-action-btn"
-            onClick={() => onTogglePanel('eval')}
-            aria-label="Ask Jordan about Dr. Alex's answer"
-            disabled={!getLastAlexMessage()}
-          >
-            <FontAwesomeIcon icon={faCommentMedical} />
-          </button>
         </div>
       </div>
     </div>
@@ -984,6 +1164,10 @@ function JordanSidebar({
   onAcceptCollabSuggestion,
   onDismissCollabSuggestion,
   onCollabEvalResponse,
+  pendingGoalNotes,
+  onSavePendingGoalNote,
+  onDismissPendingGoalNote,
+  goalNotes,
 }) {
   const sidebarOpen = proactivity !== 'active' || openJordanPanel === 'notes'
 
@@ -1030,6 +1214,12 @@ function JordanSidebar({
                       key={label}
                       label={label}
                       covered={coveredGoals.has(label)}
+                      notes={goalNotes[label] || []}
+                      pendingNote={pendingGoalNotes[label]}
+                      onSavePendingNote={() => onSavePendingGoalNote(label)}
+                      onDismissPendingNote={() =>
+                        onDismissPendingGoalNote(label)
+                      }
                     />
                   ))}
 
@@ -1051,13 +1241,47 @@ function JordanSidebar({
   )
 }
 
-function GoalChip({ label, covered }) {
+function GoalChip({
+  label,
+  covered,
+  notes,
+  pendingNote,
+  onSavePendingNote,
+  onDismissPendingNote,
+}) {
   return (
     <div className={`mi-goal-chip${covered ? ' mi-goal-chip-covered' : ''}`}>
       <span>{label}</span>
 
       {covered && (
         <FontAwesomeIcon icon={faCheck} className="mi-goal-chip-check" />
+      )}
+
+      {pendingNote && (
+        <div className="mi-goal-pending-note">
+          <div>{pendingNote.text}</div>
+
+          <div className="mi-goal-pending-note-actions">
+            <button type="button" onClick={onSavePendingNote}>
+              Save note
+            </button>
+
+            <button type="button" onClick={onDismissPendingNote}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SAVED NOTES GO HERE */}
+      {notes?.length > 0 && (
+        <div className="mi-goal-notes">
+          {notes.map((note) => (
+            <div key={note.id} className="mi-goal-note">
+              {note.text}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )
@@ -1124,12 +1348,13 @@ function CollaborativeSuggestionCard({
   )
 }
 
-function AlexHeader({ doctorRef, isAlexActive, sources }) {
+function AlexHeader({ doctorRef, isAlexActive, sources, showCards }) {
   return (
     <div
       className={`mi-chat-header ${isAlexActive ? 'mi-alex-area-active' : ''}`}
     >
       <div className="mi-avatar-alex">
+        {showCards && <SwipingCards />}
         <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
 
         <div className="alex-title-area">
@@ -1176,11 +1401,7 @@ function MessageThread({
 
   const activeNudge = [...messages]
     .reverse()
-    .find(
-      (message) =>
-        message.from === 'jordan-nudge' &&
-        (message.followWithJordan || !message.resolved),
-    )
+    .find((message) => message.from === 'jordan-nudge' && !message.resolved)
 
   useEffect(() => {
     if (proactivity !== 'passive') return
@@ -1399,6 +1620,17 @@ function JordanNudge({
             <button type="button" className="mi-nudge-btn" onClick={onDismiss}>
               No thanks
             </button>
+
+            {proactivity === 'passive' && (
+              <button
+                type="button"
+                className="mi-passive-goals-link"
+                onClick={onOpenGoals}
+              >
+                <FontAwesomeIcon icon={faBullseye} className="mi-nudge-icon" />
+                View my goals
+              </button>
+            )}
           </div>
         )}
 
@@ -1415,6 +1647,17 @@ function JordanNudge({
             <button type="button" className="mi-nudge-btn" onClick={onEvalNo}>
               Not quite
             </button>
+
+            {proactivity === 'passive' && (
+              <button
+                type="button"
+                className="mi-passive-goals-link"
+                onClick={onOpenGoals}
+              >
+                <FontAwesomeIcon icon={faBullseye} className="mi-nudge-icon" />
+                View my goals
+              </button>
+            )}
           </div>
         )}
 
@@ -1431,21 +1674,22 @@ function JordanNudge({
             <button type="button" className="mi-nudge-btn" onClick={onDismiss}>
               Not now
             </button>
+
+            {proactivity === 'passive' && (
+              <button
+                type="button"
+                className="mi-passive-goals-link"
+                onClick={onOpenGoals}
+              >
+                <FontAwesomeIcon icon={faBullseye} className="mi-nudge-icon" />
+                View my goals
+              </button>
+            )}
           </div>
         )}
 
         {msg.resolved && (
           <span className="mi-nudge-resolution">{msg.resolution}</span>
-        )}
-
-        {proactivity === 'passive' && (
-          <button
-            type="button"
-            className="mi-passive-goals-link"
-            onClick={onOpenGoals}
-          >
-            View my goals
-          </button>
         )}
       </div>
     </div>
