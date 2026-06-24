@@ -12,6 +12,7 @@ import {
   faPenToSquare,
   faCommentMedical,
 } from '@fortawesome/free-solid-svg-icons'
+import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
   initCompanionCharacter,
   initDoctorCharacter,
@@ -124,7 +125,7 @@ export default function MainInteraction() {
   const [goalNotes, setGoalNotes] = useState({})
   const [alexSources, setAlexSources] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
-  const [proactivity, setProactivity] = useState('active')
+  const [proactivity, setProactivity] = useState('collaborative')
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState('')
   const [coveredGoals, setCoveredGoals] = useState(new Set())
@@ -222,7 +223,7 @@ export default function MainInteraction() {
   }, [])
 
   useEffect(() => {
-    if (proactivity !== 'passive') return
+    if (proactivity !== 'passive' && proactivity !== 'collaborative') return
     if (!alexIntroDone) return
 
     const timer = setTimeout(async () => {
@@ -232,6 +233,17 @@ export default function MainInteraction() {
         suggestion = await generateJordanOpeningSuggestion()
       } catch (err) {
         console.log('Opening Jordan suggestion failed:', err)
+      }
+
+      if (proactivity === 'collaborative') {
+        setCollabSuggestion({
+          id: uid(),
+          type: 'query',
+          text: "Not sure where to start? Here's a question you could ask.",
+          suggestion,
+          isOpeningSuggestion: true,
+        })
+        return
       }
 
       setMessages((prev) => {
@@ -383,6 +395,13 @@ export default function MainInteraction() {
   async function handleManualQueryHelp() {
     queryNudgeShownForDraft.current = true
     setActiveQueryLoading(true)
+    const isAlreadyOpen = openJordanPanel === 'query'
+
+    if (isAlreadyOpen) {
+      setOpenJordanPanel(null)
+      return
+    }
+
     setOpenJordanPanel('query')
 
     const suggestion = await generateJordanOpeningSuggestion()
@@ -503,18 +522,20 @@ export default function MainInteraction() {
     const matches = evalData.matches || []
 
     if (matches.length === 0) {
-      const text =
-        evalData.all_goals_covered_message ||
-        evalData.no_match_jordan_message ||
-        "That didn't seem connected to your goals yet. You could ask:"
+      const allCovered = evalData.all_goals_covered_message
 
       const jordanSuggestion = {
         id: uid(),
-        type: evalData.suggested_goal_question ? 'query' : 'eval',
-        text,
+        type: 'query',
+        text:
+          evalData.all_goals_covered_message ||
+          evalData.no_match_jordan_message ||
+          "That didn't seem connected to your goals yet. You could ask:",
         suggestion:
           evalData.suggested_goal_question ||
-          'What else should I know about clinical trials?',
+          (allCovered
+            ? 'What should I ask my doctor before deciding about a clinical trial?'
+            : 'What else should I know about clinical trials?'),
         forMessageId: alexMsgId,
       }
 
@@ -529,7 +550,7 @@ export default function MainInteraction() {
     if (goodMatches.length === 0) {
       const jordanSuggestion = {
         id: uid(),
-        type: evalData.suggested_goal_question ? 'query' : 'eval',
+        type: 'query',
         text:
           evalData.next_step_message ||
           evalData.no_match_jordan_message ||
@@ -545,6 +566,13 @@ export default function MainInteraction() {
     }
 
     const match = goodMatches[0]
+
+    const coveredAfterThisTurn = new Set(coveredGoals)
+    goodMatches.forEach((m) => coveredAfterThisTurn.add(m.goal_id))
+
+    const allGoalsCoveredNow =
+      goalLabels.length > 0 &&
+      goalLabels.every((g) => coveredAfterThisTurn.has(g))
 
     if (proactivity === 'active') {
       setCoveredGoals((prev) => new Set(prev).add(match.goal_id))
@@ -562,14 +590,24 @@ export default function MainInteraction() {
       addGoalNote(match.goal_id, match.note_to_add)
     }
 
-    if (proactivity === 'passive' && match.note_to_add) {
-      addGoalNote(match.goal_id, match.note_to_add)
+    if (allGoalsCoveredNow) {
+      showJordanSuggestion({
+        id: uid(),
+        type: 'query',
+        text:
+          evalData.all_goals_covered_message ||
+          "Looks like we've covered all your goals—feel free to keep exploring any other questions!",
+        suggestion:
+          evalData.suggested_goal_question ||
+          'What should I ask my doctor before deciding about a clinical trial?',
+        goalId: match.goal_id,
+        noteToAdd: match.note_to_add,
+        forMessageId: alexMsgId,
+      })
+      return
     }
 
-    const nudgeText =
-      evalData.all_goals_covered_message ||
-      evalData.next_step_message ||
-      match.jordan_message
+    const nudgeText = evalData.next_step_message || match.jordan_message
 
     const jordanSuggestion = {
       id: uid(),
@@ -743,8 +781,6 @@ export default function MainInteraction() {
     ])
 
     setInput('')
-
-    handlePossibleGoalDrift(trimmed)
 
     const alexMsgId = uid()
 
@@ -1084,11 +1120,13 @@ function ActiveJordanDock({
             </span>
 
             <div className="mi-dock-nudge-suggestion">
-              {activeQueryLoading
-                ? 'Thinking of a helpful question...'
-                : activeJordanSuggestion?.suggestion ||
-                  activeQuerySuggestion ||
-                  getQuerySuggestion()}
+              {activeQueryLoading ? (
+                <em>Thinking of a helpful question...</em>
+              ) : (
+                activeJordanSuggestion?.suggestion ||
+                activeQuerySuggestion ||
+                getQuerySuggestion()
+              )}
             </div>
 
             <div className="mi-dock-nudge-actions">
@@ -1146,7 +1184,7 @@ function ActiveJordanDock({
             onClick={onManualQueryHelp}
             aria-label="Ask Jordan to help phrase a question"
           >
-            <FontAwesomeIcon icon={faPenToSquare} />
+            <FontAwesomeIcon icon={faLightbulb} />
           </button>
         </div>
       </div>
@@ -1178,18 +1216,30 @@ function JordanSidebar({
           <div className="mi-goals-panel">
             {proactivity === 'collaborative' && (
               <div className="mi-collab-jordan-header">
-                <div className="mi-collab-jordan-avatar">
-                  <div
-                    className="virtual-companion"
-                    id="virtualcompanion"
-                    ref={companionRef}
-                  />
+                <div className="mi-collab-jordan-header-profile">
+                  <div className="mi-collab-jordan-avatar">
+                    <div
+                      className="virtual-companion"
+                      id="virtualcompanion"
+                      ref={companionRef}
+                    />
+                  </div>
+
+                  <div>
+                    <h3>Jordan</h3>
+                    <p>Your study companion</p>
+                  </div>
                 </div>
 
-                <div>
-                  <h3>Jordan</h3>
-                  <p>Your study companion</p>
-                </div>
+                {proactivity === 'collaborative' && collabSuggestion && (
+                  <CollaborativeSuggestionCard
+                    key={collabSuggestion.id}
+                    suggestion={collabSuggestion}
+                    onAcceptQuery={onAcceptCollabSuggestion}
+                    onDismiss={onDismissCollabSuggestion}
+                    onEvalResponse={onCollabEvalResponse}
+                  />
+                )}
               </div>
             )}
 
@@ -1222,15 +1272,6 @@ function JordanSidebar({
                       }
                     />
                   ))}
-
-                  {proactivity === 'collaborative' && collabSuggestion && (
-                    <CollaborativeSuggestionCard
-                      suggestion={collabSuggestion}
-                      onAcceptQuery={onAcceptCollabSuggestion}
-                      onDismiss={onDismissCollabSuggestion}
-                      onEvalResponse={onCollabEvalResponse}
-                    />
-                  )}
                 </div>
               )}
             </div>
@@ -1263,11 +1304,17 @@ function GoalChip({
 
           <div className="mi-goal-pending-note-actions">
             <button type="button" onClick={onSavePendingNote}>
-              Save note
+              <FontAwesomeIcon icon={faCheck} />
+              &nbsp; Save
             </button>
 
-            <button type="button" onClick={onDismissPendingNote}>
-              Dismiss
+            <button
+              className="dismiss"
+              type="button"
+              onClick={onDismissPendingNote}
+            >
+              <FontAwesomeIcon icon={faXmark} />
+              &nbsp; Dismiss
             </button>
           </div>
         </div>
@@ -1293,15 +1340,24 @@ function CollaborativeSuggestionCard({
   onDismiss,
   onEvalResponse,
 }) {
+  const [isExiting, setIsExiting] = useState(false)
   const isQuery = suggestion.type === 'query'
 
-  return (
-    <div className="mi-collab-suggestion-card">
-      <span className="mi-collab-suggestion-label">
-        {isQuery ? 'Jordan suggests a question' : 'Jordan checks in'}
-      </span>
+  function closeWithAnimation(action) {
+    setIsExiting(true)
+    setTimeout(action, 220)
+  }
 
-      <p>{suggestion.text}</p>
+  return (
+    <div
+      className={`mi-collab-suggestion-card ${
+        isExiting ? 'mi-collab-suggestion-card-exiting' : ''
+      }`}
+    >
+      <div className="mi-collab-suggestion-card-suggestion">
+        <FontAwesomeIcon icon={faLightbulb} />
+        <p>{suggestion.text}</p>
+      </div>
 
       {isQuery && (
         <div className="mi-collab-suggestion-quote">
@@ -1315,12 +1371,16 @@ function CollaborativeSuggestionCard({
             <button
               type="button"
               className="mi-nudge-btn mi-nudge-btn-primary"
-              onClick={onAcceptQuery}
+              onClick={() => closeWithAnimation(onAcceptQuery)}
             >
               Use this
             </button>
 
-            <button type="button" className="mi-nudge-btn" onClick={onDismiss}>
+            <button
+              type="button"
+              className="mi-nudge-btn"
+              onClick={() => closeWithAnimation(onDismiss)}
+            >
               Not now
             </button>
           </>
@@ -1329,7 +1389,7 @@ function CollaborativeSuggestionCard({
             <button
               type="button"
               className="mi-nudge-btn mi-nudge-btn-primary"
-              onClick={() => onEvalResponse('yes')}
+              onClick={() => closeWithAnimation(() => onEvalResponse('yes'))}
             >
               Yes
             </button>
@@ -1337,7 +1397,7 @@ function CollaborativeSuggestionCard({
             <button
               type="button"
               className="mi-nudge-btn"
-              onClick={() => onEvalResponse('no')}
+              onClick={() => closeWithAnimation(() => onEvalResponse('no'))}
             >
               Not quite
             </button>
@@ -1415,6 +1475,12 @@ function MessageThread({
 
       if (!activeNudge) {
         passiveJordanRef.current.classList.remove('mi-passive-jordan-active')
+
+        const container = messagesRef.current
+        const x = 8
+        const y = container.scrollTop + container.clientHeight - 70
+
+        passiveJordanRef.current.style.transform = `translate(${x}px, ${y}px)`
         return
       }
 
@@ -1598,7 +1664,7 @@ function JordanNudge({
       className={`mi-nudge${msg.resolved ? ' mi-nudge-resolved' : ''}`}
       data-jordan-nudge-id={msg.id}
     >
-      <FontAwesomeIcon icon={faHandHoldingHeart} className="mi-nudge-icon" />
+      <FontAwesomeIcon icon={faLightbulb} className="mi-nudge-icon" />
 
       <div className="mi-nudge-body">
         <span className="mi-nudge-text">{msg.text}</span>
