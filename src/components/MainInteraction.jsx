@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 import '../css/MainInteraction.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -18,8 +18,10 @@ import {
   initDoctorCharacter,
   playGesture,
   speakWithLipsync,
+  speakWithLipsyncStatic,
 } from '../character.js'
 import SwipingCards from './SwipingCards'
+import { logMainInteraction } from '../api/logging.js'
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -105,7 +107,7 @@ export default function MainInteraction() {
   const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
   const pendingPassiveDrift = useRef(null)
-
+  const suppressNextActivePopout = useRef(false)
   const queryPauseTimer = useRef(null)
   const evalPauseTimer = useRef(null)
   const queryNudgeShownForDraft = useRef(false)
@@ -125,16 +127,24 @@ export default function MainInteraction() {
   const [goalNotes, setGoalNotes] = useState({})
   const [alexSources, setAlexSources] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
-  const [proactivity, setProactivity] = useState('collaborative')
+  const [proactivity, setProactivity] = useState(
+    goals?.proactivity || 'collaborative',
+  )
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState('')
   const [coveredGoals, setCoveredGoals] = useState(new Set())
   const [messages, setMessages] = useState([])
+  const [transcript, setTranscript] = useState([])
+
+  const participantId = goals?.participantId || 'test-participant'
 
   const goalLabels = [
     ...(goals?.selectedGoals || []).map((id) => GOAL_META[id] || id),
     ...(goals?.customGoals || []),
   ]
+
+  const allGoalsCovered =
+    goalLabels.length > 0 && goalLabels.every((goal) => coveredGoals.has(goal))
 
   const jordanPopupOpen = openJordanPanel !== null
 
@@ -207,6 +217,12 @@ export default function MainInteraction() {
               confidence: null,
             },
           ])
+
+          updateTranscript('alex', data.reply, {
+            sources: [],
+            intro: true,
+          })
+
           setIsAlexActive(true)
           // await speakWithLipsync(data.reply, 'doctor')
           setIsAlexActive(false)
@@ -277,6 +293,44 @@ export default function MainInteraction() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  /* ------------------------------------------------------------------------ */
+  /* Navigation                                               */
+  /* ------------------------------------------------------------------------ */
+
+  const navigate = useNavigate()
+
+  function handleContinue() {
+    navigate('/notes-review', {
+      state: {
+        participantId,
+        goalLabels,
+        goalNotes,
+        coveredGoals: Array.from(coveredGoals),
+        proactivity,
+      },
+    })
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* Logging helpers                                                    */
+  /* ------------------------------------------------------------------------ */
+
+  function updateTranscript(role, content, meta = {}) {
+    const newEntry = {
+      role,
+      content,
+      timestamp: new Date().toISOString(),
+      condition: proactivity,
+      ...meta,
+    }
+
+    setTranscript((prev) => {
+      const updated = [...prev, newEntry]
+      logMainInteraction(participantId, updated).catch(console.error)
+      return updated
+    })
+  }
 
   /* ------------------------------------------------------------------------ */
   /* Jordan panel helpers                                                     */
@@ -406,29 +460,37 @@ export default function MainInteraction() {
 
     const suggestion = await generateJordanOpeningSuggestion()
 
+    const manualSuggestion = {
+      id: uid(),
+      type: 'query',
+      text: 'Want help wording that question?',
+      suggestion,
+      source: 'manual_query_help',
+    }
+
+    logJordanSuggestion(manualSuggestion)
+    setActiveJordanSuggestion(manualSuggestion)
     setActiveQuerySuggestion(suggestion)
     setActiveQueryLoading(false)
   }
 
   function handleInputChange(value) {
     setInput(value)
-
     queryNudgeShownForDraft.current = false
-
-    setMessages((prev) =>
-      prev.filter(
-        (message) =>
-          !(
-            message.from === 'jordan-nudge' &&
-            message.nudgeType === 'query' &&
-            !message.resolved
-          ),
-      ),
-    )
   }
 
-  function acceptQuerySuggestion(suggestion) {
-    setInput(suggestion)
+  function acceptQuerySuggestion(message) {
+    if (!message) return
+    updateTranscript('jordan_suggestion_action', 'used suggestion', {
+      action: 'used',
+      suggestion_id: message.id,
+      suggestion_text: message.text,
+      suggested_question: message.suggestion,
+      suggestion_type: message.type || message.nudgeType,
+    })
+
+    suppressNextActivePopout.current = proactivity === 'active'
+    setInput(message.suggestion)
     textareaRef.current?.focus()
     closeJordanPopup()
   }
@@ -436,12 +498,26 @@ export default function MainInteraction() {
   function acceptCollabSuggestion() {
     if (!collabSuggestion || collabSuggestion.type !== 'query') return
 
+    updateTranscript('jordan_suggestion_action', 'used suggestion', {
+      action: 'used',
+      suggestion_id: collabSuggestion.id,
+      suggested_question: collabSuggestion.suggestion,
+    })
+
     setInput(collabSuggestion.suggestion)
     textareaRef.current?.focus()
     setCollabSuggestion(null)
   }
 
   function dismissCollabSuggestion() {
+    if (collabSuggestion) {
+      updateTranscript('jordan_suggestion_action', 'dismissed suggestion', {
+        action: 'dismissed',
+        suggestion_id: collabSuggestion.id,
+        suggested_question: collabSuggestion.suggestion || null,
+      })
+    }
+
     setCollabSuggestion(null)
   }
 
@@ -483,9 +559,27 @@ export default function MainInteraction() {
     }, 4000)
   }
 
+  function logJordanSuggestion(suggestion, shownAs = proactivity) {
+    updateTranscript('jordan_suggestion_shown', suggestion.text, {
+      suggestion_id: suggestion.id,
+      suggestion_type: suggestion.type,
+      suggested_question: suggestion.suggestion || null,
+      goal_id: suggestion.goalId || null,
+      note_to_add: suggestion.noteToAdd || null,
+      shown_as: shownAs,
+    })
+  }
+
   function showJordanSuggestion(suggestion) {
+    logJordanSuggestion(suggestion)
+
     if (proactivity === 'active') {
       setActiveJordanSuggestion(suggestion)
+
+      if (suppressNextActivePopout.current) {
+        suppressNextActivePopout.current = false
+        return
+      }
 
       if (suggestion.type === 'query' && suggestion.suggestion) {
         setActiveQuerySuggestion(suggestion.suggestion)
@@ -756,6 +850,8 @@ export default function MainInteraction() {
     const trimmed = input.trim()
     if (!trimmed) return
 
+    updateTranscript('user', trimmed)
+
     setIsAlexActive(true)
     playGesture('startSwiping')
     setShowCards(true)
@@ -767,7 +863,18 @@ export default function MainInteraction() {
     setActiveJordanSuggestion(null)
     setActiveQuerySuggestion('')
     setActiveQueryLoading(false)
-    clearUnresolvedJordanNudges()
+
+    if (proactivity === 'passive') {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.from === 'jordan-nudge' && !message.resolved
+            ? { ...message, resolved: true, resolution: 'dismissed' }
+            : message,
+        ),
+      )
+    } else {
+      clearUnresolvedJordanNudges()
+    }
 
     const userMsgId = uid()
 
@@ -840,6 +947,10 @@ export default function MainInteraction() {
       console.log('Sources', data.sources)
       playGesture('stopSwiping')
       setShowCards(false)
+
+      updateTranscript('alex', data.answer, {
+        sources: data.sources || [],
+      })
 
       // await speakWithLipsync(data.answer, 'doctor')
       setIsAlexActive(false)
@@ -938,6 +1049,12 @@ export default function MainInteraction() {
         Chat history
       </button>
 
+      {allGoalsCovered && (
+        <button className="mi-continue-btn" onClick={handleContinue}>
+          Continue
+        </button>
+      )}
+
       {proactivity === 'active' && (
         <ActiveJordanDock
           companionRef={companionRef}
@@ -1018,6 +1135,7 @@ export default function MainInteraction() {
           onSavePendingGoalNote={savePendingGoalNote}
           onDismissPendingGoalNote={dismissPendingGoalNote}
           goalNotes={goalNotes}
+          allGoalsCovered={allGoalsCovered}
         />
 
         <section className="mi-chat-card fade-in-up">
@@ -1035,7 +1153,21 @@ export default function MainInteraction() {
             companionRef={companionRef}
             onOpenGoals={() => toggleJordanPanel('notes')}
             onAcceptQuerySuggestion={acceptQuerySuggestion}
-            onDismissNudge={resolveNudge}
+            onDismissNudge={(id, resolution, message) => {
+              updateTranscript(
+                'jordan_suggestion_action',
+                'dismissed suggestion',
+                {
+                  action: 'dismissed',
+                  suggestion_id: id,
+                  suggested_question: message?.suggestion || null,
+                  suggestion_text: message?.text || null,
+                  suggestion_type: message?.type || message?.nudgeType || null,
+                },
+              )
+
+              resolveNudge(id, resolution)
+            }}
             onInlineEvalResponse={handleInlineEvalResponse}
             onAddDrift={handleAddDrifted}
             onResolveNudge={resolveNudge}
@@ -1133,13 +1265,7 @@ function ActiveJordanDock({
               <button
                 type="button"
                 className="mi-nudge-btn mi-nudge-btn-primary"
-                onClick={() =>
-                  onAcceptQuerySuggestion(
-                    activeJordanSuggestion?.suggestion ||
-                      activeQuerySuggestion ||
-                      getQuerySuggestion(),
-                  )
-                }
+                onClick={() => onAcceptQuerySuggestion(activeJordanSuggestion)}
               >
                 Use this
               </button>
@@ -1206,6 +1332,7 @@ function JordanSidebar({
   onSavePendingGoalNote,
   onDismissPendingGoalNote,
   goalNotes,
+  allGoalsCovered,
 }) {
   const sidebarOpen = proactivity !== 'active' || openJordanPanel === 'notes'
 
@@ -1213,7 +1340,9 @@ function JordanSidebar({
     <>
       {proactivity !== 'passive' && (
         <aside className={`mi-sidebar ${sidebarOpen ? 'mi-sidebar-open' : ''}`}>
-          <div className="mi-goals-panel">
+          <div
+            className={`mi-goals-panel ${proactivity === 'active' ? 'active' : ''}`}
+          >
             {proactivity === 'collaborative' && (
               <div className="mi-collab-jordan-header">
                 <div className="mi-collab-jordan-header-profile">
@@ -1225,7 +1354,7 @@ function JordanSidebar({
                     />
                   </div>
 
-                  <div>
+                  <div className="mi-collab-jordan-header-info">
                     <h3>Jordan</h3>
                     <p>Your study companion</p>
                   </div>
@@ -1244,11 +1373,15 @@ function JordanSidebar({
             )}
 
             <div className="goals-area">
-              <p className="mi-goals-subtext">
+              <div className="sticky-note">
+                I'll keep track of your goals below and add notes based on your
+                conversation with Dr. Alex as we go!
+              </div>
+              {/* <p className="mi-goals-subtext">
                 {proactivity === 'collaborative'
-                  ? "I'll keep track of your goals and suggest helpful questions as we go."
+                  ? "I'll keep track of your goals and add notes based on your conversation with Dr. Alex as we go!"
                   : 'Jordan is keeping track of your goals here and will take notes for you!'}
-              </p>
+              </p> */}
 
               <div className="mi-goals-header">
                 <FontAwesomeIcon icon={faBullseye} />
@@ -1478,7 +1611,7 @@ function MessageThread({
 
         const container = messagesRef.current
         const x = 8
-        const y = container.scrollTop + container.clientHeight - 70
+        const y = container.scrollTop + container.clientHeight - 85
 
         passiveJordanRef.current.style.transform = `translate(${x}px, ${y}px)`
         return
@@ -1495,7 +1628,7 @@ function MessageThread({
       const containerRect = messagesRef.current.getBoundingClientRect()
       const nudgeRect = nudgeEl.getBoundingClientRect()
 
-      const x = Math.max(8, nudgeRect.left - containerRect.left - 56)
+      const x = Math.max(8, nudgeRect.left - containerRect.left - 95)
       const y =
         nudgeRect.top - containerRect.top + messagesRef.current.scrollTop
 
@@ -1545,8 +1678,8 @@ function MessageThread({
             <JordanNudge
               key={message.id}
               msg={message}
-              onAcceptQuery={() => onAcceptQuerySuggestion(message.suggestion)}
-              onDismiss={() => onDismissNudge(message.id, 'dismissed')}
+              onAcceptQuery={() => onAcceptQuerySuggestion(message)}
+              onDismiss={() => onDismissNudge(message.id, 'dismissed', message)}
               onEvalYes={() => onInlineEvalResponse(message.id, 'yes')}
               onEvalNo={() => onInlineEvalResponse(message.id, 'no')}
               onAddDrift={() => {
@@ -1588,7 +1721,7 @@ function ChatInput({ input, textareaRef, onChange, onFocus, onSubmit }) {
           value={input}
           onChange={(e) => onChange(e.target.value)}
           onFocus={onFocus}
-          placeholder="Ask Dr. Alex anything..."
+          placeholder="Type your message to Dr. Alex here..."
           rows={3}
         />
       </div>

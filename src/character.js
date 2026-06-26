@@ -287,15 +287,14 @@ export async function speakWithLipsyncStatic(
   const markers = []
   const mtimes = []
 
-  if (audioPath === '/intro-voices/companion-intro1.mp3' && gestures) {
+  if (audioPath === '/intro-voices/companion-shared-intro.mp3' && gestures) {
     // define word -> gesture mappings here
     const wordGestures = [
       { word: 'hi', gesture: 'handup', dur: 2, transition: 1500 },
-      { word: 'not', gesture: 'shrug', dur: 2, transition: 2000 },
-      { word: 'where', gesture: 'chest', dur: 1, transition: 1500 },
-      { word: 'let', gesture: 'talkopen', dur: 2, transition: 1500 },
-      { word: 'share', gesture: 'oneQuestion', dur: 2, transition: 1500 },
-      { word: 'type', gesture: 'talkopen', dur: 2, transition: 1500 },
+      { word: 'alex', gesture: 'talkopen', dur: 2, transition: 1500 },
+      { word: 'track', gesture: 'chest', dur: 2, transition: 1500 },
+      { word: 'setting', gesture: 'rightGesture', dur: 2, transition: 1500 },
+      { word: 'think', gesture: 'talkopen', dur: 2, transition: 1500 },
     ]
 
     wordGestures.forEach(({ word, gesture, dur, transition }) => {

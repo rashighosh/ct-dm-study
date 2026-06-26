@@ -12,9 +12,13 @@
   backdrop-filter: blur(6px);
 }
 
-/* From Uiverse.io by adamgiebl - Adapted for React/FontAwesome */ 
+/* From Uiverse.io by adamgiebl - Adapted for React/FontAwesome */
 .cssbuttons-io-button {
-  background: linear-gradient(135deg, rgba(var(--primary-purple)) 0%, rgba(var(--primary-purple)) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-purple)) 0%,
+    rgba(var(--primary-purple)) 100%
+  );
   color: white;
   font-family: inherit;
   padding-left: 1.2em;
@@ -52,7 +56,11 @@
 }
 
 .cssbuttons-io-button:hover {
-  background: linear-gradient(135deg, rgba(var(--primary-purple)) 0%, rgba(var(--primary-orange)) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-purple)) 0%,
+    rgba(var(--primary-orange)) 100%
+  );
   animation: pulse-animation 2s infinite;
 }
 
@@ -168,7 +176,6 @@
   min-height: 0;
 }
 
-
 .panel-label {
   font-size: 11px;
   font-weight: 600;
@@ -215,7 +222,11 @@
 .next-btn {
   margin-top: 16px;
   padding: 10px 28px;
-  background: linear-gradient(135deg, rgba(var(--primary-orange)) 0%, rgba(var(--primary-orange)) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-orange)) 0%,
+    rgba(var(--primary-orange)) 100%
+  );
   color: #fff;
   border: none;
   font-size: 14px;
@@ -224,7 +235,11 @@
 }
 
 .next-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(var(--primary-orange)) 0%, rgba(var(--primary-yellow)) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-orange)) 0%,
+    rgba(var(--primary-yellow)) 100%
+  );
   animation: pulse-animation 2s infinite;
 }
 
@@ -323,19 +338,24 @@
   border-radius: 8px;
   font-size: 14px;
   outline: none;
-  transition: .2s ease-in-out;
+  transition: 0.2s ease-in-out;
   background: #fff;
   color: #111827;
 }
 
-.chat-input-row input:hover, input:focus {
+.chat-input-row input:hover,
+input:focus {
   border-color: rgba(var(--primary-blue) / 55%);
   box-shadow: 0 0 5px 5px rgb(var(--primary-blue) / 11%);
 }
 
 .chat-input-row button {
   padding: 10px 22px;
-  background: linear-gradient(135deg, rgba(var(--primary-blue)) 0%, rgba(var(--primary-blue)) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-blue)) 0%,
+    rgba(var(--primary-blue)) 100%
+  );
   color: #fff;
   border: none;
   font-size: 14px;
@@ -344,7 +364,11 @@
 }
 
 .chat-input-row button:hover {
-  background: linear-gradient(135deg, rgba(var(--primary-blue)) 0%, rgba(var(--primary-purple)) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-blue)) 0%,
+    rgba(var(--primary-purple)) 100%
+  );
   animation: pulse-animation 2s infinite;
 }
 
