@@ -8,9 +8,6 @@ import {
   faCommentDots,
   faXmark,
   faCheck,
-  faHandHoldingHeart,
-  faPenToSquare,
-  faCommentMedical,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -60,9 +57,6 @@ const PROACTIVITY_COPY = {
   },
 }
 
-const MOCK_ALEX_RESPONSE =
-  "That's a great question. I'll answer this using the clinical trial information we have."
-
 const uid = () => crypto.randomUUID()
 
 /* -------------------------------------------------------------------------- */
@@ -78,18 +72,23 @@ function wordsOf(text) {
 }
 
 // Placeholder drift detection — replace with real NLP / API logic later.
-function detectDrift(message, goalLabels) {
-  if (goalLabels.length === 0) return null
+function detectDrift(message, goalObjects) {
+  if (goalObjects.length === 0) return null
 
   const msgWords = new Set(wordsOf(message))
   if (msgWords.size < 3) return null
 
-  for (const label of goalLabels) {
-    const overlapsGoal = wordsOf(label).some((word) => msgWords.has(word))
+  for (const goal of goalObjects) {
+    const goalText = [goal.title, goal.description, goal.reason]
+      .filter(Boolean)
+      .join(' ')
+
+    const overlapsGoal = wordsOf(goalText).some((word) => msgWords.has(word))
+
     if (overlapsGoal) return null
   }
 
-  return goalLabels[0]
+  return goalObjects[0]?.title
 }
 
 /* -------------------------------------------------------------------------- */
@@ -101,7 +100,7 @@ export default function MainInteraction() {
   // const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
   const location = useLocation()
   const goals = location.state ?? { selectedGoals: [], customGoals: [] }
-
+  const suggestedGoals = goals?.suggestedGoals || []
   const doctorRef = useRef(null)
   const companionRef = useRef(null)
   const chatEndRef = useRef(null)
@@ -138,13 +137,23 @@ export default function MainInteraction() {
 
   const participantId = goals?.participantId || 'test-participant'
 
-  const goalLabels = [
-    ...(goals?.selectedGoals || []).map((id) => GOAL_META[id] || id),
-    ...(goals?.customGoals || []),
+  const goalObjects = [
+    ...(goals?.selectedGoals || []).map(getGoalInfo),
+    ...(goals?.customGoals || []).map((label) => ({
+      id: label,
+      title: label,
+      description: null,
+      reason: null,
+      confidence: null,
+      custom: true,
+    })),
   ]
 
+  const goalLabels = goalObjects.map((goal) => goal.title)
+
   const allGoalsCovered =
-    goalLabels.length > 0 && goalLabels.every((goal) => coveredGoals.has(goal))
+    goalObjects.length > 0 &&
+    goalObjects.every((goal) => coveredGoals.has(goal.id))
 
   const jordanPopupOpen = openJordanPanel !== null
 
@@ -161,7 +170,6 @@ export default function MainInteraction() {
         }
 
         console.log('GOALS ARE', goals)
-        const triggerFirstAlexResponse = `You are a Dr. Alex, a virtual health assistant n. You are introducing yourself and starting the conversation. Here are their information seeking goals: ${goals.selectedGoals}, ${goals.customGoals}. Briefly acknowledge you received their goals and summarize them. Then, ask the user where they'd like to start. Keep your response to 80 words or less.`
 
         const firstAlexPrompt = `
           You are Dr. Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
@@ -169,7 +177,7 @@ export default function MainInteraction() {
 
           The user's information-seeking goals are:
           Selected goals:
-          ${goals?.selectedGoals?.join(', ') || 'None'}
+          ${goalObjects.map((goal) => goal.title).join(', ') || 'None'}
 
           Custom goals:
           ${goals?.customGoals?.join(', ') || 'None'}
@@ -304,6 +312,7 @@ export default function MainInteraction() {
     navigate('/notes-review', {
       state: {
         participantId,
+        goalObjects,
         goalLabels,
         goalNotes,
         coveredGoals: Array.from(coveredGoals),
@@ -336,6 +345,18 @@ export default function MainInteraction() {
   /* Jordan panel helpers                                                     */
   /* ------------------------------------------------------------------------ */
 
+  function getGoalInfo(goalId) {
+    const suggested = suggestedGoals.find((goal) => goal.goalId === goalId)
+
+    return {
+      id: goalId,
+      title: suggested?.goalTitle || GOAL_META[goalId] || goalId,
+      description: suggested?.goalDescription || null,
+      reason: suggested?.reason || null,
+      confidence: suggested?.confidence || null,
+    }
+  }
+
   function toggleJordanPanel(panel) {
     setOpenJordanPanel((prev) => (prev === panel ? null : panel))
   }
@@ -367,8 +388,14 @@ export default function MainInteraction() {
       You are Jordan, a helpful virtual companion helping a patient start a conversation with Dr. Alex about clinical trial participation concepts.
 
       The user's goals are:
-      Goals: ${goalLabels.join(', ') || 'None'}
-      Already covered goals: ${Array.from(coveredGoals).join(', ') || 'None'}
+      Goals: 
+      ${JSON.stringify(goalObjects, null, 2)}
+      Already covered goals:
+      ${JSON.stringify(
+        goalObjects.filter((goal) => coveredGoals.has(goal.id)),
+        null,
+        2,
+      )}
 
       Write ONE short question the user could ask Dr. Alex first.
       Make it specific to one of their goals.
@@ -665,8 +692,8 @@ export default function MainInteraction() {
     goodMatches.forEach((m) => coveredAfterThisTurn.add(m.goal_id))
 
     const allGoalsCoveredNow =
-      goalLabels.length > 0 &&
-      goalLabels.every((g) => coveredAfterThisTurn.has(g))
+      goalObjects.length > 0 &&
+      goalObjects.every((goal) => coveredAfterThisTurn.has(goal.id))
 
     if (proactivity === 'active') {
       setCoveredGoals((prev) => new Set(prev).add(match.goal_id))
@@ -831,13 +858,13 @@ export default function MainInteraction() {
 
   function makeGoalRelevantSuggestion() {
     const uncoveredGoal =
-      goalLabels.find((label) => !coveredGoals.has(label)) || goalLabels[0]
+      goalObjects.find((goal) => !coveredGoals.has(goal.id)) || goalObjects[0]
 
     if (!uncoveredGoal) {
       return 'What should I know first about clinical trials?'
     }
 
-    return `Can you tell me about ${uncoveredGoal.toLowerCase()}?`
+    return `Can you tell me about ${uncoveredGoal.title.toLowerCase()}?`
   }
 
   /* ------------------------------------------------------------------------ */
@@ -916,11 +943,14 @@ export default function MainInteraction() {
         body: JSON.stringify({
           user_message: trimmed,
           alex_answer: data.answer,
-          goals: goalLabels.map((label) => ({
-            id: label,
-            title: label,
-            addressed: coveredGoals.has(label),
-            notes: [],
+          goals: goalObjects.map((goal) => ({
+            id: goal.id,
+            title: goal.title,
+            description: goal.description,
+            reason: goal.reason,
+            confidence: goal.confidence,
+            addressed: coveredGoals.has(goal.id),
+            notes: goalNotes[goal.id] || [],
           })),
           condition: proactivity,
         }),
@@ -1007,14 +1037,14 @@ export default function MainInteraction() {
   function handlePossibleGoalDrift(userMessage) {
     if (proactivity === 'active') return
 
-    const driftedFrom = detectDrift(userMessage, goalLabels)
+    const driftedFrom = detectDrift(userMessage, goalObjects)
     if (!driftedFrom) return
 
     // Passive: store it, but DO NOT show it yet.
     // It will appear after Dr. Alex responds.
     if (proactivity === 'passive') {
       pendingPassiveDrift.current = {
-        driftedFrom,
+        driftedFrom: driftedFrom.title,
         driftText: userMessage,
       }
 
@@ -1088,17 +1118,17 @@ export default function MainInteraction() {
             </div>
 
             <div className="mi-goals-list">
-              {goalLabels.map((label) => (
+              {goalObjects.map((goal) => (
                 <div
-                  key={label}
+                  key={goal.id}
                   className={`mi-goal-chip mi-goal-chip-with-notes${
-                    coveredGoals.has(label) ? ' mi-goal-chip-covered' : ''
+                    coveredGoals.has(goal.id) ? ' mi-goal-chip-covered' : ''
                   }`}
                 >
                   <div className="mi-goal-chip-main">
-                    <span>{label}</span>
+                    <span>{goal.title}</span>
 
-                    {coveredGoals.has(label) && (
+                    {coveredGoals.has(goal.id) && (
                       <FontAwesomeIcon
                         icon={faCheck}
                         className="mi-goal-chip-check"
@@ -1106,9 +1136,9 @@ export default function MainInteraction() {
                     )}
                   </div>
 
-                  {goalNotes[label]?.length > 0 && (
+                  {goalNotes[goal.id]?.length > 0 && (
                     <div className="mi-goal-notes">
-                      {goalNotes[label].map((note) => (
+                      {goalNotes[goal.id].map((note) => (
                         <div key={note.id} className="mi-goal-note">
                           {note.text}
                         </div>
@@ -1125,7 +1155,7 @@ export default function MainInteraction() {
           proactivity={proactivity}
           openJordanPanel={openJordanPanel}
           companionRef={companionRef}
-          goalLabels={goalLabels}
+          goalObjects={goalObjects}
           coveredGoals={coveredGoals}
           collabSuggestion={collabSuggestion}
           onAcceptCollabSuggestion={acceptCollabSuggestion}
@@ -1322,7 +1352,7 @@ function JordanSidebar({
   proactivity,
   openJordanPanel,
   companionRef,
-  goalLabels,
+  goalObjects,
   coveredGoals,
   collabSuggestion,
   onAcceptCollabSuggestion,
@@ -1388,20 +1418,20 @@ function JordanSidebar({
                 <span>Your goals</span>
               </div>
 
-              {goalLabels.length === 0 ? (
+              {goalObjects.length === 0 ? (
                 <p className="mi-goals-empty">No goals selected yet.</p>
               ) : (
                 <div className="mi-goals-list">
-                  {goalLabels.map((label) => (
+                  {goalObjects.map((goal) => (
                     <GoalChip
-                      key={label}
-                      label={label}
-                      covered={coveredGoals.has(label)}
-                      notes={goalNotes[label] || []}
-                      pendingNote={pendingGoalNotes[label]}
-                      onSavePendingNote={() => onSavePendingGoalNote(label)}
+                      key={goal.id}
+                      label={goal.title}
+                      covered={coveredGoals.has(goal.id)}
+                      notes={goalNotes[goal.id] || []}
+                      pendingNote={pendingGoalNotes[goal.id]}
+                      onSavePendingNote={() => onSavePendingGoalNote(goal.id)}
                       onDismissPendingNote={() =>
-                        onDismissPendingGoalNote(label)
+                        onDismissPendingGoalNote(goal.id)
                       }
                     />
                   ))}

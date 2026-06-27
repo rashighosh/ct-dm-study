@@ -138,7 +138,10 @@ const JORDAN_SECTIONS = [
   },
 ]
 
-function ToggleRow({ item, checked, onToggle, accent }) {
+function ToggleRow({ item, checked, onToggle, accent, suggestedGoal }) {
+  const label = suggestedGoal?.goalTitle || item.label
+  const description = suggestedGoal?.goalDescription || item.description
+
   return (
     <button
       type="button"
@@ -147,10 +150,9 @@ function ToggleRow({ item, checked, onToggle, accent }) {
       aria-pressed={checked}
     >
       <div className="gs-row-text">
-        <span className="gs-row-label">{item.label}</span>
-        <span className="gs-row-description">{item.description}</span>
+        <span className="gs-row-label">{label}</span>
+        <span className="gs-row-description">{description}</span>
       </div>
-
       <span className={`gs-switch${checked ? ' gs-switch-on' : ''}`}>
         <span className="gs-switch-knob">
           {checked && <FontAwesomeIcon icon={faCheck} />}
@@ -161,6 +163,9 @@ function ToggleRow({ item, checked, onToggle, accent }) {
 }
 
 export default function GoalSetting({ onComplete }) {
+  const BASE_URL = 'http://127.0.0.1:8000'
+  // const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+
   const [started, setStarted] = useState(false)
   const [selectedGoals, setSelectedGoals] = useState([])
   const [customGoals, setCustomGoals] = useState([]) // [{ id, label }]
@@ -170,11 +175,13 @@ export default function GoalSetting({ onComplete }) {
   const [introIcon, setIntroIcon] = useState(null)
   const [highlightTarget, setHighlightTarget] = useState(null) // null | 'goals' | 'continue'
   const companionRef = useRef(null)
+  const [isJordanSpeaking, setIsJordanSpeaking] = useState(false)
+  const [suggestedGoals, setSuggestedGoals] = useState([])
   const navigate = useNavigate()
 
   const [searchParams] = useSearchParams()
 
-  const participantId = searchParams.get('id') || 'test-participant'
+  const participantId = searchParams.get('id') || 'R_1dt1pZa4q7EkLbw'
 
   const conditionParam = searchParams.get('condition') || '2'
 
@@ -197,6 +204,31 @@ export default function GoalSetting({ onComplete }) {
   useEffect(() => {
     logSession(participantId, conditionParam, proactivity).catch(console.error)
   }, [participantId, conditionParam, proactivity])
+
+  useEffect(() => {
+    if (proactivity !== 'collaborative') return
+
+    async function loadSuggestedGoals() {
+      try {
+        const res = await fetch(`${BASE_URL}/generate-initial-goals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ response_id: participantId }),
+        })
+
+        const data = await res.json()
+        console.log("***User's suggested goals", data)
+
+        const goals = data.suggestedGoals || []
+
+        setSuggestedGoals(goals)
+      } catch (error) {
+        console.error('Could not load suggested goals:', error)
+      }
+    }
+
+    loadSuggestedGoals()
+  }, [participantId, proactivity])
 
   useEffect(() => {
     if (!started) return
@@ -224,11 +256,13 @@ export default function GoalSetting({ onComplete }) {
         const iconTimeouts = JORDAN_INTRO_ICON_TIMELINE.map(({ time, icon }) =>
           setTimeout(() => setIntroIcon(icon), time * 1000),
         )
+        setIsJordanSpeaking(true)
         await speakWithLipsyncStatic(
           '/intro-voices/companion-shared-intro.mp3',
           '/intro-voices/companion-shared-intro-timestamps.json',
           'companion',
         )
+        setIsJordanSpeaking(false)
         iconTimeouts.forEach(clearTimeout)
         setIntroIcon(null)
         await new Promise((resolve) => setTimeout(resolve, 600))
@@ -241,11 +275,13 @@ export default function GoalSetting({ onComplete }) {
           setTimeout(() => setHighlightTarget(null), 11500),
         ]
 
+        setIsJordanSpeaking(true)
         await speakWithLipsyncStatic(
           `/intro-voices/companion-${proactivity}-intro.mp3`,
           `/intro-voices/companion-${proactivity}-intro-timestamps.json`,
           'companion',
         )
+        setIsJordanSpeaking(false)
 
         secondIntroHighlightTimeouts.forEach(clearTimeout)
         setHighlightTarget(null)
@@ -292,12 +328,25 @@ export default function GoalSetting({ onComplete }) {
       proactivity,
       selectedGoals,
       selectedGoalLabels: selectedGoals.map((id) => {
+        const suggested = suggestedGoals.find((goal) => goal.goalId === id)
+
+        if (suggested) {
+          return suggested.goalTitle
+        }
+
         const allItems = [...ALEX_SECTIONS, ...JORDAN_SECTIONS].flatMap(
           (section) => section.items,
         )
+
         return allItems.find((item) => item.id === id)?.label || id
       }),
       customGoals: customGoals.map((g) => g.label),
+
+      // add these
+      suggestedGoals,
+      selectedSuggestedGoals: suggestedGoals.filter((goal) =>
+        selectedGoals.includes(goal.goalId),
+      ),
     }
 
     await logGoalSetting(participantId, goalPayload)
@@ -309,6 +358,7 @@ export default function GoalSetting({ onComplete }) {
         proactivity,
         selectedGoals,
         customGoals: customGoals.map((g) => g.label),
+        suggestedGoals,
       },
     })
   }
@@ -387,6 +437,31 @@ export default function GoalSetting({ onComplete }) {
     return null
   }
 
+  function getSuggestedGoal(goalId) {
+    return suggestedGoals.find((goal) => goal.goalId === goalId)
+  }
+
+  function getBaseGoal(goalId) {
+    const allItems = [...ALEX_SECTIONS, ...JORDAN_SECTIONS].flatMap(
+      (section) => section.items,
+    )
+    return allItems.find((item) => item.id === goalId)
+  }
+
+  const collaborativeSuggestedItems = suggestedGoals
+    .map((goal) => {
+      const baseGoal = getBaseGoal(goal.goalId)
+      if (!baseGoal) return null
+
+      return {
+        ...baseGoal,
+        label: goal.goalTitle,
+        description: goal.goalDescription,
+        suggestedGoal: goal,
+      }
+    })
+    .filter(Boolean)
+
   return (
     <div className="gs-root">
       {/* ── Start overlay ── */}
@@ -417,11 +492,9 @@ export default function GoalSetting({ onComplete }) {
           )}
           <div className="gs-header-avatars">
             <div
-              className={
-                introFinished
-                  ? 'gs-avatar gs-avatar-jordan small'
-                  : 'gs-avatar gs-avatar-jordan large'
-              }
+              className={`gs-avatar gs-avatar-jordan ${
+                introFinished ? 'small' : 'large'
+              } ${isJordanSpeaking ? 'gs-avatar-speaking' : ''}`}
             >
               <div
                 className="virtual-companion"
@@ -475,11 +548,11 @@ export default function GoalSetting({ onComplete }) {
                   </h2>
                 </div>
               </div>
-              {ALEX_SECTIONS.map((section) => (
-                <div className="gs-subsection" key={section.title}>
-                  <h3 className="gs-subsection-title">{section.title}</h3>
+              {proactivity === 'collaborative' && suggestedGoals.length > 0 ? (
+                <div className="gs-subsection">
+                  <h3 className="gs-subsection-title">Suggested for you</h3>
                   <div className="gs-row-list">
-                    {section.items.map((item) => (
+                    {collaborativeSuggestedItems.map((item) => (
                       <ToggleRow
                         key={item.id}
                         item={item}
@@ -490,7 +563,25 @@ export default function GoalSetting({ onComplete }) {
                     ))}
                   </div>
                 </div>
-              ))}
+              ) : (
+                ALEX_SECTIONS.map((section) => (
+                  <div className="gs-subsection" key={section.title}>
+                    <h3 className="gs-subsection-title">{section.title}</h3>
+                    <div className="gs-row-list">
+                      {section.items.map((item) => (
+                        <ToggleRow
+                          key={item.id}
+                          item={item}
+                          accent="alex"
+                          checked={selectedGoals.includes(item.id)}
+                          onToggle={toggleGoal}
+                          suggestedGoal={getSuggestedGoal(item.id)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
 
               <div className="gs-subsection">
                 <h3 className="gs-subsection-title">Custom topics</h3>
@@ -555,6 +646,7 @@ export default function GoalSetting({ onComplete }) {
                         accent="jordan"
                         checked={selectedGoals.includes(item.id)}
                         onToggle={toggleGoal}
+                        suggestedGoal={getSuggestedGoal(item.id)}
                       />
                     ))}
                   </div>

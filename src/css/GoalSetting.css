@@ -382,6 +382,19 @@
   }
 }
 
+.gs-avatar-jordan.gs-avatar-speaking {
+  animation: pulse-animation 2s infinite;
+}
+
+@keyframes gs-jordan-soft-pulse {
+  0% {
+    box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 20px rgba(0, 0, 0, 0);
+  }
+}
+
 .gs-eyebrow {
   font-size: 11px;
   letter-spacing: 0.12em;
@@ -547,8 +560,8 @@
 
 .gs-row-list {
   display: flex;
-  flex-direction: row;
-  gap: 7px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 /* ── Toggle row ── */
@@ -557,7 +570,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  width: 33%;
+  width: calc((100% - 20px) / 3);
+  min-height: 118px;
   text-align: left;
   background: #fff;
   border: 1px solid #e2ddd0;
