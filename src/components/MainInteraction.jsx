@@ -9,6 +9,11 @@ import {
   faCommentDots,
   faXmark,
   faCheck,
+  faClipboardList,
+  faBan,
+  faMagnifyingGlass,
+  faObjectGroup,
+  faListCheck,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -111,7 +116,13 @@ export default function MainInteraction() {
   const queryPauseTimer = useRef(null)
   const evalPauseTimer = useRef(null)
   const queryNudgeShownForDraft = useRef(false)
+  const previousJordanSuggestions = useRef(new Set())
+  const introCueTimers = useRef([])
 
+  const [showTalkingPoints, setShowTalkingPoints] = useState(false)
+  const [alexIntroCue, setAlexIntroCue] = useState(null)
+  const [audioReady, setAudioReady] = useState(false)
+  const [alexTalkingPoints, setAlexTalkingPoints] = useState([])
   const [pendingGoalNotes, setPendingGoalNotes] = useState({})
   const [activeJordanSuggestion, setActiveJordanSuggestion] = useState(null)
   const [activeQuerySuggestion, setActiveQuerySuggestion] = useState('')
@@ -163,6 +174,7 @@ export default function MainInteraction() {
   /* ------------------------------------------------------------------------ */
 
   useEffect(() => {
+    if (!audioReady) return
     async function initCharacters() {
       try {
         await initDoctorCharacter(doctorRef.current)
@@ -172,80 +184,105 @@ export default function MainInteraction() {
 
         console.log('GOALS ARE', goals)
 
-        const firstAlexPrompt = `
-          You are Doctor Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
-          You are starting the conversation.
+        const STATIC_ALEX_INTRO = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
 
-          The user's information-seeking goals are:
-          Selected goals:
-          ${goalObjects.map((goal) => goal.title).join(', ') || 'None'}
+        const personalizedAlexPrompt = `
+        You are Doctor Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
 
-          Custom goals:
-          ${goals?.customGoals?.join(', ') || 'None'}
+        The user's information-seeking goals are:
+        Selected goals:
+        ${goalObjects.map((goal) => goal.title).join(', ') || 'None'}
 
-          Your role is to:
-          - Help the user understand clinical trials and related topics.
-          - Help find, summarize, and organize information from trusted clinical-trial resources.
-          - Avoid asking for the user's diagnosis or personal medical details.
-          - Avoid providing treatment recommendations or medical advice.
-          - Avoid searching for specific clinical trials.
-          - Avoid determining whether a particular trial is appropriate for the user.
+        Custom goals:
+        ${goals?.customGoals?.join(', ') || 'None'}
 
-          Write exactly 4 sentences, in this exact order, and keep the full response under 80 words:
-          1. Introduce yourself as Doctor Alex.
-          2. Explain that your goal is to help find, summarize, and organize information about clinical trials from trusted sources. Briefly explain that you do not identify specific trials or determine whether a trial is a good fit because you do not collect personal medical details and those decisions are best discussed with real healthcare providers or study teams.
-          3. Show that you reviewed the user's goals. Mention 2–3 examples from their goals, but frame them as examples rather than a complete list. Use language such as "topics like," "including," or "such as" so the user understands you reviewed all of their goals.
-          4. Ask one question about where the user would like to begin.
+        Write exactly 2 sentences and keep the full response under 40 words:
+        1. Say that you reviewed the user's goals. Mention 2–3 examples from their goals, but frame them as examples rather than a complete list.
+        2. Ask one question about where the user would like to begin.
 
-          Do not use bullet points.
-          Do not list all of the user's goals.
-          Do not repeat the goals word-for-word.
-          Be conversational, supportive, concise, and easy to understand.
-          `
-        try {
-          const response = await fetch(`${BASE_URL}/simple-chat`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              message: firstAlexPrompt,
-            }),
-          })
-          const data = await response.json()
-          console.log('RESPONSE IS', data)
+        Do not use bullet points.
+        Do not list all of the user's goals.
+        Do not repeat the goals word-for-word.
+        Be conversational, supportive, concise, and easy to understand.
+      `
 
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: uid(),
-              from: 'alex',
-              text: data.reply,
-              sources: [],
-              explanation: null,
-              confidence: null,
-            },
-          ])
+        const personalizedPromise = fetch(`${BASE_URL}/simple-chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: personalizedAlexPrompt,
+          }),
+        }).then((res) => res.json())
 
-          updateTranscript('alex', data.reply, {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uid(),
+            from: 'alex',
+            text: STATIC_ALEX_INTRO,
             sources: [],
-            intro: true,
-          })
+            explanation: null,
+            confidence: null,
+          },
+        ])
 
-          setIsAlexActive(true)
-          await speakWithLipsync(data.reply, 'doctor')
-          setIsAlexActive(false)
-          setAlexIntroDone(true)
-        } catch (err) {
-          console.log(err)
-        }
+        updateTranscript('alex', STATIC_ALEX_INTRO, {
+          sources: [],
+          intro: true,
+          intro_part: 'static',
+        })
+
+        setIsAlexActive(true)
+        playAlexIntroCues()
+
+        await speakWithLipsyncStatic(
+          '/intro-voices/doctor-alexIntro-intro.mp3',
+          '/intro-voices/doctor-alexIntro-intro-timestamps.json',
+          'doctor',
+        )
+
+        setAlexIntroCue({
+          type: 'goals-review',
+        })
+
+        playGesture('thinkingDoctor')
+
+        const data = await personalizedPromise
+
+        const personalizedIntro = data.reply
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uid(),
+            from: 'alex',
+            text: personalizedIntro,
+            sources: [],
+            explanation: null,
+            confidence: null,
+          },
+        ])
+
+        updateTranscript('alex', personalizedIntro, {
+          sources: [],
+          intro: true,
+          intro_part: 'personalized',
+        })
+
+        await speakWithLipsync(personalizedIntro, 'doctor', null, () =>
+          setAlexIntroCue(null),
+        )
+
+        setIsAlexActive(false)
+        setAlexIntroDone(true)
       } catch (err) {
-        console.error('Main interaction init failed:', err)
+        console.log(err)
       }
     }
-
     initCharacters()
-  }, [])
+  }, [audioReady])
 
   useEffect(() => {
     if (proactivity !== 'passive' && proactivity !== 'collaborative') return
@@ -300,8 +337,15 @@ export default function MainInteraction() {
   }, [proactivity, alexIntroDone, goals])
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    const timer = setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      })
+    }, 50)
+
+    return () => clearTimeout(timer)
+  }, [messages, isAlexActive, showCards])
 
   /* ------------------------------------------------------------------------ */
   /* Navigation                                               */
@@ -398,11 +442,20 @@ export default function MainInteraction() {
         2,
       )}
 
+            Previous Jordan suggestions:
+      ${JSON.stringify(Array.from(previousJordanSuggestions.current), null, 2)}
+
       Write ONE short question the user could ask Doctor Alex first.
       Make it specific to one of their goals.
       The question should be meaningful and related to the goal, not just the goal title turned into a question.
       The question should ask about a practical detail, concern, tradeoff, or decision the user might actually have.
       Use the user's voice.
+      Do not imply the user is in, choosing, eligible for, or personally receiving a trial.
+      Avoid: "this trial", "the trial", "my trial", "this study", "for me", "treatment doesn't work for me", "would I qualify".
+      Prefer general educational wording like "people", "participants", or "someone".
+      Do not suggest a question that is the same as, or very similar to, any previous Jordan suggestion.
+      Do not suggest a question that is basically the same as something the user already asked.
+      If needed, suggest a different angle on the same goal.
       Return only the question without any quotations.
     `
 
@@ -424,22 +477,6 @@ export default function MainInteraction() {
   /* ------------------------------------------------------------------------ */
   /* Query support                                                            */
   /* ------------------------------------------------------------------------ */
-
-  // useEffect(() => {
-  //   clearTimeout(queryPauseTimer.current)
-
-  //   if (proactivity !== 'collaborative' && proactivity !== 'passive') return
-  //   if (!input.trim() || queryNudgeShownForDraft.current) return
-
-  //   queryPauseTimer.current = setTimeout(() => {
-  //     pushQueryNudge()
-  //     queryNudgeShownForDraft.current = true
-  //   }, 2000)
-
-  //   return () => clearTimeout(queryPauseTimer.current)
-  //   // pushQueryNudge reads current input/proactivity intentionally.
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [input, proactivity])
 
   function makeQueryNudge() {
     const text =
@@ -481,6 +518,7 @@ export default function MainInteraction() {
 
     if (isAlreadyOpen) {
       setOpenJordanPanel(null)
+      setActiveQueryLoading(false)
       return
     }
 
@@ -588,6 +626,10 @@ export default function MainInteraction() {
   }
 
   function logJordanSuggestion(suggestion, shownAs = proactivity) {
+    if (suggestion.suggestion) {
+      previousJordanSuggestions.current.add(suggestion.suggestion.trim())
+    }
+
     updateTranscript('jordan_suggestion_shown', suggestion.text, {
       suggestion_id: suggestion.id,
       suggestion_type: suggestion.type,
@@ -872,6 +914,38 @@ export default function MainInteraction() {
   /* Message send flow                                                        */
   /* ------------------------------------------------------------------------ */
 
+  function playAlexIntroCues() {
+    introCueTimers.current.forEach(clearTimeout)
+    introCueTimers.current = []
+
+    const cues = [
+      {
+        delay: 5840, // fix later
+        cue: {
+          type: 'boundary',
+          title: 'What I will not do',
+          text: 'I will not suggest specific trials or decide if one is right for you.',
+        },
+      },
+      {
+        delay: 15100, // fix later
+        cue: {
+          type: 'sources',
+          title: 'How I can help',
+          text: 'I can find, summarize, and organize information from trusted sources.',
+        },
+      },
+    ]
+
+    cues.forEach(({ delay, cue }) => {
+      const timer = setTimeout(() => setAlexIntroCue(cue), delay)
+      introCueTimers.current.push(timer)
+    })
+
+    const clearTimer = setTimeout(() => setAlexIntroCue(null), 19000)
+    introCueTimers.current.push(clearTimer)
+  }
+
   async function handleSend(e) {
     e.preventDefault()
 
@@ -880,6 +954,8 @@ export default function MainInteraction() {
 
     updateTranscript('user', trimmed)
 
+    setAlexTalkingPoints([])
+    setShowTalkingPoints(false)
     setIsAlexActive(true)
     playGesture('startSwiping')
     setShowCards(true)
@@ -954,6 +1030,7 @@ export default function MainInteraction() {
             notes: goalNotes[goal.id] || [],
           })),
           condition: proactivity,
+          previous_suggestions: Array.from(previousJordanSuggestions.current),
         }),
       })
 
@@ -976,15 +1053,26 @@ export default function MainInteraction() {
       ])
 
       console.log('Sources', data.sources)
-      playGesture('stopSwiping')
       setShowCards(false)
 
       updateTranscript('alex', data.answer, {
         sources: data.sources || [],
       })
 
+      setAlexTalkingPoints(data.talking_points || [])
+      setShowTalkingPoints(false)
+
+      const talkingPointsTimer = setTimeout(() => {
+        setShowTalkingPoints(true)
+      }, 5000)
+
+      playGesture('stopSwiping')
       await speakWithLipsync(data.answer, 'doctor')
+
+      clearTimeout(talkingPointsTimer)
       setIsAlexActive(false)
+      setShowTalkingPoints(false)
+      setAlexTalkingPoints([])
 
       handleGoalEvalResult(evalData, alexMsgId)
     } catch (err) {
@@ -998,6 +1086,11 @@ export default function MainInteraction() {
           text: 'Sorry, something went wrong.',
         },
       ])
+    } finally {
+      playGesture('stopSwiping')
+      setShowCards(false)
+      setIsAlexActive(false)
+      setAlexTalkingPoints([])
     }
   }
 
@@ -1075,6 +1168,21 @@ export default function MainInteraction() {
 
   return (
     <div className={`mi-root mi-root-${proactivity}`}>
+      {!audioReady && (
+        <div className="start-overlay">
+          <div className="start-overlay-content">
+            <h2>Developer Mode</h2>
+            <p>Click below to enable audio after refreshing.</p>
+
+            <button
+              className="cssbuttons-io-button"
+              onClick={() => setAudioReady(true)}
+            >
+              Enable audio
+            </button>
+          </div>
+        </div>
+      )}
       <div className="tool-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>
@@ -1118,6 +1226,10 @@ export default function MainInteraction() {
           <div className="mi-passive-goals-popover">
             <div className="mi-passive-goals-header">
               <span>Your goals</span>
+              <div className="sticky-note">
+                I'll keep track of your goals below and add notes based on your
+                conversation with Dr. Alex as we go!
+              </div>
               <button type="button" onClick={closeJordanPopup}>
                 <FontAwesomeIcon icon={faXmark} />
               </button>
@@ -1180,6 +1292,9 @@ export default function MainInteraction() {
             isAlexActive={isAlexActive}
             sources={alexSources}
             showCards={showCards}
+            talkingPoints={alexTalkingPoints}
+            showTalkingPoints={showTalkingPoints}
+            introCue={alexIntroCue}
           />
 
           <MessageThread
@@ -1413,11 +1528,6 @@ function JordanSidebar({
                 I'll keep track of your goals below and add notes based on your
                 conversation with Dr. Alex as we go!
               </div>
-              {/* <p className="mi-goals-subtext">
-                {proactivity === 'collaborative'
-                  ? "I'll keep track of your goals and add notes based on your conversation with Dr. Alex as we go!"
-                  : 'Jordan is keeping track of your goals here and will take notes for you!'}
-              </p> */}
 
               <div className="mi-goals-header">
                 <FontAwesomeIcon icon={faBullseye} />
@@ -1577,7 +1687,18 @@ function CollaborativeSuggestionCard({
   )
 }
 
-function AlexHeader({ doctorRef, isAlexActive, sources, showCards }) {
+function AlexHeader({
+  doctorRef,
+  isAlexActive,
+  sources,
+  showCards,
+  talkingPoints,
+  showTalkingPoints,
+  introCue,
+}) {
+  const uniqueSources = Array.from(
+    new Map(sources.map((source) => [source.source, source])).values(),
+  )
   return (
     <div
       className={`mi-chat-header ${isAlexActive ? 'mi-alex-area-active' : ''}`}
@@ -1591,21 +1712,81 @@ function AlexHeader({ doctorRef, isAlexActive, sources, showCards }) {
           <h2>Dr. Alex</h2>
         </div>
 
-        {sources.length > 0 && (
-          <div className="alex-source-panel">
-            <span className="alex-source-label">Sources used</span>
+        {introCue?.type === 'goals-review' && (
+          <div className="alex-goals-review-card">
+            <div className="alex-goals-paper">
+              <div className="alex-goals-paper-title">Your goals</div>
+              <div className="alex-goals-paper-line" />
+              <div className="alex-goals-paper-line short" />
+              <div className="alex-goals-paper-line" />
+            </div>
+          </div>
+        )}
+
+        {introCue?.type === 'boundary' && (
+          <div className="alex-intro-visual-card">
+            <div className="alex-search-icon">
+              <FontAwesomeIcon icon={faClipboardList} size="5x" />
+
+              <div className="alex-search-ban">
+                <FontAwesomeIcon icon={faBan} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {introCue?.type === 'sources' && (
+          <div className="alex-intro-visual-card">
+            <div className="alex-source-stack">
+              <div className="alex-source-step alex-source-step-1">
+                <FontAwesomeIcon icon={faMagnifyingGlass} size="3x" />
+              </div>
+
+              <div className="alex-source-step alex-source-step-2">
+                <FontAwesomeIcon icon={faObjectGroup} size="3x" />
+              </div>
+
+              <div className="alex-source-step alex-source-step-3">
+                <FontAwesomeIcon icon={faListCheck} size="3x" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {uniqueSources.length > 0 && (
+          <div className="alex-source-panel alex-source-panel-active">
+            <span className="alex-source-label">Trusted sources checked</span>
 
             <div className="alex-source-list">
-              {sources.map((source) => (
+              {uniqueSources.map((source, index) => (
                 <span
                   key={`${source.id}-${source.file}-${source.chunk_id}`}
-                  className="alex-source-chip"
+                  className="alex-source-chip alex-source-chip-verified"
+                  style={{ animationDelay: `${index * 120}ms` }}
                   title={source.relevance_explanation}
                 >
+                  <FontAwesomeIcon icon={faCheck} />
                   {source.source}
                 </span>
               ))}
             </div>
+          </div>
+        )}
+
+        {isAlexActive && showTalkingPoints && talkingPoints?.length > 0 && (
+          <div className="alex-talking-points">
+            {talkingPoints.map((point, index) => (
+              <div
+                className="alex-talking-point"
+                style={{
+                  animationDelay: `${index * 550}ms`,
+                }}
+                key={`${point}-${index}`}
+              >
+                <FontAwesomeIcon icon={faCheck} />
+                <span>{point}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -1630,7 +1811,7 @@ function MessageThread({
 
   const activeNudge = [...messages]
     .reverse()
-    .find((message) => message.from === 'jordan-nudge' && !message.resolved)
+    .find((message) => message.from === 'jordan-nudge')
 
   useEffect(() => {
     if (proactivity !== 'passive') return
@@ -1641,25 +1822,13 @@ function MessageThread({
     function positionJordan() {
       if (cancelled) return
       if (!messagesRef.current || !passiveJordanRef.current) return
-
-      if (!activeNudge) {
-        passiveJordanRef.current.classList.remove('mi-passive-jordan-active')
-
-        const container = messagesRef.current
-        const x = 8
-        const y = container.scrollTop + container.clientHeight - 85
-
-        passiveJordanRef.current.style.transform = `translate(${x}px, ${y}px)`
-        return
-      }
+      if (!activeNudge) return
 
       const nudgeEl = messagesRef.current.querySelector(
         `[data-jordan-nudge-id="${activeNudge.id}"]`,
       )
 
       if (!nudgeEl) return
-
-      passiveJordanRef.current.classList.add('mi-passive-jordan-active')
 
       const containerRect = messagesRef.current.getBoundingClientRect()
       const nudgeRect = nudgeEl.getBoundingClientRect()
@@ -1674,13 +1843,12 @@ function MessageThread({
     const frame1 = requestAnimationFrame(() => {
       positionJordan()
 
-      const frame2 = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         positionJordan()
       })
     })
 
     messagesRef.current.addEventListener('scroll', positionJordan)
-
     window.addEventListener('resize', positionJordan)
 
     return () => {
@@ -1714,7 +1882,10 @@ function MessageThread({
             <JordanNudge
               key={message.id}
               msg={message}
-              onAcceptQuery={() => onAcceptQuerySuggestion(message)}
+              onAcceptQuery={() => {
+                onAcceptQuerySuggestion(message)
+                onResolveNudge(message.id, 'used')
+              }}
               onDismiss={() => onDismissNudge(message.id, 'dismissed', message)}
               onEvalYes={() => onInlineEvalResponse(message.id, 'yes')}
               onEvalNo={() => onInlineEvalResponse(message.id, 'no')}

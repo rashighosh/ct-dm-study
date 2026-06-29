@@ -88,6 +88,11 @@ export async function thinking() {
   head1?.playGesture('think', Infinity, false, 1500)
 }
 
+export async function thinkingDoctor() {
+  head?.stopGesture(1500)
+  head?.playGesture('think', Infinity, false, 1500)
+}
+
 export async function thumbsup() {
   head1?.stopGesture(3000)
   head1?.playGesture('thumbup', Infinity, false, 1500)
@@ -235,18 +240,19 @@ export async function speakWithLipsync(
       head1.playGesture(gesture)
     }
   }
+  if (onStart) onStart()
+
   activeHead.speakAudio(
     {
       audio: audioBuffer,
-      words: words,
-      wtimes: wtimes,
-      wdurations: wdurations,
+      words,
+      wtimes,
+      wdurations,
     },
     { isRaw: true },
     null,
   )
 
-  if (onStart) onStart()
   return new Promise((resolve) => {
     setTimeout(resolve, audioBuffer.duration * 1000)
   })
@@ -294,6 +300,32 @@ export async function speakWithLipsyncStatic(
       { word: 'alex', gesture: 'talkopen', dur: 2, transition: 1500 },
       { word: 'track', gesture: 'chest', dur: 2, transition: 1500 },
       { word: 'setting', gesture: 'rightGesture', dur: 2, transition: 1500 },
+      { word: 'think', gesture: 'talkopen', dur: 2, transition: 1500 },
+    ]
+
+    wordGestures.forEach(({ word, gesture, dur, transition }) => {
+      const idx = timestamps.findIndex(
+        (t) =>
+          t.word
+            .trim()
+            .toLowerCase()
+            .replace(/[.,!?;:]/g, '') === word,
+      )
+      if (idx !== -1) {
+        markers.push(() =>
+          activeHead.playGesture(gesture, dur, false, transition),
+        )
+        mtimes.push(wtimes[idx])
+      }
+    })
+  }
+
+  if (audioPath === '/intro-voices/doctor-alexIntro-intro.mp3' && gestures) {
+    // define word -> gesture mappings here
+    const wordGestures = [
+      { word: 'hello', gesture: 'handup', dur: 2, transition: 1500 },
+      { word: 'choices', gesture: 'talkopen', dur: 2, transition: 1500 },
+      { word: 'help', gesture: 'rightGesture', dur: 2, transition: 1500 },
       { word: 'think', gesture: 'talkopen', dur: 2, transition: 1500 },
     ]
 
@@ -416,6 +448,7 @@ export const gestures = {
   thumbsup,
   thumbsupQuick,
   thinking,
+  thinkingDoctor,
   ready,
   lookup,
   lookdown,

@@ -196,7 +196,7 @@ export default function GoalSetting({ onComplete }) {
 
   const participantId = searchParams.get('id') || 'R_1dt1pZa4q7EkLbw'
 
-  const conditionParam = searchParams.get('condition') || '2'
+  const conditionParam = searchParams.get('condition') || '1'
 
   const CONDITION_MAP = {
     1: 'passive',
@@ -204,7 +204,7 @@ export default function GoalSetting({ onComplete }) {
     3: 'active',
   }
 
-  const proactivity = CONDITION_MAP[conditionParam] || 'collaborative'
+  const proactivity = CONDITION_MAP[conditionParam] || 'passive'
 
   const JORDAN_INTRO_ICON_TIMELINE = [
     { time: 4.6, icon: 'doctor', label: 'Talk with Dr. Alex' },
