@@ -10,6 +10,44 @@
   overflow: hidden;
 }
 
+.gs-start-checks {
+  width: min(620px, 90%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 1rem 0 1.5rem;
+}
+
+.gs-start-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  background: #fff;
+  border: 1px solid #e2ddd0;
+  border-radius: 14px;
+
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.gs-start-check:hover {
+  border-color: rgb(var(--primary-blue) / 35%);
+}
+
+.gs-start-check input {
+  margin-top: 2px;
+  transform: scale(1.15);
+}
+
+.gs-start-check span {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #555;
+}
+
 /* ── Start overlay (shared look with the rest of the app) ── */
 .gs-root .start-overlay {
   position: fixed;
@@ -19,9 +57,151 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  background: var(--background-gradient);
+  gap: 0;
+  background: #f8f7f4;
   backdrop-filter: blur(6px);
+}
+
+.gs-page .companion-intro {
+  position: absolute;
+  top: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+
+.start-overlay h1,
+.companion-intro h1 {
+  text-transform: uppercase;
+  font-size: 35px;
+  letter-spacing: 2px;
+  font-weight: 500;
+  line-height: normal;
+  margin: 0;
+}
+
+.start-overlay h2 {
+  text-transform: uppercase;
+  font-size: 25px;
+  letter-spacing: 1.5px;
+  font-weight: 300;
+  line-height: normal;
+  margin: 0;
+}
+
+.start-overlay h1 {
+  text-transform: uppercase;
+  font-size: 35px;
+  letter-spacing: 2px;
+  font-weight: 500;
+  line-height: normal;
+  margin: 0;
+}
+
+.companion-intro h2 {
+  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  font-weight: 300;
+  line-height: normal;
+  margin: 0;
+}
+
+.companion-intro h1 {
+  text-transform: uppercase;
+  font-size: 25px;
+  letter-spacing: 2px;
+  font-weight: 500;
+  line-height: normal;
+  margin: 0;
+}
+
+.companion-intro .logo {
+  height: 25px;
+  width: 25px;
+}
+
+.start-overlay .information {
+  padding: 1rem 5rem;
+  text-align: center;
+}
+
+.start-overlay hr {
+  width: 75%;
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.start-overlay .cssbuttons-io-button:disabled {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.gs-ask-jordan-card {
+  position: relative;
+  z-index: 99;
+  width: 150px;
+  padding: 18px 18px 22px;
+  font-size: 15px;
+  border-radius: 20px;
+  background: #fff;
+  border: 1px solid #8e8e8e;
+  box-shadow: 0 12px 28px rgba(35, 80, 60, 0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.gs-ask-jordan-card::after {
+  content: '';
+  position: absolute;
+
+  bottom: -11px;
+  left: 50%;
+
+  width: 20px;
+  height: 20px;
+
+  background: #fff;
+  border-left: 1px solid #8e8e8e;
+  border-bottom: 1px solid #8e8e8e;
+
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.gs-ask-jordan-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(35, 80, 60, 0.25);
+}
+
+.gs-ask-jordan-card:hover > .gs-ask-jordan-action {
+  color: rgb(var(--primary-blue) / 75%);
+}
+
+.gs-ask-jordan-action {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 15px;
+  color: #8e8e8e;
+  font-weight: 600;
+  line-height: normal;
+}
+
+.gs-ask-jordan-card:active {
+  transform: translateY(0);
 }
 
 /* ── Scrollable body ── */
@@ -33,6 +213,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
 }
 
 /* ── Header ── */
@@ -48,7 +229,9 @@
 
 .gs-header-avatars {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: -10px;
   margin-bottom: 6px;
 }
@@ -620,6 +803,52 @@
 .gs-row-jordan.gs-row-checked {
   border-color: #9fe1cb;
   background: #eef8f2;
+}
+
+.gs-suggest-more-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgb(var(--primary-blue) / 30%);
+  background: rgb(var(--primary-blue) / 6%);
+  color: rgb(var(--primary-blue));
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.gs-suggest-more-btn:hover {
+  background: rgb(var(--primary-blue) / 10%);
+}
+
+.gs-suggest-more-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gs-suggest-more-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgb(var(--primary-blue) / 30%);
+  background: rgb(var(--primary-blue) / 6%);
+  color: rgb(var(--primary-blue));
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.gs-suggest-more-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* ── Switch control ── */

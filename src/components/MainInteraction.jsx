@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
+import logo from '../assets/logo-transparent.png'
 import '../css/MainInteraction.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -172,7 +173,7 @@ export default function MainInteraction() {
         console.log('GOALS ARE', goals)
 
         const firstAlexPrompt = `
-          You are Dr. Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
+          You are Doctor Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
           You are starting the conversation.
 
           The user's information-seeking goals are:
@@ -191,8 +192,8 @@ export default function MainInteraction() {
           - Avoid determining whether a particular trial is appropriate for the user.
 
           Write exactly 4 sentences, in this exact order, and keep the full response under 80 words:
-          1. Introduce yourself as Dr. Alex.
-          2. Explain that your goal is to help find, summarize, and organize information about clinical trials from trusted sources. Briefly explain that you do not identify specific trials or determine whether a trial is a good fit because you do not collect personal medical details and those decisions are best discussed with healthcare providers or study teams.
+          1. Introduce yourself as Doctor Alex.
+          2. Explain that your goal is to help find, summarize, and organize information about clinical trials from trusted sources. Briefly explain that you do not identify specific trials or determine whether a trial is a good fit because you do not collect personal medical details and those decisions are best discussed with real healthcare providers or study teams.
           3. Show that you reviewed the user's goals. Mention 2–3 examples from their goals, but frame them as examples rather than a complete list. Use language such as "topics like," "including," or "such as" so the user understands you reviewed all of their goals.
           4. Ask one question about where the user would like to begin.
 
@@ -232,7 +233,7 @@ export default function MainInteraction() {
           })
 
           setIsAlexActive(true)
-          // await speakWithLipsync(data.reply, 'doctor')
+          await speakWithLipsync(data.reply, 'doctor')
           setIsAlexActive(false)
           setAlexIntroDone(true)
         } catch (err) {
@@ -385,7 +386,7 @@ export default function MainInteraction() {
 
     try {
       const firstJordanPrompt = `
-      You are Jordan, a helpful virtual companion helping a patient start a conversation with Dr. Alex about clinical trial participation concepts.
+      You are Jordan, a helpful virtual companion helping a patient start a conversation with Doctor Alex about clinical trial participation concepts.
 
       The user's goals are:
       Goals: 
@@ -397,7 +398,7 @@ export default function MainInteraction() {
         2,
       )}
 
-      Write ONE short question the user could ask Dr. Alex first.
+      Write ONE short question the user could ask Doctor Alex first.
       Make it specific to one of their goals.
       The question should be meaningful and related to the goal, not just the goal title turned into a question.
       The question should ask about a practical detail, concern, tradeoff, or decision the user might actually have.
@@ -982,7 +983,7 @@ export default function MainInteraction() {
         sources: data.sources || [],
       })
 
-      // await speakWithLipsync(data.answer, 'doctor')
+      await speakWithLipsync(data.answer, 'doctor')
       setIsAlexActive(false)
 
       handleGoalEvalResult(evalData, alexMsgId)
@@ -1074,6 +1075,11 @@ export default function MainInteraction() {
 
   return (
     <div className={`mi-root mi-root-${proactivity}`}>
+      <div className="tool-header">
+        <img src={logo} className="logo" alt="Study logo" />
+        <h2>Clinical Trials Education</h2>
+        <h1>Chat with Virtual Characters</h1>
+      </div>
       <button className="history-btn" onClick={() => setShowHistory(true)}>
         <FontAwesomeIcon icon={faCommentDots} size="sm" />
         Chat history

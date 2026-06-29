@@ -19,6 +19,10 @@ import {
   faLightbulb,
   faScaleUnbalanced,
   faCircleQuestion,
+  faCode,
+  faCommentNodes,
+  faSquarePollHorizontal,
+  faSliders,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   initDoctorCharacter,
@@ -177,6 +181,15 @@ export default function GoalSetting({ onComplete }) {
   const companionRef = useRef(null)
   const [isJordanSpeaking, setIsJordanSpeaking] = useState(false)
   const [suggestedGoals, setSuggestedGoals] = useState([])
+  const [suggestingMoreGoals, setSuggestingMoreGoals] = useState(false)
+  const [showActiveSuggestions, setShowActiveSuggestions] = useState(false)
+  const [startChecks, setStartChecks] = useState({
+    volume: false,
+    browser: false,
+  })
+
+  const canStart = Object.values(startChecks).every(Boolean)
+
   const navigate = useNavigate()
 
   const [searchParams] = useSearchParams()
@@ -194,11 +207,13 @@ export default function GoalSetting({ onComplete }) {
   const proactivity = CONDITION_MAP[conditionParam] || 'collaborative'
 
   const JORDAN_INTRO_ICON_TIMELINE = [
-    { time: 3.2, icon: 'doctor', label: 'Talk with Dr. Alex' },
-    { time: 7.5, icon: 'goals', label: 'Set goals' },
-    { time: 10.5, icon: 'notes', label: 'Keep notes' },
-    { time: 13.5, icon: 'no-search', label: 'No trial search' },
-    { time: 20, icon: 'decision', label: 'Think it through' },
+    { time: 4.6, icon: 'doctor', label: 'Talk with Dr. Alex' },
+    { time: 10.1, icon: 'ai', label: 'Not real people' },
+    { time: 14.0, icon: 'survey', label: 'Tailor survey' },
+    { time: 20.0, icon: 'goals', label: 'Set goals' },
+    { time: 25.0, icon: 'notes', label: 'Keep notes' },
+    { time: 28.3, icon: 'no-search', label: 'No trial search' },
+    { time: 35.5, icon: 'decision', label: 'Think it through' },
   ]
 
   useEffect(() => {
@@ -206,7 +221,7 @@ export default function GoalSetting({ onComplete }) {
   }, [participantId, conditionParam, proactivity])
 
   useEffect(() => {
-    if (proactivity !== 'collaborative') return
+    if (!['passive', 'collaborative', 'active'].includes(proactivity)) return
 
     async function loadSuggestedGoals() {
       try {
@@ -222,6 +237,10 @@ export default function GoalSetting({ onComplete }) {
         const goals = data.suggestedGoals || []
 
         setSuggestedGoals(goals)
+
+        if (proactivity === 'passive') {
+          setSelectedGoals(goals.map((goal) => goal.goalId))
+        }
       } catch (error) {
         console.error('Could not load suggested goals:', error)
       }
@@ -373,6 +392,36 @@ export default function GoalSetting({ onComplete }) {
       )
     }
 
+    if (introIcon === 'ai') {
+      return (
+        <div className="gs-intro-visual-card gs-intro-decision">
+          <FontAwesomeIcon
+            className="gs-decision-icon gs-decision-1"
+            icon={faCode}
+          />
+          <FontAwesomeIcon
+            className="gs-decision-icon gs-decision-2"
+            icon={faCommentNodes}
+          />
+        </div>
+      )
+    }
+
+    if (introIcon === 'survey') {
+      return (
+        <div className="gs-intro-visual-card gs-intro-decision">
+          <FontAwesomeIcon
+            className="gs-decision-icon gs-decision-1"
+            icon={faSquarePollHorizontal}
+          />
+          <FontAwesomeIcon
+            className="gs-decision-icon gs-decision-2"
+            icon={faSliders}
+          />
+        </div>
+      )
+    }
+
     if (introIcon === 'goals') {
       return (
         <div className="gs-intro-visual-card gs-intro-checklist">
@@ -437,6 +486,62 @@ export default function GoalSetting({ onComplete }) {
     return null
   }
 
+  async function handleSuggestMoreGoals() {
+    if (proactivity === 'active' && suggestedGoals.length > 0) {
+      setShowActiveSuggestions(true)
+      return
+    }
+
+    if (suggestingMoreGoals) return
+
+    setSuggestingMoreGoals(true)
+
+    await speakWithLipsyncStatic(
+      '/intro-voices/companion-thinking-intro.mp3',
+      '/intro-voices/companion-thinking-intro-timestamps.json',
+      'companion',
+    )
+
+    playGesture('thinking')
+
+    try {
+      const res = await fetch(`${BASE_URL}/suggest-more-goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          response_id: participantId,
+          existing_goals: suggestedGoals,
+        }),
+      })
+
+      const data = await res.json()
+      const newGoals = data.suggestedGoals || []
+
+      await speakWithLipsyncStatic(
+        '/intro-voices/companion-doneThinking-intro.mp3',
+        '/intro-voices/companion-doneThinking-intro-timestamps.json',
+        'companion',
+      )
+
+      playGesture('lookright')
+
+      setSuggestedGoals((prev) => {
+        const existingIds = new Set(prev.map((goal) => goal.goalId))
+        const uniqueNewGoals = newGoals.filter(
+          (goal) => !existingIds.has(goal.goalId),
+        )
+
+        return [...prev, ...uniqueNewGoals]
+      })
+
+      setShowActiveSuggestions(true)
+    } catch (error) {
+      console.error('Could not suggest more goals:', error)
+    } finally {
+      setSuggestingMoreGoals(false)
+    }
+  }
+
   function getSuggestedGoal(goalId) {
     return suggestedGoals.find((goal) => goal.goalId === goalId)
   }
@@ -447,6 +552,9 @@ export default function GoalSetting({ onComplete }) {
     )
     return allItems.find((item) => item.id === goalId)
   }
+
+  const showAskJordanCard =
+    proactivity === 'collaborative' || proactivity === 'active'
 
   const collaborativeSuggestedItems = suggestedGoals
     .map((goal) => {
@@ -468,11 +576,53 @@ export default function GoalSetting({ onComplete }) {
       {!started && (
         <div className="start-overlay">
           <img src={logo} className="logo" alt="Study logo" />
+          <h2>Clinical Trials Education</h2>
+          <h1>Chat with Virtual Characters</h1>
           <div className="information">
-            Let's set up what you'd like to talk about today.
+            In this activity, you'll learn about clinical trials with the help
+            of <strong>two virtual characters</strong> (or computer-generated
+            characters). The goal is to provide{' '}
+            <strong>general information</strong> and help you prepare for
+            conversations about clinical trials -- <strong>not</strong> to find
+            a specific trial.
+          </div>
+          <hr />
+          <div className="information">
+            Please complete the short checklist below to help make sure you have
+            the best experience during the activity. Then, click begin!
+          </div>
+          <div className="gs-start-checks">
+            <label className="gs-start-check">
+              <input
+                type="checkbox"
+                checked={startChecks.volume}
+                onChange={(e) =>
+                  setStartChecks((prev) => ({
+                    ...prev,
+                    volume: e.target.checked,
+                  }))
+                }
+              />
+              <span>My volume is turned up.</span>
+            </label>
+
+            <label className="gs-start-check">
+              <input
+                type="checkbox"
+                checked={startChecks.browser}
+                onChange={(e) =>
+                  setStartChecks((prev) => ({
+                    ...prev,
+                    browser: e.target.checked,
+                  }))
+                }
+              />
+              <span>My browser window is maximized.</span>
+            </label>
           </div>
           <button
             className="cssbuttons-io-button"
+            disabled={!canStart}
             onClick={() => setStarted(true)}
           >
             Begin
@@ -484,10 +634,45 @@ export default function GoalSetting({ onComplete }) {
       )}
 
       <div className="gs-page">
+        <div className="companion-intro">
+          <img src={logo} className="logo" alt="Study logo" />
+          <h2>Clinical Trials Education</h2>
+          <h1>Chat with Virtual Characters</h1>
+        </div>
         <header className="gs-header">
           {introIcon && (
             <div key={introIcon} className="gs-intro-visual-wrap">
               <IntroVisual introIcon={introIcon} />
+            </div>
+          )}
+          {introFinished && showAskJordanCard && (
+            <div
+              className="gs-ask-jordan-card"
+              onClick={
+                !suggestingMoreGoals ? handleSuggestMoreGoals : undefined
+              }
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (
+                  (e.key === 'Enter' || e.key === ' ') &&
+                  !suggestingMoreGoals
+                ) {
+                  e.preventDefault()
+                  handleSuggestMoreGoals()
+                }
+              }}
+            >
+              <div className="gs-ask-jordan-action">
+                <FontAwesomeIcon icon={faLightbulb} />
+                <span>
+                  {suggestingMoreGoals
+                    ? 'Thinking...'
+                    : proactivity === 'active'
+                      ? 'Ask me for suggestions'
+                      : 'Ask me for more suggestions'}
+                </span>
+              </div>
             </div>
           )}
           <div className="gs-header-avatars">
@@ -548,23 +733,181 @@ export default function GoalSetting({ onComplete }) {
                   </h2>
                 </div>
               </div>
-              {proactivity === 'collaborative' && suggestedGoals.length > 0 ? (
-                <div className="gs-subsection">
-                  <h3 className="gs-subsection-title">Suggested for you</h3>
-                  <div className="gs-row-list">
-                    {collaborativeSuggestedItems.map((item) => (
-                      <ToggleRow
-                        key={item.id}
-                        item={item}
-                        accent="alex"
-                        checked={selectedGoals.includes(item.id)}
-                        onToggle={toggleGoal}
+              {proactivity === 'active' ? (
+                <>
+                  <div className="gs-subsection">
+                    <h3 className="gs-subsection-title">Your goals</h3>
+                    <form
+                      className="gs-custom-form"
+                      onSubmit={handleAddCustomGoal}
+                    >
+                      <input
+                        type="text"
+                        className="gs-custom-input"
+                        placeholder="Enter a goal in your own words."
+                        value={customInput}
+                        onChange={(e) => setCustomInput(e.target.value)}
+                        maxLength={120}
                       />
-                    ))}
+                      <button
+                        type="submit"
+                        className="gs-custom-add-btn"
+                        disabled={!customInput.trim()}
+                      >
+                        <FontAwesomeIcon icon={faPlus} size="xs" />
+                        Add
+                      </button>
+                    </form>
+
+                    {customGoals.length > 0 && (
+                      <ul className="gs-custom-chip-list">
+                        {customGoals.map((goal) => (
+                          <li className="gs-custom-chip" key={goal.id}>
+                            <span>{goal.label}</span>
+                            <button
+                              type="button"
+                              className="gs-custom-chip-remove"
+                              onClick={() => handleRemoveCustomGoal(goal.id)}
+                              aria-label={`Remove "${goal.label}"`}
+                            >
+                              <FontAwesomeIcon icon={faXmark} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {showActiveSuggestions && suggestedGoals.length > 0 && (
+                    <div className="gs-subsection">
+                      <h3 className="gs-subsection-title">
+                        Jordan’s suggestions
+                      </h3>
+                      <div className="gs-row-list">
+                        {suggestedGoals.map((goal) => {
+                          const baseGoal = getBaseGoal(goal.goalId)
+                          if (!baseGoal) return null
+
+                          return (
+                            <ToggleRow
+                              key={`${goal.goalId}-${goal.goalTitle}`}
+                              item={{
+                                ...baseGoal,
+                                id: goal.goalId,
+                                label: goal.goalTitle,
+                                description: goal.goalDescription,
+                              }}
+                              accent="alex"
+                              checked={selectedGoals.includes(goal.goalId)}
+                              onToggle={toggleGoal}
+                            />
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {(proactivity === 'passive' ||
+                    proactivity === 'collaborative') &&
+                  suggestedGoals.length > 0 ? (
+                    <div className="gs-subsection">
+                      <h3 className="gs-subsection-title">Suggested for you</h3>
+                      <div className="gs-row-list">
+                        {collaborativeSuggestedItems.map((item) => (
+                          <ToggleRow
+                            key={item.id}
+                            item={item}
+                            accent="alex"
+                            checked={selectedGoals.includes(item.id)}
+                            onToggle={toggleGoal}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    ALEX_SECTIONS.map((section) => (
+                      <div className="gs-subsection" key={section.title}>
+                        <h3 className="gs-subsection-title">{section.title}</h3>
+                        <div className="gs-row-list">
+                          {section.items.map((item) => (
+                            <ToggleRow
+                              key={item.id}
+                              item={item}
+                              accent="alex"
+                              checked={selectedGoals.includes(item.id)}
+                              onToggle={toggleGoal}
+                              suggestedGoal={getSuggestedGoal(item.id)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {proactivity !== 'passive' && (
+                    <div className="gs-subsection">
+                      <h3 className="gs-subsection-title">Custom topics</h3>
+                      <form
+                        className="gs-custom-form"
+                        onSubmit={handleAddCustomGoal}
+                      >
+                        <input
+                          type="text"
+                          className="gs-custom-input"
+                          placeholder="Enter any custom topics in your own words here."
+                          value={customInput}
+                          onChange={(e) => setCustomInput(e.target.value)}
+                          maxLength={120}
+                        />
+                        <button
+                          type="submit"
+                          className="gs-custom-add-btn"
+                          disabled={!customInput.trim()}
+                        >
+                          <FontAwesomeIcon icon={faPlus} size="xs" />
+                          Add
+                        </button>
+                      </form>
+
+                      {customGoals.length > 0 && (
+                        <ul className="gs-custom-chip-list">
+                          {customGoals.map((goal) => (
+                            <li className="gs-custom-chip" key={goal.id}>
+                              <span>{goal.label}</span>
+                              <button
+                                type="button"
+                                className="gs-custom-chip-remove"
+                                onClick={() => handleRemoveCustomGoal(goal.id)}
+                                aria-label={`Remove "${goal.label}"`}
+                              >
+                                <FontAwesomeIcon icon={faXmark} />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+
+            {proactivity !== 'passive' && (
+              <section className="gs-column gs-column-jordan">
+                <div className="gs-column-header">
+                  <span className="gs-column-icon gs-column-icon-jordan">
+                    <FontAwesomeIcon icon={faHandHoldingHeart} />
+                  </span>
+                  <div>
+                    <span className="gs-column-tag gs-column-tag-jordan">
+                      With Jordan
+                    </span>
+                    <h2 className="gs-column-title">Things to think through</h2>
                   </div>
                 </div>
-              ) : (
-                ALEX_SECTIONS.map((section) => (
+                {JORDAN_SECTIONS.map((section) => (
                   <div className="gs-subsection" key={section.title}>
                     <h3 className="gs-subsection-title">{section.title}</h3>
                     <div className="gs-row-list">
@@ -572,7 +915,7 @@ export default function GoalSetting({ onComplete }) {
                         <ToggleRow
                           key={item.id}
                           item={item}
-                          accent="alex"
+                          accent="jordan"
                           checked={selectedGoals.includes(item.id)}
                           onToggle={toggleGoal}
                           suggestedGoal={getSuggestedGoal(item.id)}
@@ -580,79 +923,9 @@ export default function GoalSetting({ onComplete }) {
                       ))}
                     </div>
                   </div>
-                ))
-              )}
-
-              <div className="gs-subsection">
-                <h3 className="gs-subsection-title">Custom topics</h3>
-                <form className="gs-custom-form" onSubmit={handleAddCustomGoal}>
-                  <input
-                    type="text"
-                    className="gs-custom-input"
-                    placeholder="Enter any custom topics in your own words here."
-                    value={customInput}
-                    onChange={(e) => setCustomInput(e.target.value)}
-                    maxLength={120}
-                  />
-                  <button
-                    type="submit"
-                    className="gs-custom-add-btn"
-                    disabled={!customInput.trim()}
-                  >
-                    <FontAwesomeIcon icon={faPlus} size="xs" />
-                    Add
-                  </button>
-                </form>
-                {customGoals.length > 0 && (
-                  <ul className="gs-custom-chip-list">
-                    {customGoals.map((goal) => (
-                      <li className="gs-custom-chip" key={goal.id}>
-                        <span>{goal.label}</span>
-                        <button
-                          type="button"
-                          className="gs-custom-chip-remove"
-                          onClick={() => handleRemoveCustomGoal(goal.id)}
-                          aria-label={`Remove "${goal.label}"`}
-                        >
-                          <FontAwesomeIcon icon={faXmark} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </section>
-
-            <section className="gs-column gs-column-jordan">
-              <div className="gs-column-header">
-                <span className="gs-column-icon gs-column-icon-jordan">
-                  <FontAwesomeIcon icon={faHandHoldingHeart} />
-                </span>
-                <div>
-                  <span className="gs-column-tag gs-column-tag-jordan">
-                    With Jordan
-                  </span>
-                  <h2 className="gs-column-title">Things to think through</h2>
-                </div>
-              </div>
-              {JORDAN_SECTIONS.map((section) => (
-                <div className="gs-subsection" key={section.title}>
-                  <h3 className="gs-subsection-title">{section.title}</h3>
-                  <div className="gs-row-list">
-                    {section.items.map((item) => (
-                      <ToggleRow
-                        key={item.id}
-                        item={item}
-                        accent="jordan"
-                        checked={selectedGoals.includes(item.id)}
-                        onToggle={toggleGoal}
-                        suggestedGoal={getSuggestedGoal(item.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </section>
+                ))}
+              </section>
+            )}
           </div>
         )}
       </div>
