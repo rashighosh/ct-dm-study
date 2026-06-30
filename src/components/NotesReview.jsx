@@ -1,83 +1,228 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import '../css/NotesReview.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheck, faArrowLeft } from '@fortawesome/free-solid-svg-icons'
-import { initCompanionCharacter } from '../character.js'
+import {
+  faCheck,
+  faArrowLeft,
+  faArrowRight,
+} from '@fortawesome/free-solid-svg-icons'
+import {
+  initCompanionCharacter,
+  initDoctorCharacter,
+  speakWithLipsyncStatic,
+} from '../character.js'
+import logo from '../assets/logo-transparent.png'
 
 export default function NotesReview() {
   const companionRef = useRef(null)
+  const doctorRef = useRef(null)
   const navigate = useNavigate()
   const { state } = useLocation()
 
+  const [showNotes, setShowNotes] = useState(false)
+  const [showResourceCard, setShowResourceCard] = useState(false)
+  const [speakingCharacter, setSpeakingCharacter] = useState(null)
+  const [resourcesRequested, setResourcesRequested] = useState(null)
+  const [showContinue, setShowContinue] = useState(false)
+  const [audioReady, setAudioReady] = useState(false)
+  const goalObjects = state?.goalObjects || []
   const goalLabels = state?.goalLabels || []
   const goalNotes = state?.goalNotes || {}
   const coveredGoals = new Set(state?.coveredGoals || [])
 
   useEffect(() => {
-    initCompanionCharacter(companionRef.current)
-  }, [])
+    if (!audioReady) return
+
+    let cancelled = false
+
+    async function runFarewell() {
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      if (cancelled) return
+
+      await initDoctorCharacter(doctorRef.current)
+      await initCompanionCharacter(companionRef.current)
+
+      setSpeakingCharacter('alex')
+
+      await speakWithLipsyncStatic(
+        '/intro-voices/doctor-alexEnding.mp3',
+        '/intro-voices/doctor-alexEnding-timestamps.json',
+        'doctor',
+      )
+
+      if (cancelled) return
+
+      setSpeakingCharacter('jordan')
+
+      setTimeout(() => setShowNotes(true), 1000)
+      setTimeout(() => setShowResourceCard(true), 3000)
+
+      await speakWithLipsyncStatic(
+        '/intro-voices/companion-jordanEnding.mp3',
+        '/intro-voices/companion-jordanEnding-timestamps.json',
+        'companion',
+      )
+
+      if (cancelled) return
+
+      setShowContinue(true)
+    }
+
+    runFarewell().catch(console.error)
+
+    return () => {
+      cancelled = true
+    }
+  }, [audioReady])
+
+  if (!audioReady) {
+    return (
+      <div className="start-overlay">
+        <div className="start-overlay-content">
+          <h2>One last thing!</h2>
+          <p>Click below to enable audio for Dr. Alex and Jordan's farewell.</p>
+
+          <button
+            className="cssbuttons-io-button"
+            onClick={() => setAudioReady(true)}
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <main className="nr-root">
-      <button className="nr-back-btn" onClick={() => navigate(-1)}>
-        <FontAwesomeIcon icon={faArrowLeft} />
-        Back
-      </button>
-
       <section className="nr-card fade-in-up">
-        <div className="nr-jordan-area">
-          <div className="nr-jordan-avatar">
-            <div
-              className="virtual-companion"
-              id="virtualcompanion-review"
-              ref={companionRef}
-            />
-          </div>
-
-          <div className="nr-header-text">
-            <span className="nr-eyebrow">Jordan’s notes</span>
-            <h1>Here’s what we covered</h1>
-            <p>
-              I kept track of your goals and saved notes from your conversation.
-            </p>
-          </div>
+        <div className="nr-header-text">
+          <img src={logo} className="logo" alt="Study logo" />
+          <h1>Thank you learning with us!</h1>
         </div>
-
-        <div className="nr-notes-list">
-          {goalLabels.map((label) => (
-            <article
-              key={label}
-              className={`nr-goal-card ${
-                coveredGoals.has(label) ? 'nr-goal-card-covered' : ''
+        <div className="nr-jordan-area">
+          <div className="characters-area">
+            <div
+              className={`nr-avatar nr-avatar-alex ${
+                speakingCharacter === 'alex' ? 'nr-avatar-speaking' : ''
+              } ${
+                speakingCharacter === 'jordan' ? 'nr-avatar-not-speaking' : ''
               }`}
             >
-              <div className="nr-goal-header">
-                <h2>{label}</h2>
+              <div
+                className="virtual-doctor"
+                id="virtualdoctor-review"
+                ref={doctorRef}
+              />
+            </div>
 
-                {coveredGoals.has(label) && (
-                  <span className="nr-covered-pill">
-                    <FontAwesomeIcon icon={faCheck} />
-                    Covered
-                  </span>
-                )}
-              </div>
+            <div
+              className={`nr-avatar nr-avatar-jordan ${
+                speakingCharacter === 'jordan' ? 'nr-avatar-speaking' : ''
+              } ${
+                speakingCharacter === 'alex' ? 'nr-avatar-not-speaking' : ''
+              }`}
+            >
+              {showResourceCard && (
+                <div className="nr-resource-card">
+                  <p>Would you like me to send the notes to the post-survey?</p>
 
-              {goalNotes[label]?.length > 0 ? (
-                <div className="nr-notes">
-                  {goalNotes[label].map((note) => (
-                    <p key={note.id} className="nr-note">
-                      {note.text}
-                    </p>
-                  ))}
+                  <div className="nr-resource-actions">
+                    <button
+                      type="button"
+                      className={`nr-choice-btn ${
+                        resourcesRequested === true
+                          ? 'nr-choice-btn-selected'
+                          : ''
+                      }`}
+                      onClick={() => {
+                        ;(setResourcesRequested(true),
+                          setSpeakingCharacter(null))
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faCheck} />
+                      Yes
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`nr-choice-btn ${
+                        resourcesRequested === false
+                          ? 'nr-choice-btn-selected'
+                          : ''
+                      }`}
+                      onClick={() => {
+                        ;(setResourcesRequested(false),
+                          setSpeakingCharacter(null))
+                      }}
+                    >
+                      No thanks
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <p className="nr-empty-note">
-                  No saved notes for this goal yet.
-                </p>
               )}
-            </article>
-          ))}
+              <div
+                className="virtual-companion"
+                id="virtualcompanion-review"
+                ref={companionRef}
+              />
+            </div>
+          </div>
+
+          {showContinue && resourcesRequested !== null && (
+            <button
+              type="button"
+              className="nr-continue-btn"
+              onClick={() => {
+                // later: redirect to Qualtrics with resourcesRequested
+                console.log('resources requested:', resourcesRequested)
+              }}
+            >
+              Continue to Post Survey
+              <FontAwesomeIcon icon={faArrowRight} />
+            </button>
+          )}
+        </div>
+
+        <div
+          className={`nr-notes-shell ${showNotes ? 'nr-notes-shell-visible' : ''}`}
+        >
+          <div className="nr-notes-list">
+            {goalObjects.map((goal) => (
+              <article
+                key={goal.id}
+                className={`nr-goal-card ${
+                  coveredGoals.has(goal.id) ? 'nr-goal-card-covered' : ''
+                }`}
+              >
+                <div className="nr-goal-header">
+                  <h2>{goal.title}</h2>
+
+                  {coveredGoals.has(goal.id) && (
+                    <span className="nr-covered-pill">
+                      <FontAwesomeIcon icon={faCheck} />
+                      Covered
+                    </span>
+                  )}
+                </div>
+
+                {goalNotes[goal.id]?.length > 0 ? (
+                  <div className="nr-notes">
+                    {goalNotes[goal.id].map((note) => (
+                      <p key={note.id} className="nr-note">
+                        {note.text}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="nr-empty-note">
+                    No saved notes for this goal yet.
+                  </p>
+                )}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>

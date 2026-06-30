@@ -242,12 +242,56 @@ export async function speakWithLipsync(
   }
   if (onStart) onStart()
 
+  const markers = []
+  const mtimes = []
+
+  const gesturePool =
+    character === 'doctor'
+      ? ['talkopen', 'rightGesture']
+      : ['talkopen', 'rightGesture']
+
+  const durationMs = audioBuffer.duration * 1000
+
+  if (durationMs > 2500) {
+    const numberOfGestures = Math.min(
+      3,
+      Math.max(1, Math.floor(durationMs / 6000)),
+    )
+
+    const usedTimes = []
+
+    for (let i = 0; i < numberOfGestures; i++) {
+      const minTime = 1200
+      const maxTime = durationMs - 1200
+
+      if (maxTime <= minTime) break
+
+      let time = minTime + Math.random() * (maxTime - minTime)
+
+      const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2500)
+      if (tooClose) continue
+
+      usedTimes.push(time)
+
+      const gesture =
+        gesturePool[Math.floor(Math.random() * gesturePool.length)]
+
+      markers.push(() => {
+        activeHead.playGesture(gesture, 1.6, false, 1200)
+      })
+
+      mtimes.push(time)
+    }
+  }
+
   activeHead.speakAudio(
     {
       audio: audioBuffer,
       words,
       wtimes,
       wdurations,
+      markers,
+      mtimes,
     },
     { isRaw: true },
     null,

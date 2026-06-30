@@ -14,6 +14,7 @@ import {
   faMagnifyingGlass,
   faObjectGroup,
   faListCheck,
+  faArrowRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -61,6 +62,30 @@ const PROACTIVITY_COPY = {
     passive: (name) =>
       `Heads up — that's outside "${name}." Adding it to your goals so we don't lose track of it.`,
   },
+}
+
+const TUTORIAL_IMAGES = {
+  passive: [
+    '/tutorials/passive1.png',
+    '/tutorials/passive2.png',
+    '/tutorials/passive3.png',
+    '/tutorials/passive4.png',
+    '/tutorials/passive5.png',
+  ],
+  collaborative: [
+    '/tutorials/collaborative1.png',
+    '/tutorials/collaborative2.png',
+    '/tutorials/collaborative3.png',
+    '/tutorials/collaborative4.png',
+  ],
+  active: [
+    '/tutorials/active1.png',
+    '/tutorials/active2.png',
+    '/tutorials/active3.png',
+    '/tutorials/active4.png',
+    '/tutorials/active5.png',
+    '/tutorials/active6.png',
+  ],
 }
 
 const uid = () => crypto.randomUUID()
@@ -119,6 +144,7 @@ export default function MainInteraction() {
   const previousJordanSuggestions = useRef(new Set())
   const introCueTimers = useRef([])
 
+  const [tutorialIndex, setTutorialIndex] = useState(0)
   const [showTalkingPoints, setShowTalkingPoints] = useState(false)
   const [alexIntroCue, setAlexIntroCue] = useState(null)
   const [audioReady, setAudioReady] = useState(false)
@@ -168,6 +194,10 @@ export default function MainInteraction() {
     goalObjects.every((goal) => coveredGoals.has(goal.id))
 
   const jordanPopupOpen = openJordanPanel !== null
+
+  const tutorialImages = TUTORIAL_IMAGES[proactivity] || []
+  const currentTutorialImage = tutorialImages[tutorialIndex]
+  const isLastTutorial = tutorialIndex === tutorialImages.length - 1
 
   /* ------------------------------------------------------------------------ */
   /* Character setup + scroll behavior                                        */
@@ -275,6 +305,7 @@ export default function MainInteraction() {
           setAlexIntroCue(null),
         )
 
+        clearAlexIntroCues()
         setIsAlexActive(false)
         setAlexIntroDone(true)
       } catch (err) {
@@ -298,12 +329,16 @@ export default function MainInteraction() {
       }
 
       if (proactivity === 'collaborative') {
-        setCollabSuggestion({
-          id: uid(),
-          type: 'query',
-          text: "Not sure where to start? Here's a question you could ask.",
-          suggestion,
-          isOpeningSuggestion: true,
+        setCollabSuggestion((prev) => {
+          if (prev?.isOpeningSuggestion) return prev
+
+          return {
+            id: uid(),
+            type: 'query',
+            text: "Not sure where to start? Here's a question you could ask.",
+            suggestion,
+            isOpeningSuggestion: true,
+          }
         })
         return
       }
@@ -334,7 +369,7 @@ export default function MainInteraction() {
     }, 900)
 
     return () => clearTimeout(timer)
-  }, [proactivity, alexIntroDone, goals])
+  }, [proactivity, alexIntroDone])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -389,6 +424,12 @@ export default function MainInteraction() {
   /* ------------------------------------------------------------------------ */
   /* Jordan panel helpers                                                     */
   /* ------------------------------------------------------------------------ */
+
+  function clearAlexIntroCues() {
+    introCueTimers.current.forEach(clearTimeout)
+    introCueTimers.current = []
+    setAlexIntroCue(null)
+  }
 
   function getGoalInfo(goalId) {
     const suggested = suggestedGoals.find((goal) => goal.goalId === goalId)
@@ -572,7 +613,16 @@ export default function MainInteraction() {
 
     setInput(collabSuggestion.suggestion)
     textareaRef.current?.focus()
-    setCollabSuggestion(null)
+
+    setCollabSuggestion((prev) =>
+      prev
+        ? {
+            ...prev,
+            resolved: true,
+            resolution: 'used',
+          }
+        : prev,
+    )
   }
 
   function dismissCollabSuggestion() {
@@ -954,6 +1004,7 @@ export default function MainInteraction() {
 
     updateTranscript('user', trimmed)
 
+    clearAlexIntroCues()
     setAlexTalkingPoints([])
     setShowTalkingPoints(false)
     setIsAlexActive(true)
@@ -1053,7 +1104,6 @@ export default function MainInteraction() {
       ])
 
       console.log('Sources', data.sources)
-      setShowCards(false)
 
       updateTranscript('alex', data.answer, {
         sources: data.sources || [],
@@ -1067,7 +1117,10 @@ export default function MainInteraction() {
       }, 5000)
 
       playGesture('stopSwiping')
-      await speakWithLipsync(data.answer, 'doctor')
+
+      await speakWithLipsync(data.answer, 'doctor', null, () =>
+        setShowCards(false),
+      )
 
       clearTimeout(talkingPointsTimer)
       setIsAlexActive(false)
@@ -1170,16 +1223,70 @@ export default function MainInteraction() {
     <div className={`mi-root mi-root-${proactivity}`}>
       {!audioReady && (
         <div className="start-overlay">
-          <div className="start-overlay-content">
-            <h2>Developer Mode</h2>
-            <p>Click below to enable audio after refreshing.</p>
+          <div className="start-overlay-content tutorial-start-content">
+            <img src={logo} className="logo" alt="Study logo" />
+            <h2>Before you begin</h2>
+            <p>
+              Take a quick look at how this version of Jordan will support you.
+            </p>
 
-            <button
-              className="cssbuttons-io-button"
-              onClick={() => setAudioReady(true)}
-            >
-              Enable audio
-            </button>
+            {currentTutorialImage && (
+              <div className="tutorial-image-frame">
+                <img
+                  src={currentTutorialImage}
+                  alt={`${proactivity} tutorial step ${tutorialIndex + 1}`}
+                  className="tutorial-image"
+                />
+              </div>
+            )}
+
+            <div className="tutorial-progress">
+              {tutorialImages.map((_, index) => (
+                <span
+                  key={index}
+                  className={`tutorial-dot ${
+                    index === tutorialIndex ? 'tutorial-dot-active' : ''
+                  }`}
+                />
+              ))}
+            </div>
+
+            <div className="tutorial-actions">
+              <button
+                type="button"
+                className="tutorial-secondary-btn"
+                disabled={tutorialIndex === 0}
+                onClick={() =>
+                  setTutorialIndex((prev) => Math.max(0, prev - 1))
+                }
+              >
+                Back
+              </button>
+
+              {isLastTutorial ? (
+                <button
+                  className="cssbuttons-io-button"
+                  onClick={() => setAudioReady(true)}
+                >
+                  Start chatting
+                  <span className="icon">
+                    <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="tutorial-button"
+                  onClick={() =>
+                    setTutorialIndex((prev) =>
+                      Math.min(tutorialImages.length - 1, prev + 1),
+                    )
+                  }
+                >
+                  Next
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1195,7 +1302,7 @@ export default function MainInteraction() {
 
       {allGoalsCovered && (
         <button className="mi-continue-btn" onClick={handleContinue}>
-          Continue
+          Finish
         </button>
       )}
 
@@ -1295,6 +1402,7 @@ export default function MainInteraction() {
             talkingPoints={alexTalkingPoints}
             showTalkingPoints={showTalkingPoints}
             introCue={alexIntroCue}
+            proactivity={proactivity}
           />
 
           <MessageThread
@@ -1644,45 +1752,49 @@ function CollaborativeSuggestionCard({
         </div>
       )}
 
-      <div className="mi-collab-suggestion-actions">
-        {isQuery ? (
-          <>
-            <button
-              type="button"
-              className="mi-nudge-btn mi-nudge-btn-primary"
-              onClick={() => closeWithAnimation(onAcceptQuery)}
-            >
-              Use this
-            </button>
+      {suggestion.resolved ? (
+        <span className="mi-nudge-resolution">{suggestion.resolution}</span>
+      ) : (
+        <div className="mi-collab-suggestion-actions">
+          {isQuery ? (
+            <>
+              <button
+                type="button"
+                className="mi-nudge-btn mi-nudge-btn-primary"
+                onClick={onAcceptQuery}
+              >
+                Use this
+              </button>
 
-            <button
-              type="button"
-              className="mi-nudge-btn"
-              onClick={() => closeWithAnimation(onDismiss)}
-            >
-              Not now
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="mi-nudge-btn mi-nudge-btn-primary"
-              onClick={() => closeWithAnimation(() => onEvalResponse('yes'))}
-            >
-              Yes
-            </button>
+              <button
+                type="button"
+                className="mi-nudge-btn"
+                onClick={() => closeWithAnimation(onDismiss)}
+              >
+                Not now
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="mi-nudge-btn mi-nudge-btn-primary"
+                onClick={() => closeWithAnimation(() => onEvalResponse('yes'))}
+              >
+                Yes
+              </button>
 
-            <button
-              type="button"
-              className="mi-nudge-btn"
-              onClick={() => closeWithAnimation(() => onEvalResponse('no'))}
-            >
-              Not quite
-            </button>
-          </>
-        )}
-      </div>
+              <button
+                type="button"
+                className="mi-nudge-btn"
+                onClick={() => closeWithAnimation(() => onEvalResponse('no'))}
+              >
+                Not quite
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -1695,6 +1807,7 @@ function AlexHeader({
   talkingPoints,
   showTalkingPoints,
   introCue,
+  proactivity,
 }) {
   const uniqueSources = Array.from(
     new Map(sources.map((source) => [source.source, source])).values(),
@@ -1724,7 +1837,9 @@ function AlexHeader({
         )}
 
         {introCue?.type === 'boundary' && (
-          <div className="alex-intro-visual-card">
+          <div
+            className={`alex-intro-visual-card alex-intro-visual-card-${proactivity}`}
+          >
             <div className="alex-search-icon">
               <FontAwesomeIcon icon={faClipboardList} size="5x" />
 
@@ -1736,8 +1851,12 @@ function AlexHeader({
         )}
 
         {introCue?.type === 'sources' && (
-          <div className="alex-intro-visual-card">
-            <div className="alex-source-stack">
+          <div
+            className={`alex-intro-visual-card alex-intro-visual-card-${proactivity}`}
+          >
+            <div
+              className={`alex-source-stack alex-source-stack-${proactivity}`}
+            >
               <div className="alex-source-step alex-source-step-1">
                 <FontAwesomeIcon icon={faMagnifyingGlass} size="3x" />
               </div>
@@ -1753,7 +1872,7 @@ function AlexHeader({
           </div>
         )}
 
-        {uniqueSources.length > 0 && (
+        {isAlexActive && showTalkingPoints && uniqueSources.length > 0 && (
           <div className="alex-source-panel alex-source-panel-active">
             <span className="alex-source-label">Trusted sources checked</span>
 
@@ -1774,7 +1893,9 @@ function AlexHeader({
         )}
 
         {isAlexActive && showTalkingPoints && talkingPoints?.length > 0 && (
-          <div className="alex-talking-points">
+          <div
+            className={`alex-talking-points alex-talking-points-${proactivity}`}
+          >
             {talkingPoints.map((point, index) => (
               <div
                 className="alex-talking-point"
