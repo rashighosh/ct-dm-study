@@ -184,6 +184,7 @@ export default function GoalSetting({ onComplete }) {
   const [suggestedGoals, setSuggestedGoals] = useState([])
   const [suggestingMoreGoals, setSuggestingMoreGoals] = useState(false)
   const [showActiveSuggestions, setShowActiveSuggestions] = useState(false)
+  const [restoredProgress, setRestoredProgress] = useState(false)
   const [startChecks, setStartChecks] = useState({
     volume: false,
     browser: false,
@@ -198,6 +199,8 @@ export default function GoalSetting({ onComplete }) {
   const participantId = searchParams.get('id') || 'R_1dt1pZa4q7EkLbw'
 
   const conditionParam = searchParams.get('condition') || '1'
+
+  const STORAGE_KEY = `goalSettingProgress-${participantId}-${conditionParam}`
 
   const CONDITION_MAP = {
     1: 'passive',
@@ -220,6 +223,56 @@ export default function GoalSetting({ onComplete }) {
   useEffect(() => {
     logSession(participantId, conditionParam, proactivity).catch(console.error)
   }, [participantId, conditionParam, proactivity])
+
+  useEffect(() => {
+    if (!showDiv) return
+
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        started,
+        showDiv,
+        introFinished,
+        selectedGoals,
+        customGoals,
+        suggestedGoals,
+      }),
+    )
+  }, [
+    STORAGE_KEY,
+    started,
+    showDiv,
+    introFinished,
+    selectedGoals,
+    customGoals,
+    suggestedGoals,
+  ])
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(STORAGE_KEY)
+    if (!saved) return
+
+    try {
+      const parsed = JSON.parse(saved)
+
+      setStarted(parsed.started || false)
+      setShowDiv(parsed.showDiv || false)
+      setIntroFinished(parsed.introFinished || false)
+      setSelectedGoals(parsed.selectedGoals || [])
+      setCustomGoals(parsed.customGoals || [])
+      setSuggestedGoals(parsed.suggestedGoals || [])
+      setRestoredProgress(true)
+    } catch (e) {
+      console.error('Could not restore goal setting progress:', e)
+    }
+  }, [STORAGE_KEY])
+
+  useEffect(() => {
+    if (!started || !restoredProgress) return
+    if (!companionRef.current) return
+
+    initCompanionCharacter(companionRef.current).catch(console.error)
+  }, [started, restoredProgress])
 
   useEffect(() => {
     if (!['passive', 'collaborative', 'active'].includes(proactivity)) return
@@ -251,7 +304,7 @@ export default function GoalSetting({ onComplete }) {
   }, [participantId, proactivity])
 
   useEffect(() => {
-    if (!started) return
+    if (!started || restoredProgress) return
     ;(async () => {
       try {
         const SHARED_JORDAN_OPENING = `
@@ -311,7 +364,7 @@ export default function GoalSetting({ onComplete }) {
         console.error('Init failed:', error)
       }
     })()
-  }, [started])
+  }, [started, restoredProgress])
 
   function toggleGoal(id) {
     setSelectedGoals((prev) =>
@@ -570,7 +623,6 @@ export default function GoalSetting({ onComplete }) {
       }
     })
     .filter(Boolean)
-
   return (
     <div className="gs-root">
       {/* ── Start overlay ── */}
@@ -816,9 +868,9 @@ export default function GoalSetting({ onComplete }) {
                     <div className="gs-subsection">
                       <h3 className="gs-subsection-title">Suggested for you</h3>
                       <div className="gs-row-list">
-                        {collaborativeSuggestedItems.map((item) => (
+                        {collaborativeSuggestedItems.map((item, index) => (
                           <ToggleRow
-                            key={item.id}
+                            key={`${item.id}-${item.label}-${index}`}
                             item={item}
                             accent="alex"
                             checked={selectedGoals.includes(item.id)}
@@ -832,9 +884,9 @@ export default function GoalSetting({ onComplete }) {
                       <div className="gs-subsection" key={section.title}>
                         <h3 className="gs-subsection-title">{section.title}</h3>
                         <div className="gs-row-list">
-                          {section.items.map((item) => (
+                          {section.items.map((item, index) => (
                             <ToggleRow
-                              key={item.id}
+                              key={`${item.id}-${item.label}-${index}`}
                               item={item}
                               accent="alex"
                               checked={selectedGoals.includes(item.id)}
@@ -912,9 +964,9 @@ export default function GoalSetting({ onComplete }) {
                   <div className="gs-subsection" key={section.title}>
                     <h3 className="gs-subsection-title">{section.title}</h3>
                     <div className="gs-row-list">
-                      {section.items.map((item) => (
+                      {section.items.map((item, index) => (
                         <ToggleRow
-                          key={item.id}
+                          key={`${item.id}-${item.label}-${index}`}
                           item={item}
                           accent="jordan"
                           checked={selectedGoals.includes(item.id)}

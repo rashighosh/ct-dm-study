@@ -94,6 +94,40 @@ export default function NotesReview() {
     )
   }
 
+  const notesPayload = goalObjects.map((goal) => ({
+    id: goal.id,
+    title: goal.title,
+    covered: coveredGoals.has(goal.id),
+    notes: (goalNotes[goal.id] || []).map((note) => note.text),
+  }))
+
+  const escapeHtml = (value) =>
+    String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+
+  const goalNotesHtml = goalObjects
+    .map((goal) => {
+      const notes = goalNotes[goal.id] || []
+
+      return `
+      <div>
+        <h3>${escapeHtml(goal.title)}</h3>
+        ${
+          notes.length > 0
+            ? `<ul>${notes
+                .map((note) => `<li>${escapeHtml(note.text)}</li>`)
+                .join('')}</ul>`
+            : `<p><em>No saved notes for this goal.</em></p>`
+        }
+      </div>
+    `
+    })
+    .join('')
+
   return (
     <main className="nr-root">
       <section className="nr-card fade-in-up">
@@ -175,8 +209,16 @@ export default function NotesReview() {
               type="button"
               className="nr-continue-btn"
               onClick={() => {
-                // later: redirect to Qualtrics with resourcesRequested
-                console.log('resources requested:', resourcesRequested)
+                const encodedHtml = encodeURIComponent(
+                  JSON.stringify(
+                    goalNotesHtml.replace(/\n/g, '').replace(/\s{2,}/g, ' '),
+                  ),
+                )
+
+                window.location.href =
+                  `https://ufl.qualtrics.com/jfe/form/SV_5d3HxZpa1fP1r2S` +
+                  `?send_notes=${resourcesRequested}` +
+                  `&goal_notes_html=${encodedHtml}`
               }}
             >
               Continue to Post Survey
