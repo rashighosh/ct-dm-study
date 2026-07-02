@@ -693,7 +693,6 @@
   position: absolute;
   right: 16px;
   top: 16px;
-  max-width: 42%;
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.72);
@@ -711,8 +710,8 @@
 
 .alex-source-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .alex-source-chip {
@@ -1164,6 +1163,66 @@
 
 .mi-source-excerpt {
   margin-top: 4px;
+}
+
+.source-popout-large {
+  width: min(1000px, 94vw);
+  height: min(760px, 86vh);
+  display: flex;
+  flex-direction: column;
+}
+
+.source-popout-iframe {
+  flex: 1;
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  margin-top: 16px;
+}
+
+.source-preview-card {
+  margin-top: 16px;
+  border: 1px solid #dbe3ef;
+  border-radius: 18px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.source-preview-site {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+  gap: 5px;
+}
+
+.source-preview-site p {
+  font-weight: 400;
+  display: flex;
+  flex-direction: row;
+  align-items: first baseline;
+  gap: 5px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.source-preview-site p span {
+  font-weight: 700;
+  line-height: 13px;
+  border: 1px solid #1a3d6e;
+  padding: 1px 5px;
+  border-radius: 15px;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.source-link-later-note {
+  margin-top: 14px;
+  padding: 12px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  color: #7c2d12;
 }
 
 /* Passive/inline Jordan nudges */
@@ -1702,6 +1761,114 @@
     rgba(var(--primary-purple)) 0%,
     rgba(var(--primary-orange)) 100%
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Sources                                                              */
+/* -------------------------------------------------------------------------- */
+
+.source-popout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.source-popout {
+  width: min(620px, 92vw);
+  max-height: 75vh;
+  overflow-y: auto;
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
+}
+
+.source-popout-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.source-popout-header button {
+  border: none;
+  background: #f1f5f9;
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+}
+
+.source-popout-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.source-popout h3 {
+  margin: 4px 0 0;
+}
+
+.source-popout-content {
+  width: 75%;
+  color: #64748b;
+  font-style: italic;
+  line-height: normal;
+}
+
+.source-popout-relevance {
+  line-height: 1.55;
+  color: #334155;
+  white-space: pre-wrap;
+}
+
+.mi-note-citations {
+  margin-top: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.mi-note-citation {
+  border: 1px solid rgb(var(--primary-blue) / 22%);
+  border-radius: 999px;
+  background: white;
+  color: rgb(var(--primary-blue));
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.mi-note-citation:hover {
+  background: rgb(var(--primary-blue) / 8%);
+}
+
+.mi-note-sources {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.mi-note-sources-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.mi-note-source-chip,
+.alex-source-chip {
+  border: none;
+  cursor: pointer;
 }
 
 /* -------------------------------------------------------------------------- */

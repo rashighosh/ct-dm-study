@@ -2,13 +2,11 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import logo from '../assets/logo-transparent.png'
 import dralex from '../assets/dralex.png'
-import jordan_thumbsup from '../assets/jordan_thumbsup.png'
 import '../css/GoalSetting.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRight,
   faCheck,
-  faStethoscope,
   faHandHoldingHeart,
   faPlus,
   faXmark,
@@ -25,126 +23,15 @@ import {
   faSliders,
 } from '@fortawesome/free-solid-svg-icons'
 import {
-  initDoctorCharacter,
   initCompanionCharacter,
-  speakWithLipsync,
   speakWithLipsyncStatic,
   playGesture,
 } from '../character.js'
 import { logSession, logGoalSetting } from '../api/logging.js'
 
-function waitMs(duration) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
-}
-
-// Things to understand, with Dr. Alex — factual / informational needs
-// (QPL-CT, QuIC informed)
-const ALEX_SECTIONS = [
-  {
-    title: 'The basics',
-    items: [
-      {
-        id: 'trial-basics',
-        label: 'What is a clinical trial?',
-        description: 'What trials are, and why one might be offered to you.',
-      },
-    ],
-  },
-  {
-    title: 'Risks & benefits',
-    items: [
-      {
-        id: 'risks',
-        label: 'Risks & side effects',
-        description: "What could go wrong, and how it's monitored.",
-      },
-      {
-        id: 'benefits',
-        label: 'Possible benefits',
-        description: "What could help you, and what's still uncertain.",
-      },
-      {
-        id: 'alternatives',
-        label: 'Other options',
-        description: 'Ways to participate in research beyond clinical trials.',
-      },
-    ],
-  },
-  {
-    title: 'How it works',
-    items: [
-      {
-        id: 'types',
-        label: 'Types of clinical trials',
-        description: 'Different types of clinical trials.',
-      },
-      {
-        id: 'randomization',
-        label: 'Randomization & groups',
-        description: 'How treatment assignment is decided.',
-      },
-      {
-        id: 'logistics',
-        label: 'Schedule, costs & visits',
-        description: "Time commitment, location, and what's covered.",
-      },
-    ],
-  },
-  {
-    title: 'Other',
-    items: [
-      {
-        id: 'stories',
-        label: "People's experiences",
-        description: 'Experiences of people who have participated.',
-      },
-    ],
-  },
-]
-
-// Things to think through, with Jordan — values / decision-support needs
-// (Ottawa Decision Support Framework informed)
-const JORDAN_SECTIONS = [
-  {
-    title: 'What matters to you',
-    items: [
-      {
-        id: 'priorities',
-        label: 'What matters most to me',
-        description: 'The things you care about most in this decision.',
-      },
-      {
-        id: 'life-fit',
-        label: 'How this fits my life',
-        description: 'Family, work, and daily routine considerations.',
-      },
-    ],
-  },
-  {
-    title: 'Working through it',
-    items: [
-      {
-        id: 'worries',
-        label: "Worries I haven't said out loud",
-        description: 'Concerns or fears about joining — no judgment here.',
-      },
-      {
-        id: 'weighing',
-        label: "Decisions I'm still weighing",
-        description: "Pros and cons you haven't settled yet.",
-      },
-      {
-        id: 'questions',
-        label: 'Questions for my doctor',
-        description: 'Help getting ready for that conversation.',
-      },
-    ],
-  },
-]
-
-function ToggleRow({ item, checked, onToggle, accent, suggestedGoal }) {
-  const label = suggestedGoal?.goalTitle || item.label
-  const description = suggestedGoal?.goalDescription || item.description
+function ToggleRow({ item, checked, onToggle, accent }) {
+  const label = item.label
+  const description = item.description
 
   return (
     <button
@@ -166,10 +53,90 @@ function ToggleRow({ item, checked, onToggle, accent, suggestedGoal }) {
   )
 }
 
+function SuggestedGoalList({ title, goals, selectedGoals, onToggle }) {
+  if (!goals.length) return null
+
+  return (
+    <div className="gs-subsection">
+      <h3 className="gs-subsection-title">{title}</h3>
+
+      <div className="gs-row-list">
+        {goals.map((goal) => (
+          <ToggleRow
+            key={goal.id}
+            item={{
+              id: goal.id,
+              label: goal.title,
+              description: goal.description,
+            }}
+            accent="alex"
+            checked={selectedGoals.includes(goal.id)}
+            onToggle={onToggle}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CustomGoalForm({
+  customInput,
+  setCustomInput,
+  customGoals,
+  onAddCustomGoal,
+  onRemoveCustomGoal,
+  title,
+  placeholder,
+}) {
+  return (
+    <div className="gs-subsection">
+      <h3 className="gs-subsection-title">{title}</h3>
+
+      <form className="gs-custom-form" onSubmit={onAddCustomGoal}>
+        <input
+          type="text"
+          className="gs-custom-input"
+          placeholder={placeholder}
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          maxLength={120}
+        />
+
+        <button
+          type="submit"
+          className="gs-custom-add-btn"
+          disabled={!customInput.trim()}
+        >
+          <FontAwesomeIcon icon={faPlus} size="xs" />
+          Add
+        </button>
+      </form>
+
+      {customGoals.length > 0 && (
+        <ul className="gs-custom-chip-list">
+          {customGoals.map((goal) => (
+            <li className="gs-custom-chip" key={goal.id}>
+              <span>{goal.label}</span>
+
+              <button
+                type="button"
+                className="gs-custom-chip-remove"
+                onClick={() => onRemoveCustomGoal(goal.id)}
+                aria-label={`Remove "${goal.label}"`}
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function GoalSetting({ onComplete }) {
-  // const BASE_URL = 'http://127.0.0.1:8000'
-  const BASE_URL =
-    'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+  const BASE_URL = 'http://127.0.0.1:8000'
+  // const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
   const [started, setStarted] = useState(false)
   const [selectedGoals, setSelectedGoals] = useState([])
@@ -293,7 +260,7 @@ export default function GoalSetting({ onComplete }) {
         setSuggestedGoals(goals)
 
         if (proactivity === 'passive') {
-          setSelectedGoals(goals.map((goal) => goal.goalId))
+          setSelectedGoals(goals.map((goal) => goal.id))
         }
       } catch (error) {
         console.error('Could not load suggested goals:', error)
@@ -401,36 +368,31 @@ export default function GoalSetting({ onComplete }) {
       proactivity,
       selectedGoals,
       selectedGoalLabels: selectedGoals.map((id) => {
-        const suggested = suggestedGoals.find((goal) => goal.goalId === id)
-
-        if (suggested) {
-          return suggested.goalTitle
-        }
-
-        const allItems = [...ALEX_SECTIONS, ...JORDAN_SECTIONS].flatMap(
-          (section) => section.items,
-        )
-
-        return allItems.find((item) => item.id === id)?.label || id
+        const suggested = suggestedGoals.find((goal) => goal.id === id)
+        return suggested?.title || id
       }),
       customGoals: customGoals.map((g) => g.label),
 
       // add these
       suggestedGoals,
       selectedSuggestedGoals: suggestedGoals.filter((goal) =>
-        selectedGoals.includes(goal.goalId),
+        selectedGoals.includes(goal.id),
       ),
     }
 
     await logGoalSetting(participantId, goalPayload)
+
+    const selectedGoalObjects = suggestedGoals.filter((goal) =>
+      selectedGoals.includes(goal.id),
+    )
 
     navigate('/main-interaction', {
       state: {
         participantId,
         condition: conditionParam,
         proactivity,
-        selectedGoals,
-        customGoals: customGoals.map((g) => g.label),
+        selectedGoalObjects,
+        customGoals,
         suggestedGoals,
       },
     })
@@ -580,9 +542,10 @@ export default function GoalSetting({ onComplete }) {
       playGesture('lookright')
 
       setSuggestedGoals((prev) => {
-        const existingIds = new Set(prev.map((goal) => goal.goalId))
+        const existingIds = new Set(prev.map((goal) => goal.id))
+
         const uniqueNewGoals = newGoals.filter(
-          (goal) => !existingIds.has(goal.goalId),
+          (goal) => !existingIds.has(goal.id),
         )
 
         return [...prev, ...uniqueNewGoals]
@@ -596,33 +559,9 @@ export default function GoalSetting({ onComplete }) {
     }
   }
 
-  function getSuggestedGoal(goalId) {
-    return suggestedGoals.find((goal) => goal.goalId === goalId)
-  }
-
-  function getBaseGoal(goalId) {
-    const allItems = [...ALEX_SECTIONS, ...JORDAN_SECTIONS].flatMap(
-      (section) => section.items,
-    )
-    return allItems.find((item) => item.id === goalId)
-  }
-
   const showAskJordanCard =
     proactivity === 'collaborative' || proactivity === 'active'
 
-  const collaborativeSuggestedItems = suggestedGoals
-    .map((goal) => {
-      const baseGoal = getBaseGoal(goal.goalId)
-      if (!baseGoal) return null
-
-      return {
-        ...baseGoal,
-        label: goal.goalTitle,
-        description: goal.goalDescription,
-        suggestedGoal: goal,
-      }
-    })
-    .filter(Boolean)
   return (
     <div className="gs-root">
       {/* ── Start overlay ── */}
@@ -786,199 +725,51 @@ export default function GoalSetting({ onComplete }) {
                   </h2>
                 </div>
               </div>
+
               {proactivity === 'active' ? (
                 <>
-                  <div className="gs-subsection">
-                    <h3 className="gs-subsection-title">Your goals</h3>
-                    <form
-                      className="gs-custom-form"
-                      onSubmit={handleAddCustomGoal}
-                    >
-                      <input
-                        type="text"
-                        className="gs-custom-input"
-                        placeholder="Enter a goal in your own words."
-                        value={customInput}
-                        onChange={(e) => setCustomInput(e.target.value)}
-                        maxLength={120}
-                      />
-                      <button
-                        type="submit"
-                        className="gs-custom-add-btn"
-                        disabled={!customInput.trim()}
-                      >
-                        <FontAwesomeIcon icon={faPlus} size="xs" />
-                        Add
-                      </button>
-                    </form>
-
-                    {customGoals.length > 0 && (
-                      <ul className="gs-custom-chip-list">
-                        {customGoals.map((goal) => (
-                          <li className="gs-custom-chip" key={goal.id}>
-                            <span>{goal.label}</span>
-                            <button
-                              type="button"
-                              className="gs-custom-chip-remove"
-                              onClick={() => handleRemoveCustomGoal(goal.id)}
-                              aria-label={`Remove "${goal.label}"`}
-                            >
-                              <FontAwesomeIcon icon={faXmark} />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  <CustomGoalForm
+                    customInput={customInput}
+                    setCustomInput={setCustomInput}
+                    customGoals={customGoals}
+                    onAddCustomGoal={handleAddCustomGoal}
+                    onRemoveCustomGoal={handleRemoveCustomGoal}
+                    title="Your goals"
+                    placeholder="Enter a goal in your own words."
+                  />
 
                   {showActiveSuggestions && suggestedGoals.length > 0 && (
-                    <div className="gs-subsection">
-                      <h3 className="gs-subsection-title">
-                        Jordan’s suggestions
-                      </h3>
-                      <div className="gs-row-list">
-                        {suggestedGoals.map((goal) => {
-                          const baseGoal = getBaseGoal(goal.goalId)
-                          if (!baseGoal) return null
-
-                          return (
-                            <ToggleRow
-                              key={`${goal.goalId}-${goal.goalTitle}`}
-                              item={{
-                                ...baseGoal,
-                                id: goal.goalId,
-                                label: goal.goalTitle,
-                                description: goal.goalDescription,
-                              }}
-                              accent="alex"
-                              checked={selectedGoals.includes(goal.goalId)}
-                              onToggle={toggleGoal}
-                            />
-                          )
-                        })}
-                      </div>
-                    </div>
+                    <SuggestedGoalList
+                      title="Jordan’s suggestions"
+                      goals={suggestedGoals}
+                      selectedGoals={selectedGoals}
+                      onToggle={toggleGoal}
+                    />
                   )}
                 </>
               ) : (
                 <>
-                  {(proactivity === 'passive' ||
-                    proactivity === 'collaborative') &&
-                  suggestedGoals.length > 0 ? (
-                    <div className="gs-subsection">
-                      <h3 className="gs-subsection-title">Suggested for you</h3>
-                      <div className="gs-row-list">
-                        {collaborativeSuggestedItems.map((item, index) => (
-                          <ToggleRow
-                            key={`${item.id}-${item.label}-${index}`}
-                            item={item}
-                            accent="alex"
-                            checked={selectedGoals.includes(item.id)}
-                            onToggle={toggleGoal}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    ALEX_SECTIONS.map((section) => (
-                      <div className="gs-subsection" key={section.title}>
-                        <h3 className="gs-subsection-title">{section.title}</h3>
-                        <div className="gs-row-list">
-                          {section.items.map((item, index) => (
-                            <ToggleRow
-                              key={`${item.id}-${item.label}-${index}`}
-                              item={item}
-                              accent="alex"
-                              checked={selectedGoals.includes(item.id)}
-                              onToggle={toggleGoal}
-                              suggestedGoal={getSuggestedGoal(item.id)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  )}
+                  <SuggestedGoalList
+                    title="Suggested for you"
+                    goals={suggestedGoals}
+                    selectedGoals={selectedGoals}
+                    onToggle={toggleGoal}
+                  />
 
-                  {proactivity !== 'passive' && (
-                    <div className="gs-subsection">
-                      <h3 className="gs-subsection-title">Custom topics</h3>
-                      <form
-                        className="gs-custom-form"
-                        onSubmit={handleAddCustomGoal}
-                      >
-                        <input
-                          type="text"
-                          className="gs-custom-input"
-                          placeholder="Enter any custom topics in your own words here."
-                          value={customInput}
-                          onChange={(e) => setCustomInput(e.target.value)}
-                          maxLength={120}
-                        />
-                        <button
-                          type="submit"
-                          className="gs-custom-add-btn"
-                          disabled={!customInput.trim()}
-                        >
-                          <FontAwesomeIcon icon={faPlus} size="xs" />
-                          Add
-                        </button>
-                      </form>
-
-                      {customGoals.length > 0 && (
-                        <ul className="gs-custom-chip-list">
-                          {customGoals.map((goal) => (
-                            <li className="gs-custom-chip" key={goal.id}>
-                              <span>{goal.label}</span>
-                              <button
-                                type="button"
-                                className="gs-custom-chip-remove"
-                                onClick={() => handleRemoveCustomGoal(goal.id)}
-                                aria-label={`Remove "${goal.label}"`}
-                              >
-                                <FontAwesomeIcon icon={faXmark} />
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
+                  {proactivity === 'collaborative' && (
+                    <CustomGoalForm
+                      customInput={customInput}
+                      setCustomInput={setCustomInput}
+                      customGoals={customGoals}
+                      onAddCustomGoal={handleAddCustomGoal}
+                      onRemoveCustomGoal={handleRemoveCustomGoal}
+                      title="Custom topics"
+                      placeholder="Enter any custom topics in your own words here."
+                    />
                   )}
                 </>
               )}
             </section>
-
-            {proactivity !== 'passive' && (
-              <section className="gs-column gs-column-jordan">
-                <div className="gs-column-header">
-                  <span className="gs-column-icon gs-column-icon-jordan">
-                    <FontAwesomeIcon icon={faHandHoldingHeart} />
-                  </span>
-                  <div>
-                    <span className="gs-column-tag gs-column-tag-jordan">
-                      With Jordan
-                    </span>
-                    <h2 className="gs-column-title">Things to think through</h2>
-                  </div>
-                </div>
-                {JORDAN_SECTIONS.map((section) => (
-                  <div className="gs-subsection" key={section.title}>
-                    <h3 className="gs-subsection-title">{section.title}</h3>
-                    <div className="gs-row-list">
-                      {section.items.map((item, index) => (
-                        <ToggleRow
-                          key={`${item.id}-${item.label}-${index}`}
-                          item={item}
-                          accent="jordan"
-                          checked={selectedGoals.includes(item.id)}
-                          onToggle={toggleGoal}
-                          suggestedGoal={getSuggestedGoal(item.id)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </section>
-            )}
           </div>
         )}
       </div>
