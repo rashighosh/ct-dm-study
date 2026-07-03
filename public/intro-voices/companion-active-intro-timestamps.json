@@ -1,247 +1,222 @@
 [
   {
-    "word": " First,",
+    "word": " First",
     "start": 0,
-    "end": 0.26
+    "end": 0.18
   },
   {
-    "word": " you′ll",
-    "start": 0.34,
-    "end": 0.54
+    "word": " you'll",
+    "start": 0.18,
+    "end": 0.4
   },
   {
     "word": " set",
-    "start": 0.54,
-    "end": 0.74
+    "start": 0.4,
+    "end": 0.56
   },
   {
     "word": " up",
-    "start": 0.74,
-    "end": 0.92
+    "start": 0.56,
+    "end": 0.72
   },
   {
     "word": " your",
-    "start": 0.92,
-    "end": 1.02
+    "start": 0.72,
+    "end": 0.82
   },
   {
     "word": " own",
+    "start": 0.82,
+    "end": 1.02
+  },
+  {
+    "word": " goals",
     "start": 1.02,
-    "end": 1.24
-  },
-  {
-    "word": " goals",
-    "start": 1.24,
-    "end": 1.58
+    "end": 1.3
   },
   {
     "word": " for",
-    "start": 1.58,
-    "end": 1.82
+    "start": 1.3,
+    "end": 1.48
   },
   {
     "word": " the",
-    "start": 1.82,
-    "end": 1.92
+    "start": 1.48,
+    "end": 1.56
   },
   {
-    "word": " conversation.",
-    "start": 1.92,
-    "end": 2.28
+    "word": " conversation",
+    "start": 1.56,
+    "end": 1.96
   },
   {
-    "word": " Here",
-    "start": 3.024,
-    "end": 3.184
-  },
-  {
-    "word": " next",
-    "start": 3.184,
-    "end": 3.404
-  },
-  {
-    "word": " to",
-    "start": 3.404,
-    "end": 3.584
-  },
-  {
-    "word": " me,",
-    "start": 3.584,
-    "end": 3.704
-  },
-  {
-    "word": " you",
-    "start": 3.7439999999999998,
-    "end": 3.944
-  },
-  {
-    "word": " can",
-    "start": 3.944,
-    "end": 4.104
-  },
-  {
-    "word": " add",
-    "start": 4.104,
-    "end": 4.324
-  },
-  {
-    "word": " whatever",
-    "start": 4.324,
-    "end": 4.604
-  },
-  {
-    "word": " goals",
-    "start": 4.604,
-    "end": 5.024
-  },
-  {
-    "word": " you",
-    "start": 5.024,
-    "end": 5.264
-  },
-  {
-    "word": " have",
-    "start": 5.264,
-    "end": 5.4239999999999995
-  },
-  {
-    "word": " in",
-    "start": 5.4239999999999995,
-    "end": 5.564
-  },
-  {
-    "word": " mind.",
-    "start": 5.564,
-    "end": 5.884
-  },
-  {
-    "word": " You",
-    "start": 6.359999999999999,
-    "end": 6.4799999999999995
-  },
-  {
-    "word": " can",
-    "start": 6.4799999999999995,
-    "end": 6.539999999999999
-  },
-  {
-    "word": " also",
-    "start": 6.539999999999999,
-    "end": 6.779999999999999
-  },
-  {
-    "word": " ask",
-    "start": 6.779999999999999,
-    "end": 7.119999999999999
-  },
-  {
-    "word": " me",
-    "start": 7.119999999999999,
-    "end": 7.319999999999999
-  },
-  {
-    "word": " for",
-    "start": 7.319999999999999,
-    "end": 7.4399999999999995
-  },
-  {
-    "word": " suggestions",
-    "start": 7.4399999999999995,
-    "end": 7.879999999999999
-  },
-  {
-    "word": " if",
-    "start": 7.879999999999999,
-    "end": 8.379999999999999
-  },
-  {
-    "word": " you'd",
-    "start": 8.379999999999999,
-    "end": 8.52
-  },
-  {
-    "word": " like.",
-    "start": 8.52,
-    "end": 8.719999999999999
-  },
-  {
-    "word": " When",
-    "start": 9.168,
-    "end": 9.308
-  },
-  {
-    "word": " you",
-    "start": 9.308,
-    "end": 9.328
-  },
-  {
-    "word": " feel",
-    "start": 9.328,
-    "end": 9.548
-  },
-  {
-    "word": " good",
-    "start": 9.548,
-    "end": 9.748
-  },
-  {
-    "word": " about",
-    "start": 9.748,
-    "end": 9.947999999999999
-  },
-  {
-    "word": " them,",
-    "start": 9.947999999999999,
-    "end": 10.207999999999998
-  },
-  {
-    "word": " click",
-    "start": 10.288,
-    "end": 10.588
-  },
-  {
-    "word": " the",
-    "start": 10.588,
-    "end": 10.748
-  },
-  {
-    "word": " continue",
-    "start": 10.748,
-    "end": 11.027999999999999
-  },
-  {
-    "word": " button",
-    "start": 11.027999999999999,
-    "end": 11.408
-  },
-  {
-    "word": " below",
-    "start": 11.408,
-    "end": 11.788
-  },
-  {
-    "word": " me",
-    "start": 11.788,
-    "end": 12.008
-  },
-  {
-    "word": " to",
-    "start": 12.008,
-    "end": 12.148
-  },
-  {
-    "word": " meet",
-    "start": 12.148,
-    "end": 12.367999999999999
-  },
-  {
-    "word": " Doctor",
-    "start": 12.367999999999999,
-    "end": 12.607999999999999
+    "word": " with",
+    "start": 1.96,
+    "end": 2.32
   },
   {
     "word": " Alex.",
-    "start": 12.607999999999999,
-    "end": 12.968
+    "start": 2.32,
+    "end": 2.54
+  },
+  {
+    "word": " Next",
+    "start": 2.78,
+    "end": 3.14
+  },
+  {
+    "word": " to",
+    "start": 3.14,
+    "end": 3.28
+  },
+  {
+    "word": " me,",
+    "start": 3.28,
+    "end": 3.42
+  },
+  {
+    "word": " you",
+    "start": 3.46,
+    "end": 3.7
+  },
+  {
+    "word": " can",
+    "start": 3.7,
+    "end": 3.8
+  },
+  {
+    "word": " add",
+    "start": 3.8,
+    "end": 3.98
+  },
+  {
+    "word": " any",
+    "start": 3.98,
+    "end": 4.2
+  },
+  {
+    "word": " goals",
+    "start": 4.2,
+    "end": 4.46
+  },
+  {
+    "word": " you",
+    "start": 4.46,
+    "end": 4.62
+  },
+  {
+    "word": " have",
+    "start": 4.62,
+    "end": 4.74
+  },
+  {
+    "word": " in",
+    "start": 4.74,
+    "end": 4.86
+  },
+  {
+    "word": " mind",
+    "start": 4.86,
+    "end": 5.14
+  },
+  {
+    "word": " that",
+    "start": 5.14,
+    "end": 5.26
+  },
+  {
+    "word": " you'd",
+    "start": 5.26,
+    "end": 5.4
+  },
+  {
+    "word": " like",
+    "start": 5.4,
+    "end": 5.54
+  },
+  {
+    "word": " to",
+    "start": 5.54,
+    "end": 5.68
+  },
+  {
+    "word": " discuss.",
+    "start": 5.68,
+    "end": 5.98
+  },
+  {
+    "word": " Once",
+    "start": 6.24,
+    "end": 6.6
+  },
+  {
+    "word": " you",
+    "start": 6.6,
+    "end": 6.7
+  },
+  {
+    "word": " feel",
+    "start": 6.7,
+    "end": 6.82
+  },
+  {
+    "word": " good",
+    "start": 6.82,
+    "end": 7.02
+  },
+  {
+    "word": " about",
+    "start": 7.02,
+    "end": 7.24
+  },
+  {
+    "word": " them,",
+    "start": 7.24,
+    "end": 7.46
+  },
+  {
+    "word": " click",
+    "start": 7.54,
+    "end": 7.84
+  },
+  {
+    "word": " the",
+    "start": 7.84,
+    "end": 8
+  },
+  {
+    "word": " continue",
+    "start": 8,
+    "end": 8.28
+  },
+  {
+    "word": " button",
+    "start": 8.28,
+    "end": 8.62
+  },
+  {
+    "word": " below",
+    "start": 8.62,
+    "end": 8.98
+  },
+  {
+    "word": " me",
+    "start": 8.98,
+    "end": 9.2
+  },
+  {
+    "word": " to",
+    "start": 9.2,
+    "end": 9.34
+  },
+  {
+    "word": " meet",
+    "start": 9.34,
+    "end": 9.52
+  },
+  {
+    "word": " Alex.",
+    "start": 9.52,
+    "end": 9.8
   }
 ]

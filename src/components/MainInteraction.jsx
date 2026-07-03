@@ -391,7 +391,7 @@ export default function MainInteraction() {
   function getQuerySuggestion() {
     return input.trim()
       ? `Could you tell me more about ${input.trim().replace(/\?$/, '')}?`
-      : 'What would you like to ask Dr. Alex about first?'
+      : 'What would you like to ask Alex about first?'
   }
 
   async function generateJordanOpeningSuggestion() {
@@ -488,9 +488,7 @@ export default function MainInteraction() {
       source: 'collab_manual_query_help',
     })
 
-    playGesture('thinking')
     const suggestion = await generateJordanOpeningSuggestion()
-    playGesture('ready')
 
     const manualSuggestion = {
       id: uid(),
@@ -1449,6 +1447,7 @@ function JordanSidebar({
           companionRef={companionRef}
           onRequestQuestion={onRequestCollabQuestion}
           isAlexActive={isAlexActive}
+          collabSuggestion={collabSuggestion}
         />
 
         {!isActive && collabSuggestion && (
@@ -1489,6 +1488,7 @@ function JordanSidebarHeader({
   companionRef,
   onRequestQuestion,
   isAlexActive,
+  collabSuggestion,
 }) {
   const isActive = proactivity === 'active'
   const isPassive = proactivity === 'passive'
@@ -1496,7 +1496,7 @@ function JordanSidebarHeader({
     proactivity === 'passive'
       ? "I'll track your goals, save notes, attach sources, and suggest questions automatically."
       : proactivity === 'collaborative'
-        ? "I'll suggest updates, but you decide what to save."
+        ? 'I can help suggest questions and notes, but you have the final say.'
         : 'Use this space to track your own goals and notes.'
 
   return (
@@ -1516,7 +1516,7 @@ function JordanSidebarHeader({
         </div>
       </div>
 
-      {!isActive && !isPassive && (
+      {!isActive && !isPassive && !collabSuggestion && (
         <button
           type="button"
           className="mi-collab-question-btn"
@@ -1524,7 +1524,7 @@ function JordanSidebarHeader({
           disabled={isAlexActive}
         >
           <FontAwesomeIcon icon={faLightbulb} />
-          Help me think of a question
+          <span>Not sure what to ask?</span>
         </button>
       )}
     </div>

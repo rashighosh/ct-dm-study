@@ -1,302 +1,192 @@
 [
   {
-    "word": " First,",
-    "start": 0,
-    "end": 0.22
-  },
-  {
-    "word": " we′ll",
-    "start": 0.34,
-    "end": 0.58
-  },
-  {
-    "word": " set",
-    "start": 0.58,
-    "end": 0.7
-  },
-  {
-    "word": " up",
-    "start": 0.7,
-    "end": 0.88
-  },
-  {
-    "word": " some",
-    "start": 0.88,
-    "end": 1.02
-  },
-  {
-    "word": " goals",
-    "start": 1.02,
-    "end": 1.32
-  },
-  {
-    "word": " for",
-    "start": 1.32,
-    "end": 1.56
-  },
-  {
-    "word": " your",
-    "start": 1.56,
-    "end": 1.68
-  },
-  {
-    "word": " conversation",
-    "start": 1.68,
-    "end": 2.1
-  },
-  {
-    "word": " together.",
-    "start": 2.1,
-    "end": 2.62
-  },
-  {
-    "word": " Here",
-    "start": 3.192,
-    "end": 3.3320000000000003
-  },
-  {
-    "word": " next",
-    "start": 3.3320000000000003,
-    "end": 3.532
+    "word": " Next",
+    "start": 2.079999999999999,
+    "end": 2.5599999999999996
   },
   {
     "word": " to",
-    "start": 3.532,
-    "end": 3.712
+    "start": 2.5599999999999996,
+    "end": 3.04
   },
   {
     "word": " me,",
-    "start": 3.712,
-    "end": 3.8320000000000003
+    "start": 3.04,
+    "end": 3.22
   },
   {
     "word": " I've",
-    "start": 3.8720000000000003,
-    "end": 4.132
+    "start": 3.24,
+    "end": 3.56
   },
   {
-    "word": " shown",
-    "start": 4.132,
-    "end": 4.312
+    "word": " suggested",
+    "start": 3.56,
+    "end": 3.92
   },
   {
     "word": " a",
-    "start": 4.312,
-    "end": 4.432
+    "start": 3.92,
+    "end": 4.16
   },
   {
     "word": " few",
-    "start": 4.432,
-    "end": 4.5920000000000005
+    "start": 4.16,
+    "end": 4.3
   },
   {
-    "word": " suggestions",
-    "start": 4.5920000000000005,
-    "end": 5.0120000000000005
+    "word": " goals",
+    "start": 4.3,
+    "end": 4.58
   },
   {
     "word": " based",
-    "start": 5.0120000000000005,
-    "end": 5.412000000000001
+    "start": 4.58,
+    "end": 4.8
   },
   {
     "word": " on",
-    "start": 5.412000000000001,
-    "end": 5.612
+    "start": 4.8,
+    "end": 5.02
   },
   {
     "word": " your",
-    "start": 5.612,
-    "end": 5.732
+    "start": 5.02,
+    "end": 5.14
   },
   {
     "word": " pre",
-    "start": 5.732,
-    "end": 5.892
+    "start": 5.14,
+    "end": 5.26
   },
   {
     "word": " survey",
-    "start": 5.892,
-    "end": 6.192
+    "start": 5.26,
+    "end": 5.54
   },
   {
-    "word": " responses",
-    "start": 6.192,
-    "end": 6.572
-  },
-  {
-    "word": " you",
-    "start": 6.572,
-    "end": 6.952
-  },
-  {
-    "word": " can",
-    "start": 6.952,
-    "end": 7.072
-  },
-  {
-    "word": " choose",
-    "start": 7.072,
-    "end": 7.332
-  },
-  {
-    "word": " from,",
-    "start": 7.332,
-    "end": 7.612
-  },
-  {
-    "word": " or",
-    "start": 7.692,
-    "end": 7.992
-  },
-  {
-    "word": " you",
-    "start": 7.992,
-    "end": 8.112
-  },
-  {
-    "word": " can",
-    "start": 8.112,
-    "end": 8.232
-  },
-  {
-    "word": " enter",
-    "start": 8.232,
-    "end": 8.472000000000001
-  },
-  {
-    "word": " your",
-    "start": 8.472000000000001,
-    "end": 8.592
-  },
-  {
-    "word": " own",
-    "start": 8.592,
-    "end": 8.792
-  },
-  {
-    "word": " goals.",
-    "start": 8.792,
-    "end": 9.092
+    "word": " responses.",
+    "start": 5.54,
+    "end": 6
   },
   {
     "word": " You",
-    "start": 9.624,
-    "end": 9.744
+    "start": 6.36,
+    "end": 6.72
   },
   {
     "word": " can",
-    "start": 9.744,
-    "end": 9.804
+    "start": 6.72,
+    "end": 6.82
   },
   {
-    "word": " also",
-    "start": 9.804,
-    "end": 10.044
+    "word": " choose",
+    "start": 6.82,
+    "end": 7.1
   },
   {
-    "word": " ask",
-    "start": 10.044,
-    "end": 10.424000000000001
+    "word": " from",
+    "start": 7.1,
+    "end": 7.34
   },
   {
-    "word": " me",
-    "start": 10.424000000000001,
-    "end": 10.624
+    "word": " these",
+    "start": 7.34,
+    "end": 7.56
   },
   {
-    "word": " for",
-    "start": 10.624,
-    "end": 10.784
+    "word": " or",
+    "start": 7.56,
+    "end": 7.8
   },
   {
-    "word": " more",
-    "start": 10.784,
-    "end": 10.984
+    "word": " add",
+    "start": 7.8,
+    "end": 8
   },
   {
-    "word": " suggestions.",
-    "start": 10.984,
-    "end": 11.444
+    "word": " your",
+    "start": 8,
+    "end": 8.18
   },
   {
-    "word": " When",
-    "start": 12.120000000000001,
-    "end": 12.260000000000002
+    "word": " own.",
+    "start": 8.18,
+    "end": 8.4
+  },
+  {
+    "word": " Once",
+    "start": 8.48,
+    "end": 8.88
   },
   {
     "word": " you",
-    "start": 12.260000000000002,
-    "end": 12.280000000000001
+    "start": 8.88,
+    "end": 9.02
   },
   {
     "word": " feel",
-    "start": 12.280000000000001,
-    "end": 12.500000000000002
+    "start": 9.02,
+    "end": 9.18
   },
   {
     "word": " good",
-    "start": 12.500000000000002,
-    "end": 12.700000000000001
+    "start": 9.18,
+    "end": 9.42
   },
   {
     "word": " about",
-    "start": 12.700000000000001,
-    "end": 12.9
+    "start": 9.42,
+    "end": 9.62
   },
   {
     "word": " them,",
-    "start": 12.9,
-    "end": 13.16
+    "start": 9.62,
+    "end": 9.9
   },
   {
     "word": " click",
-    "start": 13.22,
-    "end": 13.520000000000001
+    "start": 9.98,
+    "end": 10.3
   },
   {
     "word": " the",
-    "start": 13.520000000000001,
-    "end": 13.700000000000001
+    "start": 10.3,
+    "end": 10.48
   },
   {
     "word": " continue",
-    "start": 13.700000000000001,
-    "end": 13.96
+    "start": 10.48,
+    "end": 10.82
   },
   {
     "word": " button",
-    "start": 13.96,
-    "end": 14.360000000000001
+    "start": 10.82,
+    "end": 11.18
   },
   {
     "word": " below",
-    "start": 14.360000000000001,
-    "end": 14.72
+    "start": 11.18,
+    "end": 11.52
   },
   {
     "word": " me",
-    "start": 14.72,
-    "end": 14.96
+    "start": 11.52,
+    "end": 11.78
   },
   {
     "word": " to",
-    "start": 14.96,
-    "end": 15.100000000000001
+    "start": 11.78,
+    "end": 11.92
   },
   {
     "word": " meet",
-    "start": 15.100000000000001,
-    "end": 15.32
-  },
-  {
-    "word": " Doctor",
-    "start": 15.32,
-    "end": 15.56
+    "start": 11.92,
+    "end": 12.12
   },
   {
     "word": " Alex.",
-    "start": 15.56,
-    "end": 15.920000000000002
+    "start": 12.12,
+    "end": 12.42
   }
 ]

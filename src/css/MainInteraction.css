@@ -509,9 +509,9 @@
 .mi-collab-jordan-header {
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid rgb(var(--primary-blue) / 25%);
   padding: 0;
   gap: 15px;
+  margin-bottom: 10px;
 }
 
 .mi-jordan-stage-header {
@@ -1926,20 +1926,34 @@
   cursor: pointer;
 }
 
+.mi-collab-question-btn::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 14px;
+  height: 14px;
+  background: rgb(var(--primary-blue));
+}
+
 /* Collaborative condition additions */
 .mi-collab-question-btn {
-  width: 100%;
-  border: 1px solid rgba(var(--primary-blue));
-  background: rgba(var(--primary-blue) / 50%);
+  width: 85%;
+  background: rgba(var(--primary-blue));
+  border: none;
   color: white;
   border-radius: 16px;
-  padding: 10px 12px;
-  display: inline-flex;
+  padding: 1rem;
+  display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 5px;
   font-weight: 700;
   cursor: pointer;
+  align-self: center;
+  position: relative;
 }
 
 .mi-collab-question-btn:disabled {
@@ -2039,14 +2053,6 @@
   transform: none;
 }
 
-.mi-root-active .mi-goals-panel.active {
-  border-radius: 15px;
-}
-
-.mi-jordan-sidebar-header {
-  border-bottom: 1px solid rgb(var(--primary-blue) / 25%);
-}
-
 .mi-sidebar-mode-note {
   color: rgb(var(--primary-blue) / 85%);
   font-size: 12.5px;
@@ -2059,7 +2065,6 @@
 
 .mi-sidebar-suggestions-section {
   padding: 20px 15px;
-  border-bottom: 1px solid rgb(var(--primary-blue) / 18%);
 }
 
 .mi-goal-chip-main {

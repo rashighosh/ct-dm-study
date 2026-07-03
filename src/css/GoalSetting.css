@@ -10,6 +10,12 @@
   overflow: hidden;
 }
 
+.check-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .gs-start-checks {
   width: min(620px, 90%);
   display: flex;
@@ -20,7 +26,8 @@
 
 .gs-start-check {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
 
   padding: 14px 16px;
@@ -124,7 +131,16 @@
 }
 
 .start-overlay .information {
-  padding: 1rem 5rem;
+  padding: 3rem;
+  text-align: center;
+  width: 55%;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 25px;
+  margin: 1.5rem 0;
+}
+
+.start-overlay .instructions {
+  width: 55%;
   text-align: center;
 }
 

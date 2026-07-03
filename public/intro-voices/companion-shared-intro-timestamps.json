@@ -2,636 +2,586 @@
   {
     "word": " Hi,",
     "start": 0,
-    "end": 0.24
+    "end": 0.2
   },
   {
-    "word": " I’m",
-    "start": 0.24,
-    "end": 0.48
+    "word": " I'm",
+    "start": 0.2,
+    "end": 0.38
   },
   {
     "word": " Jordan,",
-    "start": 0.48,
-    "end": 0.8
+    "start": 0.38,
+    "end": 0.66
   },
   {
     "word": " a",
-    "start": 0.96,
+    "start": 0.8,
+    "end": 0.98
+  },
+  {
+    "word": " virtual",
+    "start": 0.98,
     "end": 1.22
   },
   {
-    "word": " virtual",
-    "start": 1.22,
-    "end": 1.48
-  },
-  {
     "word": " companion",
-    "start": 1.48,
-    "end": 1.86
+    "start": 1.22,
+    "end": 1.56
   },
   {
     "word": " created",
-    "start": 1.86,
-    "end": 2.44
+    "start": 1.56,
+    "end": 2.1
   },
   {
     "word": " for",
-    "start": 2.44,
-    "end": 2.74
+    "start": 2.1,
+    "end": 2.36
   },
   {
     "word": " this",
-    "start": 2.74,
-    "end": 2.92
+    "start": 2.36,
+    "end": 2.52
   },
   {
-    "word": " activity.",
-    "start": 2.92,
-    "end": 3.26
+    "word": " health",
+    "start": 2.52,
+    "end": 2.76
   },
   {
-    "word": " Later",
-    "start": 3.864,
-    "end": 4.124
+    "word": " information",
+    "start": 2.76,
+    "end": 3.02
   },
   {
-    "word": " on,",
-    "start": 4.124,
-    "end": 4.384
+    "word": " seeking",
+    "start": 3.02,
+    "end": 3.5
   },
   {
-    "word": " you’ll",
-    "start": 4.384,
-    "end": 4.624
+    "word": " tool.",
+    "start": 3.5,
+    "end": 3.88
+  },
+  {
+    "word": " During",
+    "start": 4.06,
+    "end": 4.44
+  },
+  {
+    "word": " this",
+    "start": 4.44,
+    "end": 4.64
+  },
+  {
+    "word": " activity,",
+    "start": 4.64,
+    "end": 5.02
+  },
+  {
+    "word": " you'll",
+    "start": 5.24,
+    "end": 5.54
   },
   {
     "word": " meet",
-    "start": 4.624,
-    "end": 4.724
-  },
-  {
-    "word": " Doctor",
-    "start": 4.724,
-    "end": 5.044
+    "start": 5.54,
+    "end": 5.7
   },
   {
     "word": " Alex,",
-    "start": 5.044,
-    "end": 5.364
+    "start": 5.7,
+    "end": 6.02
   },
   {
     "word": " a",
-    "start": 5.604,
-    "end": 5.804
+    "start": 6.24,
+    "end": 6.46
   },
   {
     "word": " virtual",
-    "start": 5.804,
-    "end": 6.004
+    "start": 6.46,
+    "end": 6.7
   },
   {
-    "word": " doctor,",
-    "start": 6.004,
-    "end": 6.4239999999999995
+    "word": " health",
+    "start": 6.7,
+    "end": 6.92
+  },
+  {
+    "word": " assistant",
+    "start": 6.92,
+    "end": 7.28
   },
   {
     "word": " who'll",
-    "start": 6.564,
-    "end": 6.884
+    "start": 7.28,
+    "end": 7.62
   },
   {
     "word": " help",
-    "start": 6.884,
-    "end": 7.084
+    "start": 7.62,
+    "end": 7.8
   },
   {
     "word": " you",
-    "start": 7.084,
-    "end": 7.204
+    "start": 7.8,
+    "end": 7.94
   },
   {
     "word": " explore",
-    "start": 7.204,
-    "end": 7.564
+    "start": 7.94,
+    "end": 8.32
   },
   {
     "word": " and",
-    "start": 7.564,
-    "end": 7.763999999999999
+    "start": 8.32,
+    "end": 8.56
   },
   {
     "word": " understand",
-    "start": 7.763999999999999,
-    "end": 8.144
+    "start": 8.56,
+    "end": 8.94
   },
   {
     "word": " clinical",
-    "start": 8.144,
-    "end": 8.544
+    "start": 8.94,
+    "end": 9.42
   },
   {
     "word": " trial",
-    "start": 8.544,
-    "end": 8.943999999999999
+    "start": 9.42,
+    "end": 9.78
   },
   {
     "word": " participation.",
-    "start": 8.943999999999999,
-    "end": 9.344000000000001
-  },
-  {
-    "word": " Dr.",
-    "start": 10.176,
-    "end": 10.396
+    "start": 9.78,
+    "end": 10.24
   },
   {
     "word": " Alex",
-    "start": 10.476,
-    "end": 10.696
+    "start": 10.66,
+    "end": 11.04
   },
   {
     "word": " and",
-    "start": 10.696,
-    "end": 10.916
+    "start": 11.04,
+    "end": 11.22
   },
   {
     "word": " I",
-    "start": 10.916,
-    "end": 11.056000000000001
+    "start": 11.22,
+    "end": 11.34
   },
   {
     "word": " are",
-    "start": 11.056000000000001,
-    "end": 11.276
+    "start": 11.34,
+    "end": 11.6
   },
   {
-    "word": " AI",
-    "start": 11.276,
-    "end": 11.476
+    "word": " A",
+    "start": 11.6,
+    "end": 11.72
   },
   {
-    "word": "-powered",
-    "start": 11.476,
-    "end": 11.756
+    "word": ".I.",
+    "start": 11.72,
+    "end": 11.94
+  },
+  {
+    "word": " powered",
+    "start": 12,
+    "end": 12.16
   },
   {
     "word": " virtual",
-    "start": 11.756,
-    "end": 12.096
+    "start": 12.16,
+    "end": 12.6
   },
   {
     "word": " characters,",
-    "start": 12.096,
-    "end": 12.676
+    "start": 12.6,
+    "end": 13.16
   },
   {
     "word": " not",
-    "start": 12.856,
-    "end": 13.176
+    "start": 13.34,
+    "end": 13.62
   },
   {
     "word": " real",
-    "start": 13.176,
-    "end": 13.416
+    "start": 13.62,
+    "end": 13.86
   },
   {
     "word": " people,",
-    "start": 13.416,
-    "end": 13.796
+    "start": 13.86,
+    "end": 14.24
   },
   {
     "word": " and",
-    "start": 13.936,
-    "end": 14.216000000000001
+    "start": 14.36,
+    "end": 14.62
   },
   {
     "word": " we",
-    "start": 14.216000000000001,
-    "end": 14.296
+    "start": 14.62,
+    "end": 14.7
   },
   {
     "word": " may",
-    "start": 14.296,
-    "end": 14.436
+    "start": 14.7,
+    "end": 14.84
   },
   {
     "word": " use",
-    "start": 14.436,
-    "end": 14.636
+    "start": 14.84,
+    "end": 15.06
   },
   {
     "word": " your",
-    "start": 14.636,
-    "end": 14.815999999999999
+    "start": 15.06,
+    "end": 15.22
   },
   {
     "word": " pre",
-    "start": 14.815999999999999,
-    "end": 15.016
+    "start": 15.22,
+    "end": 15.36
   },
   {
-    "word": "-survey",
-    "start": 15.016,
-    "end": 15.356
+    "word": " survey",
+    "start": 15.36,
+    "end": 15.64
   },
   {
     "word": " responses",
-    "start": 15.356,
-    "end": 15.636
+    "start": 15.64,
+    "end": 16
   },
   {
     "word": " to",
-    "start": 15.636,
-    "end": 16.016
+    "start": 16,
+    "end": 16.4
   },
   {
     "word": " help",
-    "start": 16.016,
-    "end": 16.195999999999998
+    "start": 16.4,
+    "end": 16.58
   },
   {
     "word": " tailor",
-    "start": 16.195999999999998,
-    "end": 16.496000000000002
+    "start": 16.58,
+    "end": 16.88
   },
   {
     "word": " the",
-    "start": 16.496000000000002,
-    "end": 16.695999999999998
+    "start": 16.88,
+    "end": 17.06
   },
   {
     "word": " experience.",
-    "start": 16.695999999999998,
-    "end": 17.036
+    "start": 17.06,
+    "end": 17.4
   },
   {
     "word": " Before",
-    "start": 17.712,
-    "end": 17.912
+    "start": 17.76,
+    "end": 18.1
   },
   {
-    "word": " meeting",
-    "start": 17.912,
-    "end": 18.252
+    "word": " you",
+    "start": 18.1,
+    "end": 18.28
   },
   {
-    "word": " Doctor",
-    "start": 18.252,
-    "end": 18.552
+    "word": " meet",
+    "start": 18.28,
+    "end": 18.46
   },
   {
     "word": " Alex,",
-    "start": 18.552,
-    "end": 18.951999999999998
+    "start": 18.46,
+    "end": 18.72
   },
   {
     "word": " I'll",
-    "start": 19.172,
-    "end": 19.472
+    "start": 18.9,
+    "end": 19.12
   },
   {
     "word": " help",
-    "start": 19.472,
-    "end": 19.672
+    "start": 19.12,
+    "end": 19.3
   },
   {
     "word": " you",
-    "start": 19.672,
-    "end": 19.792
+    "start": 19.3,
+    "end": 19.42
   },
   {
     "word": " get",
-    "start": 19.792,
-    "end": 19.912
+    "start": 19.42,
+    "end": 19.52
   },
   {
     "word": " ready",
-    "start": 19.912,
-    "end": 20.212
+    "start": 19.52,
+    "end": 19.78
   },
   {
     "word": " by",
-    "start": 20.212,
-    "end": 20.372
+    "start": 19.78,
+    "end": 19.9
   },
   {
     "word": " setting",
-    "start": 20.372,
-    "end": 20.652
+    "start": 19.9,
+    "end": 20.16
   },
   {
     "word": " goals",
-    "start": 20.652,
-    "end": 20.972
+    "start": 20.16,
+    "end": 20.44
   },
   {
     "word": " for",
-    "start": 20.972,
-    "end": 21.252
+    "start": 20.44,
+    "end": 20.7
   },
   {
     "word": " the",
-    "start": 21.252,
-    "end": 21.352
+    "start": 20.7,
+    "end": 20.78
   },
   {
     "word": " conversation.",
-    "start": 21.352,
-    "end": 21.732
+    "start": 20.78,
+    "end": 21.22
   },
   {
-    "word": " Then",
-    "start": 22.439999999999998,
-    "end": 22.599999999999998
-  },
-  {
-    "word": " during",
-    "start": 22.599999999999998,
-    "end": 22.799999999999997
-  },
-  {
-    "word": " your",
-    "start": 22.799999999999997,
-    "end": 22.959999999999997
-  },
-  {
-    "word": " conversation",
-    "start": 22.959999999999997,
-    "end": 23.4
-  },
-  {
-    "word": " with",
-    "start": 23.4,
-    "end": 23.74
-  },
-  {
-    "word": " Doctor",
-    "start": 23.74,
-    "end": 24.04
-  },
-  {
-    "word": " Alex,",
-    "start": 24.04,
-    "end": 24.339999999999996
-  },
-  {
-    "word": " I’ll",
-    "start": 24.499999999999996,
-    "end": 24.86
-  },
-  {
-    "word": " help",
-    "start": 24.86,
-    "end": 24.959999999999997
+    "word": " Now,",
+    "start": 21.54,
+    "end": 21.94
   },
   {
     "word": " keep",
-    "start": 24.959999999999997,
-    "end": 25.18
+    "start": 21.96,
+    "end": 22.12
   },
   {
-    "word": " track",
-    "start": 25.18,
-    "end": 25.439999999999998
+    "word": " in",
+    "start": 22.12,
+    "end": 22.3
   },
   {
-    "word": " of",
-    "start": 25.439999999999998,
-    "end": 25.659999999999997
+    "word": " mind",
+    "start": 22.3,
+    "end": 22.54
   },
   {
-    "word": " useful",
-    "start": 25.659999999999997,
-    "end": 25.86
-  },
-  {
-    "word": " notes",
-    "start": 25.86,
-    "end": 26.259999999999998
-  },
-  {
-    "word": " as",
-    "start": 26.259999999999998,
-    "end": 26.499999999999996
-  },
-  {
-    "word": " you",
-    "start": 26.499999999999996,
-    "end": 26.58
-  },
-  {
-    "word": " go.",
-    "start": 26.58,
-    "end": 26.779999999999998
-  },
-  {
-    "word": " Remember,",
-    "start": 27.263999999999996,
-    "end": 27.583999999999996
+    "word": " that",
+    "start": 22.54,
+    "end": 22.68
   },
   {
     "word": " this",
-    "start": 27.703999999999997,
-    "end": 27.843999999999994
+    "start": 22.68,
+    "end": 22.8
   },
   {
     "word": " activity",
-    "start": 27.843999999999994,
-    "end": 28.243999999999996
+    "start": 22.8,
+    "end": 23.14
   },
   {
-    "word": " will",
-    "start": 28.243999999999996,
-    "end": 28.463999999999995
-  },
-  {
-    "word": " not",
-    "start": 28.463999999999995,
-    "end": 28.663999999999994
+    "word": " won't",
+    "start": 23.14,
+    "end": 23.46
   },
   {
     "word": " search",
-    "start": 28.663999999999994,
-    "end": 28.943999999999996
+    "start": 23.46,
+    "end": 23.7
   },
   {
     "word": " for",
-    "start": 28.943999999999996,
-    "end": 29.143999999999995
+    "start": 23.7,
+    "end": 23.88
   },
   {
     "word": " specific",
-    "start": 29.143999999999995,
-    "end": 29.443999999999996
+    "start": 23.88,
+    "end": 24.16
   },
   {
     "word": " clinical",
-    "start": 29.443999999999996,
-    "end": 29.863999999999997
+    "start": 24.16,
+    "end": 24.58
   },
   {
     "word": " trials",
-    "start": 29.863999999999997,
-    "end": 30.423999999999996
+    "start": 24.58,
+    "end": 25.08
   },
   {
     "word": " or",
-    "start": 30.423999999999996,
-    "end": 30.823999999999995
+    "start": 25.08,
+    "end": 25.44
   },
   {
     "word": " tell",
-    "start": 30.823999999999995,
-    "end": 31.023999999999994
+    "start": 25.44,
+    "end": 25.64
   },
   {
     "word": " you",
-    "start": 31.023999999999994,
-    "end": 31.243999999999996
+    "start": 25.64,
+    "end": 25.84
   },
   {
     "word": " whether",
-    "start": 31.243999999999996,
-    "end": 31.463999999999995
+    "start": 25.84,
+    "end": 26.04
   },
   {
     "word": " a",
-    "start": 31.463999999999995,
-    "end": 31.583999999999996
+    "start": 26.04,
+    "end": 26.18
   },
   {
     "word": " trial",
-    "start": 31.583999999999996,
-    "end": 31.883999999999997
+    "start": 26.18,
+    "end": 26.4
   },
   {
     "word": " is",
-    "start": 31.883999999999997,
-    "end": 32.104
+    "start": 26.4,
+    "end": 26.58
   },
   {
     "word": " right",
-    "start": 32.104,
-    "end": 32.303999999999995
+    "start": 26.58,
+    "end": 26.74
   },
   {
     "word": " for",
-    "start": 32.303999999999995,
-    "end": 32.464
+    "start": 26.74,
+    "end": 26.94
   },
   {
     "word": " you.",
-    "start": 32.464,
-    "end": 32.644
+    "start": 26.94,
+    "end": 27.1
   },
   {
     "word": " Instead,",
-    "start": 33.023999999999994,
-    "end": 33.303999999999995
+    "start": 27.1,
+    "end": 27.66
   },
   {
-    "word": " it′s",
-    "start": 33.403999999999996,
-    "end": 33.583999999999996
+    "word": " it's",
+    "start": 27.88,
+    "end": 28.2
   },
   {
     "word": " meant",
-    "start": 33.583999999999996,
-    "end": 33.74399999999999
+    "start": 28.2,
+    "end": 28.36
   },
   {
     "word": " to",
-    "start": 33.74399999999999,
-    "end": 33.864
+    "start": 28.36,
+    "end": 28.46
   },
   {
     "word": " help",
-    "start": 33.864,
-    "end": 33.96399999999999
+    "start": 28.46,
+    "end": 28.58
   },
   {
     "word": " you",
-    "start": 33.96399999999999,
-    "end": 34.123999999999995
+    "start": 28.58,
+    "end": 28.74
   },
   {
     "word": " think",
-    "start": 34.123999999999995,
-    "end": 34.303999999999995
+    "start": 28.74,
+    "end": 28.92
   },
   {
     "word": " through",
-    "start": 34.303999999999995,
-    "end": 34.523999999999994
+    "start": 28.92,
+    "end": 29.12
   },
   {
     "word": " what",
-    "start": 34.523999999999994,
-    "end": 34.70399999999999
+    "start": 29.12,
+    "end": 29.3
   },
   {
     "word": " people",
-    "start": 34.70399999999999,
-    "end": 34.983999999999995
+    "start": 29.3,
+    "end": 29.54
   },
   {
     "word": " may",
-    "start": 34.983999999999995,
-    "end": 35.184
+    "start": 29.54,
+    "end": 29.72
   },
   {
     "word": " want",
-    "start": 35.184,
-    "end": 35.403999999999996
+    "start": 29.72,
+    "end": 29.9
   },
   {
     "word": " to",
-    "start": 35.403999999999996,
-    "end": 35.56399999999999
+    "start": 29.9,
+    "end": 30.06
   },
   {
     "word": " understand,",
-    "start": 35.56399999999999,
-    "end": 35.943999999999996
+    "start": 30.06,
+    "end": 30.42
   },
   {
     "word": " ask,",
-    "start": 36.24399999999999,
-    "end": 36.64399999999999
+    "start": 30.7,
+    "end": 31.1
   },
   {
     "word": " and",
-    "start": 36.803999999999995,
-    "end": 36.96399999999999
+    "start": 31.24,
+    "end": 31.42
   },
   {
     "word": " consider",
-    "start": 36.96399999999999,
-    "end": 37.343999999999994
+    "start": 31.42,
+    "end": 31.74
   },
   {
     "word": " before",
-    "start": 37.343999999999994,
-    "end": 37.74399999999999
+    "start": 31.74,
+    "end": 32.08
   },
   {
     "word": " deciding",
-    "start": 37.74399999999999,
-    "end": 38.14399999999999
+    "start": 32.08,
+    "end": 32.48
   },
   {
     "word": " whether",
-    "start": 38.14399999999999,
-    "end": 38.544
+    "start": 32.48,
+    "end": 32.84
   },
   {
     "word": " to",
-    "start": 38.544,
-    "end": 38.763999999999996
+    "start": 32.84,
+    "end": 33.06
   },
   {
     "word": " participate.",
-    "start": 38.763999999999996,
-    "end": 39.163999999999994
+    "start": 33.06,
+    "end": 33.46
   }
 ]

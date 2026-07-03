@@ -21,6 +21,8 @@ import {
   faCommentNodes,
   faSquarePollHorizontal,
   faSliders,
+  faVolume,
+  faExpand,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   initCompanionCharacter,
@@ -135,6 +137,110 @@ function CustomGoalForm({
   )
 }
 
+function IntroVisual({ introIcon }) {
+  if (introIcon === 'doctor') {
+    return (
+      <div className="gs-intro-visual-card gs-intro-doctor-card">
+        <img src={dralex} alt="Alex" className="gs-intro-doctor-img" />
+        <span>Alex</span>
+      </div>
+    )
+  }
+
+  if (introIcon === 'ai') {
+    return (
+      <div className="gs-intro-visual-card gs-intro-decision">
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-1"
+          icon={faCode}
+        />
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-2"
+          icon={faCommentNodes}
+        />
+      </div>
+    )
+  }
+
+  if (introIcon === 'survey') {
+    return (
+      <div className="gs-intro-visual-card gs-intro-decision">
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-1"
+          icon={faSquarePollHorizontal}
+        />
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-2"
+          icon={faSliders}
+        />
+      </div>
+    )
+  }
+
+  if (introIcon === 'goals') {
+    return (
+      <div className="gs-intro-visual-card gs-intro-checklist">
+        {[0, 1, 2].map((i) => (
+          <div className="gs-check-row" key={i}>
+            <span className="gs-check-box">
+              <FontAwesomeIcon icon={faCheck} />
+            </span>
+            <span className="gs-check-line" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (introIcon === 'notes') {
+    return (
+      <div className="gs-intro-visual-card gs-intro-notes">
+        <div className="gs-note-icon">
+          <FontAwesomeIcon icon={faNoteSticky} size="2xl" />
+          <div className="gs-note-plus">
+            <FontAwesomeIcon icon={faPlus} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (introIcon === 'no-search') {
+    return (
+      <div className="gs-intro-visual-card">
+        <div className="gs-search-icon">
+          <FontAwesomeIcon icon={faClipboardList} size="2xl" />
+
+          <div className="gs-search-ban">
+            <FontAwesomeIcon icon={faBan} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (introIcon === 'decision') {
+    return (
+      <div className="gs-intro-visual-card gs-intro-decision">
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-1"
+          icon={faScaleUnbalanced}
+        />
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-2"
+          icon={faCircleQuestion}
+        />
+        <FontAwesomeIcon
+          className="gs-decision-icon gs-decision-3"
+          icon={faLightbulb}
+        />
+      </div>
+    )
+  }
+
+  return null
+}
+
 export default function GoalSetting({ onComplete }) {
   // const BASE_URL = 'http://127.0.0.1:8000'
   const BASE_URL =
@@ -149,6 +255,7 @@ export default function GoalSetting({ onComplete }) {
   const [introIcon, setIntroIcon] = useState(null)
   const [highlightTarget, setHighlightTarget] = useState(null) // null | 'goals' | 'continue'
   const companionRef = useRef(null)
+  const introRanRef = useRef(false)
   const [isJordanSpeaking, setIsJordanSpeaking] = useState(false)
   const [suggestedGoals, setSuggestedGoals] = useState([])
   const [suggestingMoreGoals, setSuggestingMoreGoals] = useState(false)
@@ -182,7 +289,7 @@ export default function GoalSetting({ onComplete }) {
   const proactivity = CONDITION_MAP[conditionParam] || 'passive'
 
   const JORDAN_INTRO_ICON_TIMELINE = [
-    { time: 4.6, icon: 'doctor', label: 'Talk with Dr. Alex' },
+    { time: 4.6, icon: 'doctor', label: 'Talk with Alex' },
     { time: 10.1, icon: 'ai', label: 'Not real people' },
     { time: 14.0, icon: 'survey', label: 'Tailor survey' },
     { time: 20.0, icon: 'goals', label: 'Set goals' },
@@ -281,6 +388,8 @@ export default function GoalSetting({ onComplete }) {
 
   useEffect(() => {
     if (!started || restoredProgress) return
+    if (introRanRef.current) return
+    introRanRef.current = true
     ;(async () => {
       try {
         const SHARED_JORDAN_OPENING = `
@@ -450,110 +559,6 @@ export default function GoalSetting({ onComplete }) {
     })
   }
 
-  function IntroVisual({ introIcon }) {
-    if (introIcon === 'doctor') {
-      return (
-        <div className="gs-intro-visual-card gs-intro-doctor-card">
-          <img src={dralex} alt="Dr. Alex" className="gs-intro-doctor-img" />
-          <span>Dr. Alex</span>
-        </div>
-      )
-    }
-
-    if (introIcon === 'ai') {
-      return (
-        <div className="gs-intro-visual-card gs-intro-decision">
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-1"
-            icon={faCode}
-          />
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-2"
-            icon={faCommentNodes}
-          />
-        </div>
-      )
-    }
-
-    if (introIcon === 'survey') {
-      return (
-        <div className="gs-intro-visual-card gs-intro-decision">
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-1"
-            icon={faSquarePollHorizontal}
-          />
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-2"
-            icon={faSliders}
-          />
-        </div>
-      )
-    }
-
-    if (introIcon === 'goals') {
-      return (
-        <div className="gs-intro-visual-card gs-intro-checklist">
-          {[0, 1, 2].map((i) => (
-            <div className="gs-check-row" key={i}>
-              <span className="gs-check-box">
-                <FontAwesomeIcon icon={faCheck} />
-              </span>
-              <span className="gs-check-line" />
-            </div>
-          ))}
-        </div>
-      )
-    }
-
-    if (introIcon === 'notes') {
-      return (
-        <div className="gs-intro-visual-card gs-intro-notes">
-          <div className="gs-note-icon">
-            <FontAwesomeIcon icon={faNoteSticky} size="2xl" />
-            <div className="gs-note-plus">
-              <FontAwesomeIcon icon={faPlus} />
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (introIcon === 'no-search') {
-      return (
-        <div className="gs-intro-visual-card">
-          <div className="gs-search-icon">
-            <FontAwesomeIcon icon={faClipboardList} size="2xl" />
-
-            <div className="gs-search-ban">
-              <FontAwesomeIcon icon={faBan} />
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (introIcon === 'decision') {
-      return (
-        <div className="gs-intro-visual-card gs-intro-decision">
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-1"
-            icon={faScaleUnbalanced}
-          />
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-2"
-            icon={faCircleQuestion}
-          />
-          <FontAwesomeIcon
-            className="gs-decision-icon gs-decision-3"
-            icon={faLightbulb}
-          />
-        </div>
-      )
-    }
-
-    return null
-  }
-
   async function handleSuggestMoreGoals() {
     if (suggestingMoreGoals) return
 
@@ -632,13 +637,16 @@ export default function GoalSetting({ onComplete }) {
             conversations about clinical trials -- <strong>not</strong> to find
             a specific trial.
           </div>
-          <hr />
-          <div className="information">
+          <div className="instructions">
             Please complete the short checklist below to help make sure you have
             the best experience during the activity. Then, click begin!
           </div>
           <div className="gs-start-checks">
             <label className="gs-start-check">
+              <div className="check-area">
+                <FontAwesomeIcon icon={faVolume} />
+                <span>My volume is turned up.</span>
+              </div>
               <input
                 type="checkbox"
                 checked={startChecks.volume}
@@ -649,10 +657,13 @@ export default function GoalSetting({ onComplete }) {
                   }))
                 }
               />
-              <span>My volume is turned up.</span>
             </label>
 
             <label className="gs-start-check">
+              <div className="check-area">
+                <FontAwesomeIcon icon={faExpand} />
+                <span>My browser window is maximized.</span>
+              </div>
               <input
                 type="checkbox"
                 checked={startChecks.browser}
@@ -663,7 +674,6 @@ export default function GoalSetting({ onComplete }) {
                   }))
                 }
               />
-              <span>My browser window is maximized.</span>
             </label>
           </div>
           <button
@@ -689,38 +699,10 @@ export default function GoalSetting({ onComplete }) {
           <div
             className={`gs-intro-visual-slot ${introIcon ? 'has-icon' : ''}`}
           >
-            <div key={introIcon || 'empty'} className="gs-intro-visual-wrap">
+            <div className="gs-intro-visual-wrap">
               {introIcon && <IntroVisual introIcon={introIcon} />}
             </div>
           </div>
-          {showAskJordanCard && (
-            <div
-              className="gs-ask-jordan-card"
-              onClick={
-                !suggestingMoreGoals ? handleSuggestMoreGoals : undefined
-              }
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (
-                  (e.key === 'Enter' || e.key === ' ') &&
-                  !suggestingMoreGoals
-                ) {
-                  e.preventDefault()
-                  handleSuggestMoreGoals()
-                }
-              }}
-            >
-              <div className="gs-ask-jordan-action">
-                <FontAwesomeIcon icon={faLightbulb} />
-                <span>
-                  {suggestingMoreGoals
-                    ? 'Thinking...'
-                    : 'Ask me for more suggestions'}
-                </span>
-              </div>
-            </div>
-          )}
           <div className="gs-header-avatars">
             <div
               className={`gs-avatar gs-avatar-jordan ${
