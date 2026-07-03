@@ -377,7 +377,7 @@
   border-radius: 10px 10px 35px 14px;
   padding: 25px;
   max-width: 320px;
-
+  margin: 0 auto;
   color: #4a3f1c;
   font-size: 13px;
   line-height: 1.45;
@@ -1963,4 +1963,160 @@
   .mi-goals-panel {
     max-height: 220px;
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Refactored shared Jordan sidebar: active + collaborative                   */
+/* -------------------------------------------------------------------------- */
+
+.mi-root-active .mi-main {
+  flex-direction: row-reverse;
+}
+
+.mi-root-active .mi-sidebar {
+  position: static;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+  width: 35%;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  transition: none;
+}
+
+.mi-root-active .mi-sidebar.mi-sidebar-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.mi-root-active .mi-goals-panel.active {
+  border-radius: 15px;
+}
+
+.mi-jordan-sidebar-header {
+  border-bottom: 1px solid rgb(var(--primary-blue) / 25%);
+}
+
+.mi-sidebar-mode-note {
+  color: rgb(var(--primary-blue) / 85%);
+  font-size: 12.5px;
+  line-height: 1.4;
+  padding: 10px 12px;
+  border: 1px solid rgb(var(--primary-blue) / 18%);
+  border-radius: 12px;
+  background: rgb(var(--primary-blue) / 4%);
+}
+
+.mi-sidebar-suggestions-section {
+  padding: 0 20px 15px;
+  border-bottom: 1px solid rgb(var(--primary-blue) / 18%);
+}
+
+.mi-goal-chip-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mi-active-goal-toggle {
+  border: 1px solid rgb(var(--primary-blue) / 35%);
+  background: white;
+  color: rgb(var(--primary-blue));
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mi-active-goal-toggle:hover {
+  background: rgb(var(--primary-blue) / 8%);
+}
+
+.mi-active-goal-toggle.is-covered {
+  background: rgb(var(--primary-blue));
+  color: white;
+}
+
+.mi-active-add-note-btn {
+  flex-basis: 100%;
+  border: 1px dashed rgb(var(--primary-blue) / 35%);
+  border-radius: 10px;
+  background: rgb(var(--primary-blue) / 3%);
+  color: rgb(var(--primary-blue));
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mi-active-add-note-btn:hover {
+  background: rgb(var(--primary-blue) / 7%);
+}
+
+.mi-active-note-composer {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgb(var(--primary-blue) / 4%);
+  border: 1px solid rgb(var(--primary-blue) / 14%);
+}
+
+.mi-active-note-composer textarea {
+  width: auto;
+  resize: vertical;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 10px;
+  padding: 9px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  background: white;
+}
+
+.mi-active-source-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #64748b;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.mi-active-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: white;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.mi-active-source-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.mi-active-source-preview {
+  border: none;
+  background: transparent;
+  color: rgb(var(--primary-blue));
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mi-active-note-actions {
+  display: flex;
+  gap: 7px;
 }

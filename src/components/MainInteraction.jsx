@@ -132,7 +132,7 @@ export default function MainInteraction() {
     goalObjects.length > 0 &&
     goalObjects.every((goal) => coveredGoals.has(goal.id))
 
-  const jordanPopupOpen = openJordanPanel !== null
+  const jordanPopupOpen = proactivity === 'active' && openJordanPanel !== null
 
   const tutorialImages = TUTORIAL_IMAGES[proactivity] || []
   const currentTutorialImage = tutorialImages[tutorialIndex]
@@ -607,6 +607,18 @@ export default function MainInteraction() {
     setCoveredGoals((prev) => new Set(prev).add(goalId))
   }
 
+  function toggleGoalCovered(goalId) {
+    setCoveredGoals((prev) => {
+      const next = new Set(prev)
+      if (next.has(goalId)) {
+        next.delete(goalId)
+      } else {
+        next.add(goalId)
+      }
+      return next
+    })
+  }
+
   function logJordanSuggestion(suggestion, shownAs = proactivity) {
     if (suggestion.suggestion) {
       previousJordanSuggestions.current.add(suggestion.suggestion.trim())
@@ -623,29 +635,12 @@ export default function MainInteraction() {
   }
 
   function showJordanSuggestion(suggestion) {
-    logJordanSuggestion(suggestion)
-
     if (proactivity === 'active') {
-      setActiveJordanSuggestion(suggestion)
-
-      if (suppressNextActivePopout.current) {
-        suppressNextActivePopout.current = false
-        return
-      }
-
-      if (suggestion.type === 'query' && suggestion.suggestion) {
-        setActiveQuerySuggestion(suggestion.suggestion)
-        setOpenJordanPanel('query')
-        return
-      }
-
-      if (suggestion.type === 'eval') {
-        setOpenJordanPanel('eval')
-        return
-      }
-
+      // Active condition: Jordan does not generate or surface suggestions.
       return
     }
+
+    logJordanSuggestion(suggestion)
 
     if (proactivity === 'collaborative') {
       setCollabSuggestion(suggestion)
@@ -685,7 +680,7 @@ export default function MainInteraction() {
         forMessageId: alexMsgId,
       }
 
-      if (proactivity !== 'collaborative') {
+      if (proactivity === 'passive') {
         showJordanSuggestion(jordanSuggestion)
       }
       return
@@ -709,7 +704,7 @@ export default function MainInteraction() {
         forMessageId: alexMsgId,
       }
 
-      if (proactivity !== 'collaborative') {
+      if (proactivity === 'passive') {
         showJordanSuggestion(jordanSuggestion)
       }
       return
@@ -725,18 +720,8 @@ export default function MainInteraction() {
       goalObjects.every((goal) => coveredAfterThisTurn.has(goal.id))
 
     if (proactivity === 'active') {
-      setCoveredGoals((prev) => new Set(prev).add(match.goal_id))
-
-      if (match.note_to_add) {
-        setPendingGoalNotes((prev) => ({
-          ...prev,
-          [match.goal_id]: {
-            id: uid(),
-            text: match.note_to_add,
-            sources: dedupeSources(sourcesForTurn),
-          },
-        }))
-      }
+      // Active condition: user decides whether goals were addressed and writes notes manually.
+      return
     } else if (proactivity === 'collaborative') {
       const goalTitle =
         goalObjects.find((goal) => goal.id === match.goal_id)?.title ||
@@ -1149,24 +1134,6 @@ export default function MainInteraction() {
         </button>
       )}
 
-      {proactivity === 'active' && (
-        <ActiveJordanDock
-          companionRef={companionRef}
-          openJordanPanel={openJordanPanel}
-          coveredGoalsCount={Object.keys(pendingGoalNotes).length}
-          getQuerySuggestion={getQuerySuggestion}
-          activeQuerySuggestion={activeQuerySuggestion}
-          activeQueryLoading={activeQueryLoading}
-          onTogglePanel={toggleJordanPanel}
-          onClosePanel={closeJordanPopup}
-          onManualQueryHelp={handleManualQueryHelp}
-          onAcceptQuerySuggestion={acceptQuerySuggestion}
-          activeJordanSuggestion={activeJordanSuggestion}
-          onActiveSaveNote={handleActiveSaveNote}
-          disabled={isAlexActive}
-        />
-      )}
-
       <main className="mi-main">
         <div
           className={`mi-overlay ${jordanPopupOpen ? 'mi-overlay-open' : ''}`}
@@ -1256,6 +1223,11 @@ export default function MainInteraction() {
           onSaveCollabNote={(goalId, noteText, sources) =>
             addGoalNote(goalId, noteText, sources, false)
           }
+          onToggleGoalCovered={toggleGoalCovered}
+          onAddManualNote={(goalId, noteText, sources) =>
+            addGoalNote(goalId, noteText, sources, false)
+          }
+          availableSources={alexSources}
           isAlexActive={isAlexActive}
           pendingGoalNotes={pendingGoalNotes}
           onSavePendingGoalNote={savePendingGoalNote}
@@ -1432,7 +1404,6 @@ function ActiveJordanDock({
 
 function JordanSidebar({
   proactivity,
-  openJordanPanel,
   companionRef,
   goalObjects,
   coveredGoals,
@@ -1443,6 +1414,9 @@ function JordanSidebar({
   onRequestCollabQuestion,
   onAcceptCollabGoal,
   onSaveCollabNote,
+  onToggleGoalCovered,
+  onAddManualNote,
+  availableSources,
   isAlexActive,
   pendingGoalNotes,
   onSavePendingGoalNote,
@@ -1450,114 +1424,198 @@ function JordanSidebar({
   goalNotes,
   onOpenSource,
 }) {
-  const sidebarOpen = proactivity !== 'active' || openJordanPanel === 'notes'
+  if (proactivity === 'passive') return null
+
+  const isActive = proactivity === 'active'
+  const isCollaborative = proactivity === 'collaborative'
 
   return (
-    <>
-      {proactivity !== 'passive' && (
-        <aside className={`mi-sidebar ${sidebarOpen ? 'mi-sidebar-open' : ''}`}>
-          <div
-            className={`mi-goals-panel ${proactivity === 'active' ? 'active' : ''}`}
-          >
-            {proactivity === 'collaborative' && (
-              <div className="mi-collab-jordan-header">
-                <div className="mi-collab-jordan-header-profile">
-                  <div className="mi-collab-jordan-avatar">
-                    <div
-                      className="virtual-companion"
-                      id="virtualcompanion"
-                      ref={companionRef}
-                    />
-                  </div>
+    <aside className="mi-sidebar mi-sidebar-open">
+      <div className={`mi-goals-panel ${isActive ? 'active' : ''}`}>
+        <JordanSidebarHeader
+          proactivity={proactivity}
+          companionRef={companionRef}
+          onRequestQuestion={onRequestCollabQuestion}
+          isAlexActive={isAlexActive}
+        />
 
-                  <div className="mi-collab-jordan-header-info">
-                    <h3>Jordan</h3>
-                    <p>Your study companion</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="mi-collab-question-btn"
-                  onClick={onRequestCollabQuestion}
-                  disabled={isAlexActive}
-                >
-                  <FontAwesomeIcon icon={faLightbulb} />
-                  Help me think of a question
-                </button>
-
-                {proactivity === 'collaborative' && collabSuggestion && (
-                  <CollaborativeSuggestionCard
-                    key={collabSuggestion.id}
-                    suggestion={collabSuggestion}
-                    onAcceptQuery={onAcceptCollabSuggestion}
-                    onDismiss={onDismissCollabSuggestion}
-                    onEvalResponse={onCollabEvalResponse}
-                    onAcceptGoal={onAcceptCollabGoal}
-                    onSaveNote={onSaveCollabNote}
-                    onOpenSource={onOpenSource}
-                  />
-                )}
-              </div>
-            )}
-
-            <div className="goals-area">
-              <div className="sticky-note">
-                I'll keep track of your goals below and add notes based on your
-                conversation with Dr. Alex as we go!
-              </div>
-
-              <div className="mi-goals-header">
-                <FontAwesomeIcon icon={faBullseye} />
-                <span>Your goals</span>
-              </div>
-
-              {goalObjects.length === 0 ? (
-                <p className="mi-goals-empty">No goals selected yet.</p>
-              ) : (
-                <div className="mi-goals-list">
-                  {goalObjects.map((goal) => (
-                    <GoalChip
-                      key={goal.id}
-                      label={goal.title}
-                      covered={coveredGoals.has(goal.id)}
-                      notes={goalNotes[goal.id] || []}
-                      pendingNote={pendingGoalNotes[goal.id]}
-                      onSavePendingNote={() => onSavePendingGoalNote(goal.id)}
-                      onDismissPendingNote={() =>
-                        onDismissPendingGoalNote(goal.id)
-                      }
-                      onOpenSource={onOpenSource}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+        {isCollaborative && collabSuggestion && (
+          <div className="mi-sidebar-suggestions-section">
+            <CollaborativeSuggestionCard
+              key={collabSuggestion.id}
+              suggestion={collabSuggestion}
+              onAcceptQuery={onAcceptCollabSuggestion}
+              onDismiss={onDismissCollabSuggestion}
+              onEvalResponse={onCollabEvalResponse}
+              onAcceptGoal={onAcceptCollabGoal}
+              onSaveNote={onSaveCollabNote}
+              onOpenSource={onOpenSource}
+            />
           </div>
-        </aside>
+        )}
+
+        <GoalsSection
+          proactivity={proactivity}
+          goalObjects={goalObjects}
+          coveredGoals={coveredGoals}
+          goalNotes={goalNotes}
+          pendingGoalNotes={pendingGoalNotes}
+          onToggleGoalCovered={onToggleGoalCovered}
+          onSavePendingGoalNote={onSavePendingGoalNote}
+          onDismissPendingGoalNote={onDismissPendingGoalNote}
+          onAddManualNote={onAddManualNote}
+          availableSources={availableSources}
+          onOpenSource={onOpenSource}
+        />
+      </div>
+    </aside>
+  )
+}
+
+function JordanSidebarHeader({
+  proactivity,
+  companionRef,
+  onRequestQuestion,
+  isAlexActive,
+}) {
+  const isActive = proactivity === 'active'
+
+  return (
+    <div className="mi-collab-jordan-header mi-jordan-sidebar-header">
+      <div className="mi-collab-jordan-header-profile">
+        <div className="mi-collab-jordan-avatar">
+          <div
+            className="virtual-companion"
+            id="virtualcompanion"
+            ref={companionRef}
+          />
+        </div>
+
+        <div className="mi-collab-jordan-header-info">
+          <h3>Jordan</h3>
+          <p>
+            {isActive
+              ? 'Your goal and notes workspace'
+              : 'Your study companion'}
+          </p>
+        </div>
+      </div>
+
+      <div className="mi-sidebar-mode-note">
+        {isActive
+          ? 'You are in control: you can mark your own goals and take your own notes.'
+          : 'I can suggest ideas and notes, but you have the final say.'}
+      </div>
+
+      {!isActive && (
+        <button
+          type="button"
+          className="mi-collab-question-btn"
+          onClick={onRequestQuestion}
+          disabled={isAlexActive}
+        >
+          <FontAwesomeIcon icon={faLightbulb} />
+          Help me think of a question
+        </button>
       )}
-    </>
+    </div>
+  )
+}
+
+function GoalsSection({
+  proactivity,
+  goalObjects,
+  coveredGoals,
+  goalNotes,
+  pendingGoalNotes,
+  onToggleGoalCovered,
+  onSavePendingGoalNote,
+  onDismissPendingGoalNote,
+  onAddManualNote,
+  availableSources,
+  onOpenSource,
+}) {
+  const isActive = proactivity === 'active'
+
+  return (
+    <div className="goals-area">
+      <div className="sticky-note">
+        {isActive
+          ? 'Use this space to track your own goals and save notes you want to remember.'
+          : "I'll keep track of your goals below and suggest notes based on your conversation with Dr. Alex."}
+      </div>
+
+      <div className="mi-goals-header">
+        <FontAwesomeIcon icon={faBullseye} />
+        <span>Your goals</span>
+      </div>
+
+      {goalObjects.length === 0 ? (
+        <p className="mi-goals-empty">No goals selected yet.</p>
+      ) : (
+        <div className="mi-goals-list">
+          {goalObjects.map((goal) => (
+            <GoalChip
+              key={goal.id}
+              goalId={goal.id}
+              label={goal.title}
+              proactivity={proactivity}
+              covered={coveredGoals.has(goal.id)}
+              notes={goalNotes[goal.id] || []}
+              pendingNote={pendingGoalNotes[goal.id]}
+              onToggleGoalCovered={() => onToggleGoalCovered?.(goal.id)}
+              onSavePendingNote={() => onSavePendingGoalNote(goal.id)}
+              onDismissPendingNote={() => onDismissPendingGoalNote(goal.id)}
+              onAddManualNote={(noteText, sources) =>
+                onAddManualNote?.(goal.id, noteText, sources)
+              }
+              availableSources={availableSources}
+              onOpenSource={onOpenSource}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
 function GoalChip({
+  goalId,
   label,
+  proactivity,
   covered,
   notes,
   pendingNote,
+  onToggleGoalCovered,
   onSavePendingNote,
   onDismissPendingNote,
+  onAddManualNote,
+  availableSources = [],
   onOpenSource,
 }) {
+  const isActive = proactivity === 'active'
+
   return (
     <div className={`mi-goal-chip${covered ? ' mi-goal-chip-covered' : ''}`}>
-      <span>{label}</span>
+      <div className="mi-goal-chip-main">
+        <span>{label}</span>
 
-      {covered && (
-        <FontAwesomeIcon icon={faCheck} className="mi-goal-chip-check" />
+        {covered && (
+          <FontAwesomeIcon icon={faCheck} className="mi-goal-chip-check" />
+        )}
+      </div>
+
+      {isActive && (
+        <button
+          type="button"
+          className={`mi-active-goal-toggle ${covered ? 'is-covered' : ''}`}
+          onClick={onToggleGoalCovered}
+        >
+          {covered ? 'Reopen' : 'Mark complete'}
+        </button>
       )}
 
-      {pendingNote && (
+      {pendingNote && !isActive && (
         <div className="mi-goal-pending-note">
           <div>{pendingNote.text}</div>
 
@@ -1577,6 +1635,15 @@ function GoalChip({
             </button>
           </div>
         </div>
+      )}
+
+      {isActive && (
+        <ActiveNoteComposer
+          goalId={goalId}
+          availableSources={availableSources}
+          onAddManualNote={onAddManualNote}
+          onOpenSource={onOpenSource}
+        />
       )}
 
       {notes?.length > 0 && (
@@ -1607,6 +1674,120 @@ function GoalChip({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function ActiveNoteComposer({
+  availableSources = [],
+  onAddManualNote,
+  onOpenSource,
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [selectedSourceKeys, setSelectedSourceKeys] = useState(new Set())
+  const sources = dedupeSources(availableSources).slice(0, 3)
+
+  function toggleSource(source) {
+    const key = getSourceKey(source)
+    setSelectedSourceKeys((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  function handleSave() {
+    const selectedSources = sources.filter((source) =>
+      selectedSourceKeys.has(getSourceKey(source)),
+    )
+
+    if (!noteText.trim() && selectedSources.length === 0) return
+
+    const textToSave = noteText.trim() || 'Saved Dr. Alex resource.'
+    onAddManualNote?.(textToSave, selectedSources)
+    setNoteText('')
+    setSelectedSourceKeys(new Set())
+    setIsOpen(false)
+  }
+
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        className="mi-active-add-note-btn"
+        onClick={() => setIsOpen(true)}
+      >
+        Add my own note
+      </button>
+    )
+  }
+
+  return (
+    <div className="mi-active-note-composer">
+      <textarea
+        value={noteText}
+        onChange={(e) => setNoteText(e.target.value)}
+        placeholder="Write a note for yourself..."
+        rows={3}
+      />
+
+      {sources.length > 0 && (
+        <div className="mi-active-source-picker">
+          <span>Attach resources from Dr. Alex's last answer:</span>
+          {sources.map((source, index) => {
+            const key = getSourceKey(source)
+            const selected = selectedSourceKeys.has(key)
+
+            return (
+              <div key={key} className="mi-active-source-row">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleSource(source)}
+                  />
+                  [{index + 1}] {source.source || 'Source'}
+                </label>
+
+                <button
+                  type="button"
+                  className="mi-active-source-preview"
+                  onClick={() => onOpenSource?.(source)}
+                >
+                  Preview
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="mi-active-note-actions">
+        <button
+          type="button"
+          className="mi-nudge-btn mi-nudge-btn-primary"
+          onClick={handleSave}
+        >
+          Save note
+        </button>
+
+        <button
+          type="button"
+          className="mi-nudge-btn"
+          onClick={() => {
+            setNoteText('')
+            setSelectedSourceKeys(new Set())
+            setIsOpen(false)
+          }}
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }
