@@ -155,7 +155,7 @@ export default function MainInteraction() {
 
         const STATIC_ALEX_INTRO1 = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
 
-        const STATIC_ALEX_INTRO2 = `Now, let me take a quick look at the goals you set earlier with Jordan.`
+        const STATIC_ALEX_INTRO2 = `Now, let me take a quick look at the goals that you set earlier with Jordan.`
 
         const personalizedAlexPrompt = `
         You are Doctor Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
