@@ -1,132 +1,167 @@
 [
   {
-    "word": " Yes",
-    "start": 0,
-    "end": 0.2
-  },
-  {
-    "word": " I've",
-    "start": 0.2,
-    "end": 0.46
-  },
-  {
-    "word": " pulled",
-    "start": 0.46,
-    "end": 0.66
-  },
-  {
-    "word": " up",
-    "start": 0.66,
-    "end": 0.88
-  },
-  {
-    "word": " any",
-    "start": 0.88,
-    "end": 1.02
-  },
-  {
-    "word": " notes",
-    "start": 1.02,
-    "end": 1.28
-  },
-  {
     "word": " I",
-    "start": 1.28,
-    "end": 1.42
+    "start": 0,
+    "end": 0.14
   },
   {
-    "word": " took",
-    "start": 1.42,
-    "end": 1.58
-  },
-  {
-    "word": " below.",
-    "start": 1.58,
-    "end": 1.9
-  },
-  {
-    "word": " Would",
-    "start": 2.08,
-    "end": 2.4
-  },
-  {
-    "word": " you",
-    "start": 2.4,
-    "end": 2.5
-  },
-  {
-    "word": " like",
-    "start": 2.5,
-    "end": 2.7
-  },
-  {
-    "word": " me",
-    "start": 2.7,
-    "end": 2.82
-  },
-  {
-    "word": " to",
-    "start": 2.82,
-    "end": 2.96
-  },
-  {
-    "word": " send",
-    "start": 2.96,
-    "end": 3.18
-  },
-  {
-    "word": " them",
-    "start": 3.18,
-    "end": 3.3
-  },
-  {
-    "word": " to",
-    "start": 3.3,
-    "end": 3.48
+    "word": " have",
+    "start": 0.14,
+    "end": 0.28
   },
   {
     "word": " the",
-    "start": 3.48,
-    "end": 3.56
+    "start": 0.28,
+    "end": 0.42
   },
   {
-    "word": " so",
-    "start": 4.16,
-    "end": 4.46
+    "word": " resources",
+    "start": 0.42,
+    "end": 0.72
   },
   {
-    "word": " you",
-    "start": 4.46,
-    "end": 4.6
+    "word": " Doctor",
+    "start": 0.72,
+    "end": 1.06
+  },
+  {
+    "word": " Alex",
+    "start": 1.06,
+    "end": 1.44
+  },
+  {
+    "word": " used",
+    "start": 1.44,
+    "end": 1.76
+  },
+  {
+    "word": " earlier",
+    "start": 1.76,
+    "end": 2.22
+  },
+  {
+    "word": " in",
+    "start": 2.22,
+    "end": 2.44
+  },
+  {
+    "word": " your",
+    "start": 2.44,
+    "end": 2.54
+  },
+  {
+    "word": " conversation.",
+    "start": 2.54,
+    "end": 3
+  },
+  {
+    "word": " You",
+    "start": 3.32,
+    "end": 3.74
   },
   {
     "word": " can",
-    "start": 4.6,
-    "end": 4.72
+    "start": 3.74,
+    "end": 3.82
   },
   {
-    "word": " download",
-    "start": 4.72,
-    "end": 5.12
+    "word": " choose",
+    "start": 3.82,
+    "end": 4.12
   },
   {
-    "word": " it",
-    "start": 5.12,
-    "end": 5.32
+    "word": " what",
+    "start": 4.12,
+    "end": 4.32
   },
   {
-    "word": " safely",
-    "start": 5.32,
+    "word": " resources",
+    "start": 4.32,
+    "end": 4.7
+  },
+  {
+    "word": " you'd",
+    "start": 4.7,
+    "end": 5.04
+  },
+  {
+    "word": " like",
+    "start": 5.04,
+    "end": 5.18
+  },
+  {
+    "word": " to",
+    "start": 5.18,
+    "end": 5.3
+  },
+  {
+    "word": " receive",
+    "start": 5.3,
     "end": 5.6
   },
   {
-    "word": " from",
+    "word": " and",
     "start": 5.6,
-    "end": 5.88
+    "end": 5.98
   },
   {
-    "word": " there?",
-    "start": 5.88,
-    "end": 6.06
+    "word": " they'll",
+    "start": 5.98,
+    "end": 6.16
+  },
+  {
+    "word": " be",
+    "start": 6.16,
+    "end": 6.24
+  },
+  {
+    "word": " shared",
+    "start": 6.24,
+    "end": 6.54
+  },
+  {
+    "word": " with",
+    "start": 6.54,
+    "end": 6.68
+  },
+  {
+    "word": " you",
+    "start": 6.68,
+    "end": 6.8
+  },
+  {
+    "word": " securely",
+    "start": 6.8,
+    "end": 7.2
+  },
+  {
+    "word": " when",
+    "start": 7.2,
+    "end": 7.6
+  },
+  {
+    "word": " you",
+    "start": 7.6,
+    "end": 7.68
+  },
+  {
+    "word": " finish",
+    "start": 7.68,
+    "end": 7.96
+  },
+  {
+    "word": " the",
+    "start": 7.96,
+    "end": 8.12
+  },
+  {
+    "word": " post",
+    "start": 8.12,
+    "end": 8.28
+  },
+  {
+    "word": " survey.",
+    "start": 8.28,
+    "end": 8.62
   }
 ]

@@ -6,6 +6,9 @@ import {
   faCheck,
   faArrowLeft,
   faArrowRight,
+  faLink,
+  faUserDoctor,
+  faHeart,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   initCompanionCharacter,
@@ -23,7 +26,7 @@ export default function NotesReview() {
   const [showNotes, setShowNotes] = useState(false)
   const [showResourceCard, setShowResourceCard] = useState(false)
   const [speakingCharacter, setSpeakingCharacter] = useState(null)
-  const [resourcesRequested, setResourcesRequested] = useState(null)
+  const [selectedResources, setSelectedResources] = useState([])
   const [showContinue, setShowContinue] = useState(false)
   const [audioReady, setAudioReady] = useState(false)
   const goalObjects = state?.goalObjects || []
@@ -63,6 +66,8 @@ export default function NotesReview() {
         '/intro-voices/companion-jordanEnding-timestamps.json',
         'companion',
       )
+
+      setSpeakingCharacter(null)
 
       if (cancelled) return
 
@@ -128,145 +133,207 @@ export default function NotesReview() {
     })
     .join('')
 
+  const jordanResources = goalObjects
+    .filter(
+      (goal) => coveredGoals.has(goal.id) || goalNotes[goal.id]?.length > 0,
+    )
+    .map((goal) => ({
+      id: `jordan-${goal.id}`,
+      title: `Source links related to: ${goal.title}`,
+      source: 'Suggested by Jordan',
+      description:
+        goalNotes[goal.id]?.[0]?.text ||
+        'Based on one of the goals you explored with Dr. Alex.',
+      url: '',
+      type: 'jordan',
+    }))
+
+  const alexResources = [
+    {
+      id: 'clinicaltrials-gov',
+      title: 'Search ClinicalTrials.gov',
+      source: 'Recommended by Dr. Alex',
+      description:
+        'A public database where you can search for clinical studies.',
+      url: 'https://clinicaltrials.gov/',
+      type: 'alex',
+    },
+    {
+      id: 'nci-clinical-trials-search',
+      title: 'Browse NCI-supported cancer clinical trials',
+      source: 'Recommended by Dr. Alex',
+      description:
+        'A National Cancer Institute page for finding cancer clinical trials.',
+      url: 'https://www.cancer.gov/research/participate/clinical-trials-search',
+      type: 'alex',
+    },
+  ]
+
+  const allResources = [...jordanResources, ...alexResources]
+
+  function toggleResource(id) {
+    setSelectedResources((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id],
+    )
+  }
+
+  const selectedResourceObjects = allResources.filter((resource) =>
+    selectedResources.includes(resource.id),
+  )
+
   return (
     <main className="nr-root">
       <section className="nr-card fade-in-up">
         <div className="nr-header-text">
           <img src={logo} className="logo" alt="Study logo" />
-          <h1>Thank you learning with us!</h1>
+          <h1>Thank you for learning with us!</h1>
+          <p className="nr-page-instruction">
+            Select any resources you’d like to receive (optional). They’ll be
+            shared with you at the end of the post-survey. Then, click the
+            'Continue to Post Survey' button in the top right corner.
+          </p>
         </div>
-        <div className="nr-jordan-area">
+        <div className="nr-characters-area">
           <div className="characters-area">
-            <div
-              className={`nr-avatar nr-avatar-alex ${
-                speakingCharacter === 'alex' ? 'nr-avatar-speaking' : ''
-              } ${
-                speakingCharacter === 'jordan' ? 'nr-avatar-not-speaking' : ''
-              }`}
-            >
+            <div className="nr-alex-area">
               <div
-                className="virtual-doctor"
-                id="virtualdoctor-review"
-                ref={doctorRef}
-              />
-            </div>
-
-            <div
-              className={`nr-avatar nr-avatar-jordan ${
-                speakingCharacter === 'jordan' ? 'nr-avatar-speaking' : ''
-              } ${
-                speakingCharacter === 'alex' ? 'nr-avatar-not-speaking' : ''
-              }`}
-            >
+                className={`nr-avatar nr-avatar-alex ${
+                  speakingCharacter === 'alex' ? 'nr-avatar-speaking' : ''
+                } ${
+                  speakingCharacter === 'jordan' ? 'nr-avatar-not-speaking' : ''
+                }`}
+              >
+                <div
+                  className="virtual-doctor"
+                  id="virtualdoctor-review"
+                  ref={doctorRef}
+                />
+              </div>
               {showResourceCard && (
                 <div className="nr-resource-card">
-                  <p>Would you like me to send the notes to the post-survey?</p>
+                  <h2>Dr. Alex's recommended sources</h2>
+                  <p>
+                    These links provide next steps to start looking for clinical
+                    trials!
+                  </p>
+                  <div className="nr-resource-list">
+                    {alexResources.map((resource) => (
+                      <button
+                        key={resource.id}
+                        type="button"
+                        className={`nr-resource-option-alex ${
+                          selectedResources.includes(resource.id)
+                            ? 'nr-resource-option-selected-alex'
+                            : ''
+                        }`}
+                        onClick={() => toggleResource(resource.id)}
+                      >
+                        <span className="nr-resource-icon nr-resource-icon-alex">
+                          <FontAwesomeIcon icon={faUserDoctor} />
+                        </span>
 
-                  <div className="nr-resource-actions">
-                    <button
-                      type="button"
-                      className={`nr-choice-btn ${
-                        resourcesRequested === true
-                          ? 'nr-choice-btn-selected'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        ;(setResourcesRequested(true),
-                          setSpeakingCharacter(null))
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faCheck} />
-                      Yes
-                    </button>
+                        <span className="nr-resource-copy">
+                          <strong>{resource.title}</strong>
+                        </span>
 
-                    <button
-                      type="button"
-                      className={`nr-choice-btn ${
-                        resourcesRequested === false
-                          ? 'nr-choice-btn-selected'
-                          : ''
-                      }`}
-                      onClick={() => {
-                        ;(setResourcesRequested(false),
-                          setSpeakingCharacter(null))
-                      }}
-                    >
-                      No thanks
-                    </button>
+                        {selectedResources.includes(resource.id) && (
+                          <FontAwesomeIcon
+                            className="nr-resource-check"
+                            icon={faCheck}
+                          />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
-              <div
-                className="virtual-companion"
-                id="virtualcompanion-review"
-                ref={companionRef}
-              />
             </div>
-          </div>
 
-          {showContinue && resourcesRequested !== null && (
-            <button
-              type="button"
-              className="nr-continue-btn"
-              onClick={() => {
-                const encodedHtml = encodeURIComponent(
-                  JSON.stringify(
-                    goalNotesHtml.replace(/\n/g, '').replace(/\s{2,}/g, ' '),
-                  ),
-                )
-
-                window.location.href =
-                  `https://ufl.qualtrics.com/jfe/form/SV_5d3HxZpa1fP1r2S` +
-                  `?send_notes=${resourcesRequested}` +
-                  `&goal_notes_html=${encodedHtml}`
-              }}
-            >
-              Continue to Post Survey
-              <FontAwesomeIcon icon={faArrowRight} />
-            </button>
-          )}
-        </div>
-
-        <div
-          className={`nr-notes-shell ${showNotes ? 'nr-notes-shell-visible' : ''}`}
-        >
-          <div className="nr-notes-list">
-            {goalObjects.map((goal) => (
-              <article
-                key={goal.id}
-                className={`nr-goal-card ${
-                  coveredGoals.has(goal.id) ? 'nr-goal-card-covered' : ''
+            <div className="nr-jordan-area">
+              <div
+                className={`nr-avatar nr-avatar-jordan ${
+                  speakingCharacter === 'jordan' ? 'nr-avatar-speaking' : ''
+                } ${
+                  speakingCharacter === 'alex' ? 'nr-avatar-not-speaking' : ''
                 }`}
               >
-                <div className="nr-goal-header">
-                  <h2>{goal.title}</h2>
+                <div
+                  className="virtual-companion"
+                  id="virtualcompanion-review"
+                  ref={companionRef}
+                />
+              </div>
+              {showResourceCard && (
+                <div className="nr-resource-card">
+                  <h2>Jordan's sources based on your goals</h2>
+                  <p>
+                    These are links to resources Dr. Alex used during your
+                    conversation to address your goals.
+                  </p>
 
-                  {coveredGoals.has(goal.id) && (
-                    <span className="nr-covered-pill">
-                      <FontAwesomeIcon icon={faCheck} />
-                      Covered
-                    </span>
+                  {jordanResources.length > 0 && (
+                    <>
+                      <div className="nr-resource-list">
+                        {jordanResources.slice(0, 2).map((resource) => (
+                          <button
+                            key={resource.id}
+                            type="button"
+                            className={`nr-resource-option ${
+                              selectedResources.includes(resource.id)
+                                ? 'nr-resource-option-selected'
+                                : ''
+                            }`}
+                            onClick={() => toggleResource(resource.id)}
+                          >
+                            <span className="nr-resource-icon nr-resource-icon-jordan">
+                              <FontAwesomeIcon icon={faHeart} />
+                            </span>
+
+                            <span className="nr-resource-copy">
+                              <strong>{resource.title}</strong>
+                            </span>
+
+                            {selectedResources.includes(resource.id) && (
+                              <FontAwesomeIcon
+                                className="nr-resource-check"
+                                icon={faCheck}
+                              />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
-
-                {goalNotes[goal.id]?.length > 0 ? (
-                  <div className="nr-notes">
-                    {goalNotes[goal.id].map((note) => (
-                      <p key={note.id} className="nr-note">
-                        {note.text}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="nr-empty-note">
-                    No saved notes for this goal yet.
-                  </p>
-                )}
-              </article>
-            ))}
+              )}
+            </div>
           </div>
         </div>
       </section>
+      {showContinue && (
+        <button
+          type="button"
+          className="nr-continue-btn"
+          onClick={() => {
+            const encodedHtml = encodeURIComponent(
+              JSON.stringify(
+                goalNotesHtml.replace(/\n/g, '').replace(/\s{2,}/g, ' '),
+              ),
+            )
+            const encodedResources = encodeURIComponent(
+              JSON.stringify(selectedResourceObjects),
+            )
+
+            window.location.href =
+              `https://ufl.qualtrics.com/jfe/form/SV_5d3HxZpa1fP1r2S` +
+              `?selected_resources=${encodedResources}` +
+              `&goal_notes_html=${encodedHtml}`
+          }}
+        >
+          Continue to Post Survey
+          <FontAwesomeIcon icon={faArrowRight} />
+        </button>
+      )}
     </main>
   )
 }

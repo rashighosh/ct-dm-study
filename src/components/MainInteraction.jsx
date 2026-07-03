@@ -1657,7 +1657,7 @@ function AlexHeader({
         )}
 
         {uniqueSources.length > 0 && (
-          <div className="alex-source-panel alex-source-panel-active">
+          <div className={`alex-source-panel alex-source-panel-${proactivity}`}>
             <span className="alex-source-label">Trusted sources checked</span>
 
             <div className="alex-source-list">

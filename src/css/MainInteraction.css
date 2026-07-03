@@ -700,6 +700,10 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
+.alex-source-panel-collaborative {
+  max-width: 25%;
+}
+
 .alex-source-label {
   display: block;
   margin-bottom: 6px;

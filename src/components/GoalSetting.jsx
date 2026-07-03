@@ -55,6 +55,7 @@ function ToggleRow({ item, checked, onToggle, accent }) {
 
 function SuggestedGoalList({ title, goals, selectedGoals, onToggle }) {
   if (!goals.length) return null
+  console.log('GOALS ARE', goals)
 
   return (
     <div className="gs-subsection">
@@ -150,8 +151,10 @@ export default function GoalSetting({ onComplete }) {
   const [isJordanSpeaking, setIsJordanSpeaking] = useState(false)
   const [suggestedGoals, setSuggestedGoals] = useState([])
   const [suggestingMoreGoals, setSuggestingMoreGoals] = useState(false)
-  const [showActiveSuggestions, setShowActiveSuggestions] = useState(false)
   const [restoredProgress, setRestoredProgress] = useState(false)
+  const [showAskJordanCard, setShowAskJordanCard] = useState(false)
+  const [subtitle, setSubtitle] = useState('')
+  const [collabSuggestionCount, setCollabSuggestionCount] = useState(3)
   const [startChecks, setStartChecks] = useState({
     volume: false,
     browser: false,
@@ -165,7 +168,7 @@ export default function GoalSetting({ onComplete }) {
 
   const participantId = searchParams.get('id') || 'R_1dt1pZa4q7EkLbw'
 
-  const conditionParam = searchParams.get('condition') || '1'
+  const conditionParam = searchParams.get('c') || '1'
 
   const STORAGE_KEY = `goalSettingProgress-${participantId}-${conditionParam}`
 
@@ -203,6 +206,7 @@ export default function GoalSetting({ onComplete }) {
         selectedGoals,
         customGoals,
         suggestedGoals,
+        showAskJordanCard,
       }),
     )
   }, [
@@ -213,6 +217,7 @@ export default function GoalSetting({ onComplete }) {
     selectedGoals,
     customGoals,
     suggestedGoals,
+    showAskJordanCard,
   ])
 
   useEffect(() => {
@@ -228,6 +233,9 @@ export default function GoalSetting({ onComplete }) {
       setSelectedGoals(parsed.selectedGoals || [])
       setCustomGoals(parsed.customGoals || [])
       setSuggestedGoals(parsed.suggestedGoals || [])
+      setShowAskJordanCard(
+        proactivity === 'collaborative' && (parsed.showAskJordanCard || false),
+      )
       setRestoredProgress(true)
     } catch (e) {
       console.error('Could not restore goal setting progress:', e)
@@ -297,7 +305,7 @@ export default function GoalSetting({ onComplete }) {
           setTimeout(() => setIntroIcon(icon), time * 1000),
         )
         setIsJordanSpeaking(true)
-        await speakWithLipsyncStatic(
+        await playIntroWithAutoCaptions(
           '/intro-voices/companion-shared-intro.mp3',
           '/intro-voices/companion-shared-intro-timestamps.json',
           'companion',
@@ -316,12 +324,16 @@ export default function GoalSetting({ onComplete }) {
         ]
 
         setIsJordanSpeaking(true)
-        await speakWithLipsyncStatic(
+        await playIntroWithAutoCaptions(
           `/intro-voices/companion-${proactivity}-intro.mp3`,
           `/intro-voices/companion-${proactivity}-intro-timestamps.json`,
           'companion',
         )
         setIsJordanSpeaking(false)
+
+        if (proactivity === 'collaborative') {
+          setShowAskJordanCard(true)
+        }
 
         secondIntroHighlightTimeouts.forEach(clearTimeout)
         setHighlightTarget(null)
@@ -341,6 +353,45 @@ export default function GoalSetting({ onComplete }) {
     setTimeout(() => {
       playGesture('lookright')
     }, 3000)
+  }
+
+  async function playIntroWithAutoCaptions(
+    audioPath,
+    timestampsPath,
+    character,
+  ) {
+    const res = await fetch(timestampsPath)
+    const words = await res.json()
+
+    const captionTimeouts = []
+    const chunkSeconds = 3
+
+    for (
+      let start = 0;
+      start < words[words.length - 1].end;
+      start += chunkSeconds
+    ) {
+      const end = start + chunkSeconds
+
+      const captionText = words
+        .filter((w) => w.start >= start && w.start < end)
+        .map((w) => w.word)
+        .join('')
+        .trim()
+
+      if (!captionText) continue
+
+      captionTimeouts.push(
+        setTimeout(() => setSubtitle(captionText), start * 1000),
+      )
+    }
+
+    try {
+      await speakWithLipsyncStatic(audioPath, timestampsPath, character)
+    } finally {
+      captionTimeouts.forEach(clearTimeout)
+      setSubtitle('')
+    }
   }
 
   function handleAddCustomGoal(e) {
@@ -503,12 +554,17 @@ export default function GoalSetting({ onComplete }) {
   }
 
   async function handleSuggestMoreGoals() {
-    if (proactivity === 'active' && suggestedGoals.length > 0) {
-      setShowActiveSuggestions(true)
+    if (suggestingMoreGoals) return
+
+    if (
+      proactivity === 'collaborative' &&
+      collabSuggestionCount < suggestedGoals.length
+    ) {
+      setCollabSuggestionCount((prev) =>
+        Math.min(prev + 1, suggestedGoals.length),
+      )
       return
     }
-
-    if (suggestingMoreGoals) return
 
     setSuggestingMoreGoals(true)
 
@@ -551,16 +607,13 @@ export default function GoalSetting({ onComplete }) {
         return [...prev, ...uniqueNewGoals]
       })
 
-      setShowActiveSuggestions(true)
+      setCollabSuggestionCount((prev) => prev + 3)
     } catch (error) {
       console.error('Could not suggest more goals:', error)
     } finally {
       setSuggestingMoreGoals(false)
     }
   }
-
-  const showAskJordanCard =
-    proactivity === 'collaborative' || proactivity === 'active'
 
   return (
     <div className="gs-root">
@@ -632,12 +685,14 @@ export default function GoalSetting({ onComplete }) {
           <h1>Chat with Virtual Characters</h1>
         </div>
         <header className="gs-header">
-          {introIcon && (
-            <div key={introIcon} className="gs-intro-visual-wrap">
-              <IntroVisual introIcon={introIcon} />
+          <div
+            className={`gs-intro-visual-slot ${introIcon ? 'has-icon' : ''}`}
+          >
+            <div key={introIcon || 'empty'} className="gs-intro-visual-wrap">
+              {introIcon && <IntroVisual introIcon={introIcon} />}
             </div>
-          )}
-          {introFinished && showAskJordanCard && (
+          </div>
+          {showAskJordanCard && (
             <div
               className="gs-ask-jordan-card"
               onClick={
@@ -660,9 +715,7 @@ export default function GoalSetting({ onComplete }) {
                 <span>
                   {suggestingMoreGoals
                     ? 'Thinking...'
-                    : proactivity === 'active'
-                      ? 'Ask me for suggestions'
-                      : 'Ask me for more suggestions'}
+                    : 'Ask me for more suggestions'}
                 </span>
               </div>
             </div>
@@ -680,8 +733,21 @@ export default function GoalSetting({ onComplete }) {
               />
             </div>
           </div>
-          <h1 className="gs-title">Jordan</h1>
-          <span className="gs-eyebrow">Virtual Companion</span>
+          <div>
+            <h1 className="gs-title">Jordan</h1>
+            <span className="gs-eyebrow">Virtual Companion</span>
+            <hr />
+          </div>
+
+          <div
+            className={`gs-subtitle-slot ${
+              subtitle ? 'has-subtitle' : ''
+            } ${introFinished && !subtitle ? 'is-done' : ''}`}
+          >
+            <div className="gs-subtitles">
+              <span className="gs-subtitle-text">{subtitle}</span>
+            </div>
+          </div>
           {introFinished && (
             <div
               className={`continue-area ${
@@ -710,48 +776,41 @@ export default function GoalSetting({ onComplete }) {
 
         {showDiv && (
           <div
-            className={`gs-columns fade-in-up ${
+            className={`gs-columns fade-in-up ${proactivity} ${
               highlightTarget === 'goals' ? 'gs-highlight-goals' : ''
             }`}
           >
-            <section className="gs-column gs-column-alex">
+            <section className={`gs-column gs-column-alex ${proactivity}`}>
               <div className="gs-column-header">
                 <span className="gs-column-icon gs-column-icon-alex">
                   <FontAwesomeIcon icon={faFilePen} />
                 </span>
                 <div>
                   <h2 className="gs-column-title">
-                    Let's write down your information needs
+                    Let's plan what you'd like to learn
                   </h2>
                 </div>
               </div>
 
               {proactivity === 'active' ? (
-                <>
-                  <CustomGoalForm
-                    customInput={customInput}
-                    setCustomInput={setCustomInput}
-                    customGoals={customGoals}
-                    onAddCustomGoal={handleAddCustomGoal}
-                    onRemoveCustomGoal={handleRemoveCustomGoal}
-                    title="Your goals"
-                    placeholder="Enter a goal in your own words."
-                  />
-
-                  {showActiveSuggestions && suggestedGoals.length > 0 && (
-                    <SuggestedGoalList
-                      title="Jordan’s suggestions"
-                      goals={suggestedGoals}
-                      selectedGoals={selectedGoals}
-                      onToggle={toggleGoal}
-                    />
-                  )}
-                </>
+                <CustomGoalForm
+                  customInput={customInput}
+                  setCustomInput={setCustomInput}
+                  customGoals={customGoals}
+                  onAddCustomGoal={handleAddCustomGoal}
+                  onRemoveCustomGoal={handleRemoveCustomGoal}
+                  title="Your goals"
+                  placeholder="Enter a goal in your own words."
+                />
               ) : (
                 <>
                   <SuggestedGoalList
-                    title="Suggested for you"
-                    goals={suggestedGoals}
+                    title="Jordan's suggestions"
+                    goals={
+                      proactivity === 'collaborative'
+                        ? suggestedGoals.slice(0, collabSuggestionCount)
+                        : suggestedGoals
+                    }
                     selectedGoals={selectedGoals}
                     onToggle={toggleGoal}
                   />
@@ -763,8 +822,8 @@ export default function GoalSetting({ onComplete }) {
                       customGoals={customGoals}
                       onAddCustomGoal={handleAddCustomGoal}
                       onRemoveCustomGoal={handleRemoveCustomGoal}
-                      title="Custom topics"
-                      placeholder="Enter any custom topics in your own words here."
+                      title="Your Ideas"
+                      placeholder="Enter your own goals in your words here."
                     />
                   )}
                 </>
