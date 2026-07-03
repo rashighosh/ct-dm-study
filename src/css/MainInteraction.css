@@ -208,7 +208,7 @@
     transform 0.12s;
 }
 
-.mi-jordan-action-btn:hover {
+.mi-jordan-action-btn:not(:disabled):hover {
   background: rgb(var(--primary-blue) / 15%);
   transform: scale(1.1);
 }
@@ -1297,7 +1297,7 @@
   transition: 0.2s ease-in-out;
 }
 
-.mi-nudge-btn:hover {
+.mi-nudge-btn:not(:disabled):hover {
   background: rgb(var(--primary-blue) / 5%);
 }
 
@@ -1307,7 +1307,7 @@
   color: #fff;
 }
 
-.mi-nudge-btn-primary:hover {
+.mi-nudge-btn-primary:not(:disabled):hover {
   background: rgb(var(--primary-blue));
 }
 
@@ -1633,7 +1633,7 @@
   background-color: rgb(var(--primary-purple));
 }
 
-.send-button:hover {
+.send-button:not(:disabled):hover {
   background: linear-gradient(
     90deg,
     rgb(var(--primary-purple)) 0%,
@@ -1873,6 +1873,18 @@
 .alex-source-chip {
   border: none;
   cursor: pointer;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Disable inputs when Dr ALex is talking                                                                */
+/* -------------------------------------------------------------------------- */
+
+.mi-jordan-action-btn:disabled,
+.mi-nudge-btn:disabled,
+.send-button:disabled,
+.mi-input-row textarea:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* -------------------------------------------------------------------------- */

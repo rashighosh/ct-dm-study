@@ -11,7 +11,8 @@ const JORDAN_INTRO_SCRIPTS = {
 }
 const thinking = `Sure, give me a moment.`
 const doneThinking = `I've added a few suggestions.`
-const alexIntro = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
+const alexIntro1 = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
+const alexIntro2 = `Now, let me take a quick look at the goals that you set earlier with Jordan.`
 
 const alexEnding = `Thanks for chatting with me about clinical trial participation today. I hope it was helpful! Before you leave, I have some resources I'd like to share to help you get started searching for clinical trials if you're interested.`
 const jordanEnding = `And I have the sources Doctor Alex used earlier in your conversation. You can choose what resources you'd like to receive and they'll be shared with you securely when you finish the post survey.`
@@ -20,7 +21,7 @@ const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: alexEnding,
+    text: alexIntro2,
     character: 'doctor',
   }),
 })
@@ -28,11 +29,11 @@ const res = await fetch(`${BASE_URL}/tts`, {
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/doctor-alexEnding.mp3',
+  'public/intro-voices/doctor-alexIntro2-intro.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/doctor-alexEnding-timestamps.json',
+  'public/intro-voices/doctor-alexIntro2-intro-timestamps.json',
   JSON.stringify(timestamps, null, 2),
 )
 

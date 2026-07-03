@@ -57,13 +57,22 @@ const TUTORIAL_IMAGES = {
 
 const uid = () => crypto.randomUUID()
 
+const getSourceKey = (source) =>
+  source.url || source.title || source.file || source.source || source.id
+
+const dedupeSources = (sources = []) =>
+  Array.from(
+    new Map(sources.map((source) => [getSourceKey(source), source])).values(),
+  )
+
 /* -------------------------------------------------------------------------- */
 /* Main component                                                             */
 /* -------------------------------------------------------------------------- */
 
 export default function MainInteraction() {
-  const BASE_URL = 'http://127.0.0.1:8000'
-  // const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+  // const BASE_URL = 'http://127.0.0.1:8000'
+  const BASE_URL =
+    'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
   const location = useLocation()
   const goals = location.state ?? {}
 
@@ -71,9 +80,9 @@ export default function MainInteraction() {
 
   const goalObjects = [
     ...selectedGoalObjects,
-    ...(goals.customGoals || []).map((label) => ({
-      id: `custom-${label}`,
-      title: label,
+    ...(goals.customGoals || []).map((goal) => ({
+      id: goal.id,
+      title: goal.label,
       description: null,
       custom: true,
     })),
@@ -144,7 +153,9 @@ export default function MainInteraction() {
 
         console.log('GOALS ARE', goals)
 
-        const STATIC_ALEX_INTRO = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
+        const STATIC_ALEX_INTRO1 = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
+
+        const STATIC_ALEX_INTRO2 = `Now, let me take a quick look at the goals you set earlier with Jordan.`
 
         const personalizedAlexPrompt = `
         You are Doctor Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
@@ -181,14 +192,14 @@ export default function MainInteraction() {
           {
             id: uid(),
             from: 'alex',
-            text: STATIC_ALEX_INTRO,
+            text: STATIC_ALEX_INTRO1,
             sources: [],
             explanation: null,
             confidence: null,
           },
         ])
 
-        updateTranscript('alex', STATIC_ALEX_INTRO, {
+        updateTranscript('alex', STATIC_ALEX_INTRO1, {
           sources: [],
           intro: true,
           intro_part: 'static',
@@ -198,14 +209,38 @@ export default function MainInteraction() {
         playAlexIntroCues()
 
         await speakWithLipsyncStatic(
-          '/intro-voices/doctor-alexIntro-intro.mp3',
-          '/intro-voices/doctor-alexIntro-intro-timestamps.json',
+          '/intro-voices/doctor-alexIntro1-intro.mp3',
+          '/intro-voices/doctor-alexIntro1-intro-timestamps.json',
           'doctor',
         )
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uid(),
+            from: 'alex',
+            text: STATIC_ALEX_INTRO2,
+            sources: [],
+            explanation: null,
+            confidence: null,
+          },
+        ])
+
+        updateTranscript('alex', STATIC_ALEX_INTRO2, {
+          sources: [],
+          intro: true,
+          intro_part: 'static',
+        })
 
         setAlexIntroCue({
           type: 'goals-review',
         })
+
+        await speakWithLipsyncStatic(
+          '/intro-voices/doctor-alexIntro2-intro.mp3',
+          '/intro-voices/doctor-alexIntro2-intro-timestamps.json',
+          'doctor',
+        )
 
         playGesture('thinkingDoctor')
 
@@ -213,26 +248,28 @@ export default function MainInteraction() {
 
         const personalizedIntro = data.reply
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid(),
-            from: 'alex',
-            text: personalizedIntro,
-            sources: [],
-            explanation: null,
-            confidence: null,
-          },
-        ])
-
         updateTranscript('alex', personalizedIntro, {
           sources: [],
           intro: true,
           intro_part: 'personalized',
         })
 
-        await speakWithLipsync(personalizedIntro, 'doctor', null, () =>
-          setAlexIntroCue(null),
+        await speakWithLipsync(
+          personalizedIntro,
+          'doctor',
+          null,
+          () => setAlexIntroCue(null),
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uid(),
+              from: 'alex',
+              text: personalizedIntro,
+              sources: [],
+              explanation: null,
+              confidence: null,
+            },
+          ]),
         )
 
         clearAlexIntroCues()
@@ -524,15 +561,17 @@ export default function MainInteraction() {
   function addGoalNote(goalId, noteText, sources = []) {
     if (!noteText) return
 
-    const savedSources = sources.slice(0, 2).map((source) => ({
-      id: source.id || uid(),
-      title: source.title || source.source || source.file || 'Trusted source',
-      url: source.url || null,
-      file: source.file || null,
-      source: source.source || null,
-      content: source.content || null,
-      relevance_explanation: source.relevance_explanation || null,
-    }))
+    const savedSources = dedupeSources(sources)
+      .slice(0, 2)
+      .map((source) => ({
+        id: source.id || uid(),
+        title: source.title || source.source || source.file || 'Trusted source',
+        url: source.url || null,
+        file: source.file || null,
+        source: source.source || null,
+        content: source.content || null,
+        relevance_explanation: source.relevance_explanation || null,
+      }))
 
     setGoalNotes((prev) => ({
       ...prev,
@@ -671,7 +710,7 @@ export default function MainInteraction() {
           [match.goal_id]: {
             id: uid(),
             text: match.note_to_add,
-            sources: sourcesForTurn,
+            sources: dedupeSources(sourcesForTurn),
           },
         }))
       }
@@ -715,10 +754,12 @@ export default function MainInteraction() {
     if (!activeJordanSuggestion?.goalId || !activeJordanSuggestion?.noteToAdd)
       return
 
+    const pendingNote = pendingGoalNotes[activeJordanSuggestion.goalId]
+
     addGoalNote(
       activeJordanSuggestion.goalId,
       activeJordanSuggestion.noteToAdd,
-      alexSources,
+      pendingNote?.sources || [],
     )
 
     setActiveJordanSuggestion((prev) =>
@@ -911,11 +952,10 @@ export default function MainInteraction() {
         setShowTalkingPoints(true)
       }, 5000)
 
-      playGesture('stopSwiping')
-
-      await speakWithLipsync(data.answer, 'doctor', null, () =>
-        setShowCards(false),
-      )
+      await speakWithLipsync(data.answer, 'doctor', null, () => {
+        setShowCards(false)
+        playGesture('stopSwiping')
+      })
 
       clearTimeout(talkingPointsTimer)
       setIsAlexActive(false)
@@ -1081,6 +1121,7 @@ export default function MainInteraction() {
           onAcceptQuerySuggestion={acceptQuerySuggestion}
           activeJordanSuggestion={activeJordanSuggestion}
           onActiveSaveNote={handleActiveSaveNote}
+          disabled={isAlexActive}
         />
       )}
 
@@ -1219,6 +1260,7 @@ export default function MainInteraction() {
             textareaRef={textareaRef}
             onChange={handleInputChange}
             onSubmit={handleSend}
+            disabled={isAlexActive}
           />
         </section>
       </main>
@@ -1257,6 +1299,7 @@ function ActiveJordanDock({
   onManualQueryHelp,
   onAcceptQuerySuggestion,
   onActiveSaveNote,
+  disabled = false,
 }) {
   return (
     <div className="mi-jordan-active-area">
@@ -1283,6 +1326,7 @@ function ActiveJordanDock({
                 type="button"
                 className="mi-nudge-btn mi-nudge-btn-primary"
                 onClick={() => onAcceptQuerySuggestion(activeJordanSuggestion)}
+                disabled={disabled}
               >
                 Use this
               </button>
@@ -1291,6 +1335,7 @@ function ActiveJordanDock({
                 type="button"
                 className="mi-nudge-btn"
                 onClick={onClosePanel}
+                disabled={disabled}
               >
                 No thanks
               </button>
@@ -1314,6 +1359,7 @@ function ActiveJordanDock({
             className="mi-jordan-action-btn"
             onClick={() => onTogglePanel('notes')}
             aria-label="Open Jordan's notes"
+            disabled={disabled}
           >
             <FontAwesomeIcon icon={faBullseye} />
             {coveredGoalsCount > 0 && (
@@ -1326,6 +1372,7 @@ function ActiveJordanDock({
             className="mi-jordan-action-btn"
             onClick={onManualQueryHelp}
             aria-label="Ask Jordan to help phrase a question"
+            disabled={disabled}
           >
             <FontAwesomeIcon icon={faLightbulb} />
           </button>
@@ -1588,14 +1635,7 @@ function AlexHeader({
   proactivity,
   onOpenSource,
 }) {
-  const uniqueSources = Array.from(
-    new Map(
-      sources.map((source) => [
-        source.url || source.title || source.file || source.source,
-        source,
-      ]),
-    ).values(),
-  )
+  const uniqueSources = dedupeSources(sources)
   return (
     <div
       className={`mi-chat-header ${isAlexActive ? 'mi-alex-area-active' : ''}`}
@@ -1663,7 +1703,7 @@ function AlexHeader({
             <div className="alex-source-list">
               {uniqueSources.map((source, index) => (
                 <button
-                  key={`${source.id}-${source.file}-${source.chunk_id}`}
+                  key={getSourceKey(source)}
                   type="button"
                   className="alex-source-chip alex-source-chip-verified"
                   style={{ animationDelay: `${index * 120}ms` }}
@@ -1821,21 +1861,42 @@ function ChatMessage({ message }) {
   )
 }
 
-function ChatInput({ input, textareaRef, onChange, onFocus, onSubmit }) {
+function ChatInput({
+  input,
+  textareaRef,
+  onChange,
+  onFocus,
+  onSubmit,
+  disabled = false,
+}) {
   return (
-    <form className="mi-input-row" onSubmit={onSubmit}>
+    <form
+      className="mi-input-row"
+      onSubmit={(e) => {
+        if (disabled) {
+          e.preventDefault()
+          return
+        }
+        onSubmit(e)
+      }}
+    >
       <div className="mi-input-stack">
         <textarea
           ref={textareaRef}
           value={input}
           onChange={(e) => onChange(e.target.value)}
           onFocus={onFocus}
-          placeholder="Type your message to Dr. Alex here..."
+          placeholder={
+            disabled
+              ? 'Please wait while Dr. Alex is speaking...'
+              : 'Type your message to Dr. Alex here...'
+          }
           rows={3}
+          disabled={disabled}
         />
       </div>
 
-      <button type="submit" className="send-button">
+      <button type="submit" className="send-button" disabled={disabled}>
         <FontAwesomeIcon icon={faPaperPlane} />
         <span>Send</span>
       </button>

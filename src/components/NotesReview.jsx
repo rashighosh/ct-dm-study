@@ -23,7 +23,6 @@ export default function NotesReview() {
   const navigate = useNavigate()
   const { state } = useLocation()
 
-  const [showNotes, setShowNotes] = useState(false)
   const [showResourceCard, setShowResourceCard] = useState(false)
   const [speakingCharacter, setSpeakingCharacter] = useState(null)
   const [selectedResources, setSelectedResources] = useState([])
@@ -58,7 +57,6 @@ export default function NotesReview() {
 
       setSpeakingCharacter('jordan')
 
-      setTimeout(() => setShowNotes(true), 1000)
       setTimeout(() => setShowResourceCard(true), 3000)
 
       await speakWithLipsyncStatic(
@@ -99,13 +97,6 @@ export default function NotesReview() {
     )
   }
 
-  const notesPayload = goalObjects.map((goal) => ({
-    id: goal.id,
-    title: goal.title,
-    covered: coveredGoals.has(goal.id),
-    notes: (goalNotes[goal.id] || []).map((note) => note.text),
-  }))
-
   const escapeHtml = (value) =>
     String(value)
       .replaceAll('&', '&amp;')
@@ -113,25 +104,6 @@ export default function NotesReview() {
       .replaceAll('>', '&gt;')
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&#039;')
-
-  const goalNotesHtml = goalObjects
-    .map((goal) => {
-      const notes = goalNotes[goal.id] || []
-
-      return `
-      <div>
-        <h3>${escapeHtml(goal.title)}</h3>
-        ${
-          notes.length > 0
-            ? `<ul>${notes
-                .map((note) => `<li>${escapeHtml(note.text)}</li>`)
-                .join('')}</ul>`
-            : `<p><em>No saved notes for this goal.</em></p>`
-        }
-      </div>
-    `
-    })
-    .join('')
 
   const jordanResources = goalObjects
     .filter(
@@ -152,7 +124,6 @@ export default function NotesReview() {
     {
       id: 'clinicaltrials-gov',
       title: 'Search ClinicalTrials.gov',
-      source: 'Recommended by Dr. Alex',
       description:
         'A public database where you can search for clinical studies.',
       url: 'https://clinicaltrials.gov/',
@@ -161,7 +132,6 @@ export default function NotesReview() {
     {
       id: 'nci-clinical-trials-search',
       title: 'Browse NCI-supported cancer clinical trials',
-      source: 'Recommended by Dr. Alex',
       description:
         'A National Cancer Institute page for finding cancer clinical trials.',
       url: 'https://www.cancer.gov/research/participate/clinical-trials-search',

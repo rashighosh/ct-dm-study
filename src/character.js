@@ -1,8 +1,9 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs'
 
 // const BASE_URL = 'https://fastapi-rashi.onrender.com';
-const BASE_URL = 'http://127.0.0.1:8000'
-// const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+// const BASE_URL = 'http://127.0.0.1:8000'
+const BASE_URL =
+  'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 let head = null
 let head1 = null
 let onSubtitleCallback = null
@@ -195,19 +196,14 @@ export async function speakWithLipsync(
   onStart = null,
 ) {
   const activeHead = character === 'companion' ? head1 : head
-  const body = JSON.stringify({ text, character })
-  console.log(text)
-  console.log('BODY IS', body)
-  console.log('IN SPEAK W LIPSYNC')
+
   const ttsRes = await fetch(`${BASE_URL}/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, character }),
   })
 
-  const { audio, timestamps } = await ttsRes.json()
-  console.log('GOT TTS RESPONSE')
-  const lastWord = timestamps[timestamps.length - 1]
+  const { audio, timestamps = [] } = await ttsRes.json()
 
   const audioBytes = Uint8Array.from(atob(audio), (c) => c.charCodeAt(0))
   const audioBuffer = await activeHead.audioCtx.decodeAudioData(
@@ -215,74 +211,21 @@ export async function speakWithLipsync(
   )
 
   const words = timestamps.map((t) => t.word.trim().replace(/[.,!?;:]/g, ''))
+
+  // Small lead-in helps lips start closer to the audio.
   const wtimes = timestamps.map((t) => t.start * 1000)
+
   const wdurations = timestamps.map((t) => (t.end - t.start) * 1000)
 
-  // const subtitleWords = timestamps.map(t => t.word.trim());
-
-  // if (onSubtitleCallback) {
-  //   const chunkSize = 8;
-  //   for (let i = 0; i < subtitleWords.length; i += chunkSize) {
-  //     const chunk = subtitleWords.slice(i, i + chunkSize).join(' ');
-  //     const triggerTime = wtimes[i];
-  //     setTimeout(() => onSubtitleCallback(chunk), triggerTime);
-  //   }
-  // }
-
   activeHead.stopGesture()
-  // fire onStart right before audio plays
-  console.log('GOING TO SPEAK AUDIO')
+
   if (gesture) {
-    if (character === 'doctor') {
-      console.log('HERE')
-      head?.playGesture('handup', 1)
-    } else {
-      head1.playGesture(gesture)
-    }
+    activeHead.playGesture(gesture, 1)
   }
-  if (onStart) onStart()
 
-  const markers = []
-  const mtimes = []
+  onStart?.()
 
-  const gesturePool =
-    character === 'doctor'
-      ? ['talkopen', 'rightGesture']
-      : ['talkopen', 'rightGesture']
-
-  const durationMs = audioBuffer.duration * 1000
-
-  if (durationMs > 2500) {
-    const numberOfGestures = Math.min(
-      3,
-      Math.max(1, Math.floor(durationMs / 6000)),
-    )
-
-    const usedTimes = []
-
-    for (let i = 0; i < numberOfGestures; i++) {
-      const minTime = 1200
-      const maxTime = durationMs - 1200
-
-      if (maxTime <= minTime) break
-
-      let time = minTime + Math.random() * (maxTime - minTime)
-
-      const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2500)
-      if (tooClose) continue
-
-      usedTimes.push(time)
-
-      const gesture =
-        gesturePool[Math.floor(Math.random() * gesturePool.length)]
-
-      markers.push(() => {
-        activeHead.playGesture(gesture, 1.6, false, 1200)
-      })
-
-      mtimes.push(time)
-    }
-  }
+  const { markers, mtimes } = createSpeechGestures(activeHead, audioBuffer)
 
   activeHead.speakAudio(
     {
@@ -300,6 +243,49 @@ export async function speakWithLipsync(
   return new Promise((resolve) => {
     setTimeout(resolve, audioBuffer.duration * 1000)
   })
+}
+
+function createSpeechGestures(activeHead, audioBuffer) {
+  const markers = []
+  const mtimes = []
+
+  const gesturePool = ['talkopen', 'rightGesture']
+  const durationMs = audioBuffer.duration * 1000
+
+  if (durationMs <= 2500) {
+    return { markers, mtimes }
+  }
+
+  const numberOfGestures = Math.min(
+    3,
+    Math.max(1, Math.floor(durationMs / 6000)),
+  )
+
+  const usedTimes = []
+
+  for (let i = 0; i < numberOfGestures; i++) {
+    const minTime = 1200
+    const maxTime = durationMs - 1200
+
+    if (maxTime <= minTime) break
+
+    const time = minTime + Math.random() * (maxTime - minTime)
+
+    const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2500)
+    if (tooClose) continue
+
+    usedTimes.push(time)
+
+    const gesture = gesturePool[Math.floor(Math.random() * gesturePool.length)]
+
+    markers.push(() => {
+      activeHead.playGesture(gesture, 1.6, false, 1200)
+    })
+
+    mtimes.push(time)
+  }
+
+  return { markers, mtimes }
 }
 
 export async function speakWithLipsyncStatic(
@@ -364,7 +350,7 @@ export async function speakWithLipsyncStatic(
     })
   }
 
-  if (audioPath === '/intro-voices/doctor-alexIntro-intro.mp3' && gestures) {
+  if (audioPath === '/intro-voices/doctor-alexIntro1-intro.mp3' && gestures) {
     // define word -> gesture mappings here
     const wordGestures = [
       { word: 'hello', gesture: 'handup', dur: 2, transition: 1500 },

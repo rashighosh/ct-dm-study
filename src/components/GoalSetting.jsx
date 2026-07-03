@@ -136,8 +136,9 @@ function CustomGoalForm({
 }
 
 export default function GoalSetting({ onComplete }) {
-  const BASE_URL = 'http://127.0.0.1:8000'
-  // const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+  // const BASE_URL = 'http://127.0.0.1:8000'
+  const BASE_URL =
+    'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
   const [started, setStarted] = useState(false)
   const [selectedGoals, setSelectedGoals] = useState([])
