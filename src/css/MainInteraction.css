@@ -8,7 +8,7 @@
 
 .mi-root {
   position: relative;
-  width: 75%;
+  width: 95%;
   height: 100vh;
   margin: 0 auto;
   padding: 25px;
@@ -336,7 +336,7 @@
 .mi-goals-panel {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: scroll;
   display: flex;
   flex-direction: column;
   border: 1px solid rgb(var(--primary-blue) / 55%);
@@ -611,6 +611,8 @@
   margin: 2px 0 0;
   color: rgb(var(--primary-blue) / 75%);
   font-size: 12px;
+  line-height: normal;
+  font-style: italic;
 }
 
 /* Collaborative suggestion/check-in card */
@@ -1295,6 +1297,7 @@
   font-size: 11.5px;
   cursor: pointer;
   transition: 0.2s ease-in-out;
+  margin: 5px 0;
 }
 
 .mi-nudge-btn:not(:disabled):hover {
@@ -1873,6 +1876,63 @@
 .alex-source-chip {
   border: none;
   cursor: pointer;
+}
+
+/* Collaborative condition additions */
+.mi-collab-question-btn {
+  width: 100%;
+  border: 1px solid rgba(var(--primary-blue));
+  background: rgba(var(--primary-blue) / 50%);
+  color: white;
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mi-collab-question-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.mi-collab-review {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mi-collab-review-section {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mi-collab-review-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgb(var(--primary-blue));
+  line-height: normal;
+}
+
+.mi-collab-note-editor {
+  width: auto;
+  resize: vertical;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 12px;
+  padding: 10px;
+  font: inherit;
+  line-height: 1.4;
+  background: white;
 }
 
 /* -------------------------------------------------------------------------- */

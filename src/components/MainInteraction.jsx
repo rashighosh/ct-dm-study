@@ -283,7 +283,7 @@ export default function MainInteraction() {
   }, [audioReady])
 
   useEffect(() => {
-    if (proactivity !== 'passive' && proactivity !== 'collaborative') return
+    if (proactivity !== 'passive') return
     if (!alexIntroDone) return
 
     const timer = setTimeout(async () => {
@@ -293,21 +293,6 @@ export default function MainInteraction() {
         suggestion = await generateJordanOpeningSuggestion()
       } catch (err) {
         console.log('Opening Jordan suggestion failed:', err)
-      }
-
-      if (proactivity === 'collaborative') {
-        setCollabSuggestion((prev) => {
-          if (prev?.isOpeningSuggestion) return prev
-
-          return {
-            id: uid(),
-            type: 'query',
-            text: "Not sure where to start? Here's a question you could ask.",
-            suggestion,
-            isOpeningSuggestion: true,
-          }
-        })
-        return
       }
 
       setMessages((prev) => {
@@ -499,6 +484,34 @@ export default function MainInteraction() {
     setActiveQueryLoading(false)
   }
 
+  async function handleCollabQueryHelp() {
+    if (isAlexActive) return
+
+    setCollabSuggestion({
+      id: uid(),
+      type: 'query',
+      text: 'Want help thinking of a question to ask Dr. Alex?',
+      suggestion: null,
+      loading: true,
+      source: 'collab_manual_query_help',
+    })
+
+    playGesture('thinking')
+    const suggestion = await generateJordanOpeningSuggestion()
+    playGesture('ready')
+
+    const manualSuggestion = {
+      id: uid(),
+      type: 'query',
+      text: 'Here is a question I would ask based on your goals.',
+      suggestion,
+      source: 'collab_manual_query_help',
+    }
+
+    logJordanSuggestion(manualSuggestion)
+    setCollabSuggestion(manualSuggestion)
+  }
+
   function handleInputChange(value) {
     setInput(value)
   }
@@ -558,7 +571,7 @@ export default function MainInteraction() {
   /* Evaluation/check-in support                                              */
   /* ------------------------------------------------------------------------ */
 
-  function addGoalNote(goalId, noteText, sources = []) {
+  function addGoalNote(goalId, noteText, sources = [], markCovered = true) {
     if (!noteText) return
 
     const savedSources = dedupeSources(sources)
@@ -585,6 +598,12 @@ export default function MainInteraction() {
       ],
     }))
 
+    if (markCovered) {
+      setCoveredGoals((prev) => new Set(prev).add(goalId))
+    }
+  }
+
+  function markGoalCovered(goalId) {
     setCoveredGoals((prev) => new Set(prev).add(goalId))
   }
 
@@ -666,7 +685,9 @@ export default function MainInteraction() {
         forMessageId: alexMsgId,
       }
 
-      showJordanSuggestion(jordanSuggestion)
+      if (proactivity !== 'collaborative') {
+        showJordanSuggestion(jordanSuggestion)
+      }
       return
     }
 
@@ -688,7 +709,9 @@ export default function MainInteraction() {
         forMessageId: alexMsgId,
       }
 
-      showJordanSuggestion(jordanSuggestion)
+      if (proactivity !== 'collaborative') {
+        showJordanSuggestion(jordanSuggestion)
+      }
       return
     }
 
@@ -714,6 +737,25 @@ export default function MainInteraction() {
           },
         }))
       }
+    } else if (proactivity === 'collaborative') {
+      const goalTitle =
+        goalObjects.find((goal) => goal.id === match.goal_id)?.title ||
+        match.goal_id
+
+      showJordanSuggestion({
+        id: uid(),
+        type: 'goal_note',
+        text:
+          evalData.next_step_message ||
+          match.jordan_message ||
+          `I think Dr. Alex may have addressed your goal about ${goalTitle}.`,
+        goalId: match.goal_id,
+        goalTitle,
+        noteToAdd: match.note_to_add || '',
+        sources: dedupeSources(sourcesForTurn),
+        forMessageId: alexMsgId,
+      })
+      return
     } else if (match.note_to_add) {
       addGoalNote(match.goal_id, match.note_to_add, sourcesForTurn)
     }
@@ -1209,6 +1251,12 @@ export default function MainInteraction() {
           onAcceptCollabSuggestion={acceptCollabSuggestion}
           onDismissCollabSuggestion={dismissCollabSuggestion}
           onCollabEvalResponse={handleCollabEvalResponse}
+          onRequestCollabQuestion={handleCollabQueryHelp}
+          onAcceptCollabGoal={markGoalCovered}
+          onSaveCollabNote={(goalId, noteText, sources) =>
+            addGoalNote(goalId, noteText, sources, false)
+          }
+          isAlexActive={isAlexActive}
           pendingGoalNotes={pendingGoalNotes}
           onSavePendingGoalNote={savePendingGoalNote}
           onDismissPendingGoalNote={dismissPendingGoalNote}
@@ -1392,6 +1440,10 @@ function JordanSidebar({
   onAcceptCollabSuggestion,
   onDismissCollabSuggestion,
   onCollabEvalResponse,
+  onRequestCollabQuestion,
+  onAcceptCollabGoal,
+  onSaveCollabNote,
+  isAlexActive,
   pendingGoalNotes,
   onSavePendingGoalNote,
   onDismissPendingGoalNote,
@@ -1424,6 +1476,16 @@ function JordanSidebar({
                   </div>
                 </div>
 
+                <button
+                  type="button"
+                  className="mi-collab-question-btn"
+                  onClick={onRequestCollabQuestion}
+                  disabled={isAlexActive}
+                >
+                  <FontAwesomeIcon icon={faLightbulb} />
+                  Help me think of a question
+                </button>
+
                 {proactivity === 'collaborative' && collabSuggestion && (
                   <CollaborativeSuggestionCard
                     key={collabSuggestion.id}
@@ -1431,6 +1493,9 @@ function JordanSidebar({
                     onAcceptQuery={onAcceptCollabSuggestion}
                     onDismiss={onDismissCollabSuggestion}
                     onEvalResponse={onCollabEvalResponse}
+                    onAcceptGoal={onAcceptCollabGoal}
+                    onSaveNote={onSaveCollabNote}
+                    onOpenSource={onOpenSource}
                   />
                 )}
               </div>
@@ -1551,13 +1616,33 @@ function CollaborativeSuggestionCard({
   onAcceptQuery,
   onDismiss,
   onEvalResponse,
+  onAcceptGoal,
+  onSaveNote,
+  onOpenSource,
 }) {
   const [isExiting, setIsExiting] = useState(false)
+  const [noteDraft, setNoteDraft] = useState(suggestion.noteToAdd || '')
+  const [goalDecision, setGoalDecision] = useState(null)
+  const [noteDecision, setNoteDecision] = useState(null)
   const isQuery = suggestion.type === 'query'
+  const isGoalNote = suggestion.type === 'goal_note'
+  const sources = dedupeSources(suggestion.sources || []).slice(0, 2)
 
   function closeWithAnimation(action) {
     setIsExiting(true)
     setTimeout(action, 220)
+  }
+
+  function handleAcceptGoal() {
+    if (!suggestion.goalId) return
+    onAcceptGoal?.(suggestion.goalId)
+    setGoalDecision('marked')
+  }
+
+  function handleSaveNote() {
+    if (!suggestion.goalId || !noteDraft.trim()) return
+    onSaveNote?.(suggestion.goalId, noteDraft.trim(), suggestion.sources || [])
+    setNoteDecision('saved')
   }
 
   return (
@@ -1568,21 +1653,25 @@ function CollaborativeSuggestionCard({
     >
       <div className="mi-collab-suggestion-card-suggestion">
         <FontAwesomeIcon icon={faLightbulb} />
-        <p>{suggestion.text}</p>
+        <p>
+          {suggestion.loading
+            ? 'Thinking of a helpful question...'
+            : suggestion.text}
+        </p>
       </div>
 
       {isQuery && (
-        <div className="mi-collab-suggestion-quote">
-          {suggestion.suggestion}
-        </div>
-      )}
+        <>
+          <div className="mi-collab-suggestion-quote">
+            {suggestion.loading ? (
+              <em>One moment...</em>
+            ) : (
+              suggestion.suggestion
+            )}
+          </div>
 
-      {suggestion.resolved ? (
-        <span className="mi-nudge-resolution">{suggestion.resolution}</span>
-      ) : (
-        <div className="mi-collab-suggestion-actions">
-          {isQuery ? (
-            <>
+          {!suggestion.loading && (
+            <div className="mi-collab-suggestion-actions">
               <button
                 type="button"
                 className="mi-nudge-btn mi-nudge-btn-primary"
@@ -1598,26 +1687,131 @@ function CollaborativeSuggestionCard({
               >
                 Not now
               </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="mi-nudge-btn mi-nudge-btn-primary"
-                onClick={() => closeWithAnimation(() => onEvalResponse('yes'))}
-              >
-                Yes
-              </button>
-
-              <button
-                type="button"
-                className="mi-nudge-btn"
-                onClick={() => closeWithAnimation(() => onEvalResponse('no'))}
-              >
-                Not quite
-              </button>
-            </>
+            </div>
           )}
+        </>
+      )}
+
+      {isGoalNote && (
+        <div className="mi-collab-review">
+          <div className="mi-collab-review-section">
+            <div className="mi-collab-review-label">Goal progress</div>
+            <p>
+              I think Dr. Alex may have addressed your goal
+              {suggestion.goalTitle ? `: ${suggestion.goalTitle}` : ''}.
+            </p>
+
+            {goalDecision ? (
+              <span className="mi-nudge-resolution">
+                {goalDecision === 'marked' ? 'Marked complete' : 'Left open'}
+              </span>
+            ) : (
+              <div className="mi-collab-suggestion-actions">
+                <button
+                  type="button"
+                  className="mi-nudge-btn mi-nudge-btn-primary"
+                  onClick={handleAcceptGoal}
+                >
+                  Mark complete
+                </button>
+
+                <button
+                  type="button"
+                  className="mi-nudge-btn"
+                  onClick={() => setGoalDecision('open')}
+                >
+                  Not yet
+                </button>
+              </div>
+            )}
+          </div>
+
+          {suggestion.noteToAdd && (
+            <div className="mi-collab-review-section">
+              <div className="mi-collab-review-label">Suggested note</div>
+
+              <textarea
+                className="mi-collab-note-editor"
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                rows={4}
+                disabled={noteDecision === 'saved'}
+              />
+
+              {sources.length > 0 && (
+                <div
+                  className="mi-note-citations"
+                  aria-label="Sources for this note"
+                >
+                  {sources.map((source, index) => (
+                    <button
+                      key={source.id || getSourceKey(source)}
+                      type="button"
+                      className="mi-note-citation"
+                      onClick={() => onOpenSource?.(source)}
+                      title={source.title || source.source || source.file}
+                    >
+                      [{index + 1}] {source.source || 'Source'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {noteDecision ? (
+                <span className="mi-nudge-resolution">
+                  {noteDecision === 'saved' ? 'Note saved' : 'Note dismissed'}
+                </span>
+              ) : (
+                <div className="mi-collab-suggestion-actions">
+                  <button
+                    type="button"
+                    className="mi-nudge-btn mi-nudge-btn-primary"
+                    onClick={handleSaveNote}
+                  >
+                    Save note
+                  </button>
+
+                  <button
+                    type="button"
+                    className="mi-nudge-btn"
+                    onClick={() => setNoteDecision('dismissed')}
+                  >
+                    Dismiss note
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mi-collab-suggestion-actions">
+            <button
+              type="button"
+              className="mi-nudge-btn"
+              onClick={() => closeWithAnimation(onDismiss)}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!isQuery && !isGoalNote && (
+        <div className="mi-collab-suggestion-actions">
+          <button
+            type="button"
+            className="mi-nudge-btn mi-nudge-btn-primary"
+            onClick={() => closeWithAnimation(() => onEvalResponse('yes'))}
+          >
+            Yes
+          </button>
+
+          <button
+            type="button"
+            className="mi-nudge-btn"
+            onClick={() => closeWithAnimation(() => onEvalResponse('no'))}
+          >
+            Not quite
+          </button>
         </div>
       )}
     </div>
