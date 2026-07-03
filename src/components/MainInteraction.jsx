@@ -295,28 +295,20 @@ export default function MainInteraction() {
         console.log('Opening Jordan suggestion failed:', err)
       }
 
-      setMessages((prev) => {
-        const alreadySuggested = prev.some(
-          (message) =>
-            message.from === 'jordan-nudge' &&
-            message.nudgeType === 'query' &&
-            message.isOpeningSuggestion,
-        )
+      const openingSuggestion = {
+        id: uid(),
+        type: 'query',
+        isOpeningSuggestion: true,
+        text: "Here's a question you could ask to get started.",
+        suggestion,
+        source: 'passive_opening_suggestion',
+      }
 
-        if (alreadySuggested) return prev
+      logJordanSuggestion(openingSuggestion)
 
-        return [
-          ...prev,
-          {
-            id: uid(),
-            from: 'jordan-nudge',
-            nudgeType: 'query',
-            type: 'query',
-            isOpeningSuggestion: true,
-            text: "Not sure where to start? Here's a question you could ask.",
-            suggestion,
-          },
-        ]
+      setCollabSuggestion((prev) => {
+        if (prev?.isOpeningSuggestion) return prev
+        return openingSuggestion
       })
     }, 900)
 
@@ -533,12 +525,13 @@ export default function MainInteraction() {
   }
 
   function acceptCollabSuggestion() {
-    if (!collabSuggestion || collabSuggestion.type !== 'query') return
+    if (!collabSuggestion?.suggestion) return
 
     updateTranscript('jordan_suggestion_action', 'used suggestion', {
       action: 'used',
       suggestion_id: collabSuggestion.id,
       suggested_question: collabSuggestion.suggestion,
+      suggestion_type: collabSuggestion.type,
     })
 
     setInput(collabSuggestion.suggestion)
@@ -642,21 +635,10 @@ export default function MainInteraction() {
 
     logJordanSuggestion(suggestion)
 
-    if (proactivity === 'collaborative') {
+    if (proactivity === 'collaborative' || proactivity === 'passive') {
       setCollabSuggestion(suggestion)
       return
     }
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        ...suggestion,
-        from: 'jordan-nudge',
-        nudgeType: suggestion.type,
-        resolved: false,
-        followWithJordan: true,
-      },
-    ])
   }
 
   function handleGoalEvalResult(evalData, alexMsgId, sourcesForTurn = []) {
@@ -738,6 +720,39 @@ export default function MainInteraction() {
         goalTitle,
         noteToAdd: match.note_to_add || '',
         sources: dedupeSources(sourcesForTurn),
+        forMessageId: alexMsgId,
+      })
+      return
+    } else if (proactivity === 'passive') {
+      goodMatches.forEach((goodMatch) => {
+        if (goodMatch.note_to_add) {
+          addGoalNote(goodMatch.goal_id, goodMatch.note_to_add, sourcesForTurn)
+        } else {
+          markGoalCovered(goodMatch.goal_id)
+        }
+      })
+
+      const goalTitle =
+        goalObjects.find((goal) => goal.id === match.goal_id)?.title ||
+        match.goal_id
+
+      showJordanSuggestion({
+        id: uid(),
+        type: 'passive_update',
+        text:
+          evalData.next_step_message ||
+          match.jordan_message ||
+          `I updated your goal about ${goalTitle}.`,
+        goalId: match.goal_id,
+        goalTitle,
+        noteToAdd: match.note_to_add || '',
+        sources: dedupeSources(sourcesForTurn),
+        suggestion:
+          evalData.suggested_goal_question ||
+          (allGoalsCoveredNow
+            ? 'What should I ask my doctor before deciding about a clinical trial?'
+            : 'What else should I know about clinical trials?'),
+        allGoalsCovered: allGoalsCoveredNow,
         forMessageId: alexMsgId,
       })
       return
@@ -1424,10 +1439,7 @@ function JordanSidebar({
   goalNotes,
   onOpenSource,
 }) {
-  if (proactivity === 'passive') return null
-
   const isActive = proactivity === 'active'
-  const isCollaborative = proactivity === 'collaborative'
 
   return (
     <aside className="mi-sidebar mi-sidebar-open">
@@ -1439,7 +1451,7 @@ function JordanSidebar({
           isAlexActive={isAlexActive}
         />
 
-        {isCollaborative && collabSuggestion && (
+        {!isActive && collabSuggestion && (
           <div className="mi-sidebar-suggestions-section">
             <CollaborativeSuggestionCard
               key={collabSuggestion.id}
@@ -1479,11 +1491,18 @@ function JordanSidebarHeader({
   isAlexActive,
 }) {
   const isActive = proactivity === 'active'
+  const isPassive = proactivity === 'passive'
+  const helperText =
+    proactivity === 'passive'
+      ? "I'll track your goals, save notes, attach sources, and suggest questions automatically."
+      : proactivity === 'collaborative'
+        ? "I'll suggest updates, but you decide what to save."
+        : 'Use this space to track your own goals and notes.'
 
   return (
     <div className="mi-collab-jordan-header mi-jordan-sidebar-header">
-      <div className="mi-collab-jordan-header-profile">
-        <div className="mi-collab-jordan-avatar">
+      <div className="mi-jordan-stage-header">
+        <div className="mi-jordan-stage-avatar">
           <div
             className="virtual-companion"
             id="virtualcompanion"
@@ -1491,23 +1510,13 @@ function JordanSidebarHeader({
           />
         </div>
 
-        <div className="mi-collab-jordan-header-info">
+        <div className="mi-jordan-stage-text">
           <h3>Jordan</h3>
-          <p>
-            {isActive
-              ? 'Your goal and notes workspace'
-              : 'Your study companion'}
-          </p>
+          <p>{helperText}</p>
         </div>
       </div>
 
-      <div className="mi-sidebar-mode-note">
-        {isActive
-          ? 'You are in control: you can mark your own goals and take your own notes.'
-          : 'I can suggest ideas and notes, but you have the final say.'}
-      </div>
-
-      {!isActive && (
+      {!isActive && !isPassive && (
         <button
           type="button"
           className="mi-collab-question-btn"
@@ -1536,13 +1545,16 @@ function GoalsSection({
   onOpenSource,
 }) {
   const isActive = proactivity === 'active'
+  const isPassive = proactivity === 'passive'
 
   return (
     <div className="goals-area">
       <div className="sticky-note">
         {isActive
           ? 'Use this space to track your own goals and save notes you want to remember.'
-          : "I'll keep track of your goals below and suggest notes based on your conversation with Dr. Alex."}
+          : isPassive
+            ? "I'll mark goals complete and save notes with sources as you talk with Dr. Alex."
+            : "I'll keep track of your goals below and suggest notes based on your conversation with Dr. Alex."}
       </div>
 
       <div className="mi-goals-header">
@@ -1807,6 +1819,7 @@ function CollaborativeSuggestionCard({
   const [noteDecision, setNoteDecision] = useState(null)
   const isQuery = suggestion.type === 'query'
   const isGoalNote = suggestion.type === 'goal_note'
+  const isPassiveUpdate = suggestion.type === 'passive_update'
   const sources = dedupeSources(suggestion.sources || []).slice(0, 2)
 
   function closeWithAnimation(action) {
@@ -1871,6 +1884,73 @@ function CollaborativeSuggestionCard({
             </div>
           )}
         </>
+      )}
+
+      {isPassiveUpdate && (
+        <div className="mi-collab-review mi-passive-review">
+          <div className="mi-passive-auto-status">
+            <FontAwesomeIcon icon={faCheck} />
+            <span>
+              I marked {suggestion.goalTitle || 'this goal'} complete
+              {suggestion.noteToAdd ? ' and saved a note.' : '.'}
+            </span>
+          </div>
+
+          {suggestion.noteToAdd && (
+            <div className="mi-collab-review-section">
+              <div className="mi-collab-review-label">Saved note</div>
+              <div className="mi-passive-saved-note">
+                {suggestion.noteToAdd}
+              </div>
+
+              {sources.length > 0 && (
+                <div
+                  className="mi-note-citations"
+                  aria-label="Sources for this note"
+                >
+                  {sources.map((source, index) => (
+                    <button
+                      key={source.id || getSourceKey(source)}
+                      type="button"
+                      className="mi-note-citation"
+                      onClick={() => onOpenSource?.(source)}
+                      title={source.title || source.source || source.file}
+                    >
+                      [{index + 1}] {source.source || 'Source'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {suggestion.suggestion && (
+            <div className="mi-collab-review-section">
+              <div className="mi-collab-review-label">Suggested question</div>
+              <div className="mi-collab-suggestion-quote">
+                {suggestion.suggestion}
+              </div>
+
+              <div className="mi-collab-suggestion-actions">
+                <button
+                  type="button"
+                  className="mi-nudge-btn mi-nudge-btn-primary"
+                  onClick={onAcceptQuery}
+                >
+                  Use this
+                </button>
+
+                <button
+                  type="button"
+                  className="mi-nudge-btn"
+                  onClick={() => closeWithAnimation(onDismiss)}
+                >
+                  Not now
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {isGoalNote && (
@@ -1976,7 +2056,7 @@ function CollaborativeSuggestionCard({
         </div>
       )}
 
-      {!isQuery && !isGoalNote && (
+      {!isQuery && !isGoalNote && !isPassiveUpdate && (
         <div className="mi-collab-suggestion-actions">
           <button
             type="button"
@@ -2182,21 +2262,6 @@ function MessageThread({
 
   return (
     <div className="mi-messages" ref={messagesRef}>
-      {proactivity === 'passive' && (
-        <div
-          ref={passiveJordanRef}
-          className={`mi-passive-jordan-floating ${
-            activeNudge ? 'mi-passive-jordan-active' : ''
-          }`}
-        >
-          <div
-            className="virtual-companion"
-            id="virtualcompanion"
-            ref={companionRef}
-          />
-        </div>
-      )}
-
       {messages.map((message) => {
         if (message.from === 'jordan-nudge') {
           return (
