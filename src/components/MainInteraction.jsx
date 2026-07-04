@@ -633,16 +633,12 @@ export default function MainInteraction() {
 
   function showJordanSuggestion(suggestion) {
     if (proactivity === 'active') {
-      // Active condition: Jordan does not generate or surface suggestions.
       return
     }
 
     logJordanSuggestion(suggestion)
 
-    if (proactivity === 'collaborative' || proactivity === 'passive') {
-      setCollabSuggestion(suggestion)
-      return
-    }
+    setCollabSuggestion(suggestion)
   }
 
   function handleGoalEvalResult(evalData, alexMsgId, sourcesForTurn = []) {
@@ -904,18 +900,6 @@ export default function MainInteraction() {
     setActiveQuerySuggestion('')
     setActiveQueryLoading(false)
 
-    if (proactivity === 'passive') {
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.from === 'jordan-nudge' && !message.resolved
-            ? { ...message, resolved: true, resolution: 'dismissed' }
-            : message,
-        ),
-      )
-    } else {
-      clearUnresolvedJordanNudges()
-    }
-
     setMessages((prev) => [
       ...prev,
       {
@@ -987,7 +971,6 @@ export default function MainInteraction() {
       await speakWithLipsync(data.answer, 'doctor', null, () => {
         setShowCards(false)
         playGesture('stopSwiping')
-        playGesture('stopCompanionGesture')
         setMessages((prev) => [
           ...prev,
           {
@@ -1004,6 +987,7 @@ export default function MainInteraction() {
         }, 5000)
       })
 
+      playGesture('stopCompanionGesture')
       clearTimeout(talkingPointsTimer)
       setIsAlexActive(false)
       setShowTalkingPoints(false)
@@ -1027,19 +1011,6 @@ export default function MainInteraction() {
       setIsAlexActive(false)
       setAlexTalkingPoints([])
     }
-  }
-
-  function clearUnresolvedJordanNudges() {
-    setMessages((prev) =>
-      prev.filter(
-        (message) =>
-          !(
-            message.from === 'jordan-nudge' &&
-            !message.resolved &&
-            ['query', 'eval'].includes(message.nudgeType)
-          ),
-      ),
-    )
   }
 
   function savePendingGoalNote(goalId) {
@@ -1474,6 +1445,7 @@ function JordanSidebar({
               onAcceptGoal={onAcceptCollabGoal}
               onSaveNote={onSaveCollabNote}
               onOpenSource={onOpenSource}
+              proactivity={proactivity}
             />
           </div>
         )}
@@ -1856,9 +1828,11 @@ function CollaborativeSuggestionCard({
   onAcceptGoal,
   onSaveNote,
   onOpenSource,
+  proactivity,
 }) {
   const [requestedExtraSuggestion, setRequestedExtraSuggestion] =
     useState(false)
+  const isPassive = proactivity === 'passive'
   const [isExiting, setIsExiting] = useState(false)
   const [noteDraft, setNoteDraft] = useState(suggestion.noteToAdd || '')
   const [goalDecision, setGoalDecision] = useState(null)
@@ -2015,7 +1989,48 @@ function CollaborativeSuggestionCard({
         </div>
       )}
 
-      {isGoalNote && (
+      {isGoalNote && isPassive && (
+        <div className="mi-collab-suggestion-next-suggestion">
+          <div className="mi-collab-suggestion-card-suggestion">
+            <FontAwesomeIcon icon={faLightbulb} />
+            <p>{suggestion.text || "Here's another question you could ask:"}</p>
+          </div>
+
+          <div className="mi-collab-suggestion-quote">
+            {suggestion.suggestion ||
+              'What else should I know about clinical trials?'}
+          </div>
+
+          {!isResolved ? (
+            <div className="mi-collab-suggestion-actions">
+              <button
+                type="button"
+                className="mi-nudge-btn mi-nudge-btn-primary"
+                onClick={onAcceptQuery}
+              >
+                Use this
+              </button>
+
+              <button
+                type="button"
+                className="mi-nudge-btn"
+                onClick={onDismiss}
+              >
+                Not now
+              </button>
+            </div>
+          ) : (
+            <div
+              className={`mi-suggestion-status ${wasUsed ? 'used' : 'dismissed'}`}
+            >
+              <FontAwesomeIcon icon={wasUsed ? faCheck : faBan} />
+              {wasUsed ? 'Question added to your message' : 'Dismissed'}
+            </div>
+          )}
+        </div>
+      )}
+
+      {isGoalNote && !isPassive && (
         <div className="mi-collab-review">
           <div className="mi-collab-review-section">
             {goalDecision ? (
@@ -2040,23 +2055,25 @@ function CollaborativeSuggestionCard({
                   </span>
                 </p>
 
-                <div className="mi-collab-suggestion-actions">
-                  <button
-                    type="button"
-                    className="mi-nudge-btn mi-nudge-btn-primary"
-                    onClick={handleAcceptGoal}
-                  >
-                    Mark complete
-                  </button>
+                {!isPassive && (
+                  <div className="mi-collab-suggestion-actions">
+                    <button
+                      type="button"
+                      className="mi-nudge-btn mi-nudge-btn-primary"
+                      onClick={handleAcceptGoal}
+                    >
+                      Mark complete
+                    </button>
 
-                  <button
-                    type="button"
-                    className="mi-nudge-btn"
-                    onClick={() => setGoalDecision('open')}
-                  >
-                    Not yet
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      className="mi-nudge-btn"
+                      onClick={() => setGoalDecision('open')}
+                    >
+                      Not yet
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -2089,6 +2106,7 @@ function CollaborativeSuggestionCard({
                     value={noteDraft}
                     onChange={(e) => setNoteDraft(e.target.value)}
                     rows={4}
+                    readOnly={isPassive}
                   />
 
                   {sources.length > 0 && (
@@ -2110,29 +2128,31 @@ function CollaborativeSuggestionCard({
                     </div>
                   )}
 
-                  <div className="mi-collab-suggestion-actions">
-                    <button
-                      type="button"
-                      className="mi-nudge-btn mi-nudge-btn-primary"
-                      onClick={handleSaveNote}
-                    >
-                      Save note
-                    </button>
+                  {!isPassive && (
+                    <div className="mi-collab-suggestion-actions">
+                      <button
+                        type="button"
+                        className="mi-nudge-btn mi-nudge-btn-primary"
+                        onClick={handleSaveNote}
+                      >
+                        Save note
+                      </button>
 
-                    <button
-                      type="button"
-                      className="mi-nudge-btn"
-                      onClick={() => setNoteDecision('dismissed')}
-                    >
-                      Dismiss note
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        className="mi-nudge-btn"
+                        onClick={() => setNoteDecision('dismissed')}
+                      >
+                        Dismiss note
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>
           )}
 
-          {requestedExtraSuggestion ? (
+          {requestedExtraSuggestion || isPassive ? (
             <div className="mi-collab-suggestion-next-suggestion">
               <div className="mi-collab-suggestion-card-suggestion">
                 <FontAwesomeIcon icon={faLightbulb} />
@@ -2144,34 +2164,35 @@ function CollaborativeSuggestionCard({
                   'What else should I know about clinical trials?'}
               </div>
 
-              {!isResolved ? (
-                <div className="mi-collab-suggestion-actions">
-                  <button
-                    type="button"
-                    className="mi-nudge-btn mi-nudge-btn-primary"
-                    onClick={onAcceptQuery}
-                  >
-                    Use this
-                  </button>
+              {!isPassive &&
+                (!isResolved ? (
+                  <div className="mi-collab-suggestion-actions">
+                    <button
+                      type="button"
+                      className="mi-nudge-btn mi-nudge-btn-primary"
+                      onClick={onAcceptQuery}
+                    >
+                      Use this
+                    </button>
 
-                  <button
-                    type="button"
-                    className="mi-nudge-btn"
-                    onClick={() => setRequestedExtraSuggestion(false)}
+                    <button
+                      type="button"
+                      className="mi-nudge-btn"
+                      onClick={() => setRequestedExtraSuggestion(false)}
+                    >
+                      Not now
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className={`mi-suggestion-status ${
+                      wasUsed ? 'used' : 'dismissed'
+                    }`}
                   >
-                    Not now
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className={`mi-suggestion-status ${
-                    wasUsed ? 'used' : 'dismissed'
-                  }`}
-                >
-                  <FontAwesomeIcon icon={wasUsed ? faCheck : faBan} />
-                  {wasUsed ? 'Question added to your message' : 'Dismissed'}
-                </div>
-              )}
+                    <FontAwesomeIcon icon={wasUsed ? faCheck : faBan} />
+                    {wasUsed ? 'Question added to your message' : 'Dismissed'}
+                  </div>
+                ))}
             </div>
           ) : (
             <div className="mi-collab-review-section">
