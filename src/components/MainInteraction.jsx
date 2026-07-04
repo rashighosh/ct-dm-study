@@ -97,6 +97,9 @@ export default function MainInteraction() {
   const previousJordanSuggestions = useRef(new Set())
   const introCueTimers = useRef([])
 
+  const [showCollabQuestionPrompt, setShowCollabQuestionPrompt] =
+    useState(false)
+  const [collabQuestionPromptText, setCollabQuestionPromptText] = useState(null)
   const [activeSourcePopout, setActiveSourcePopout] = useState(null)
   const [tutorialIndex, setTutorialIndex] = useState(0)
   const [showTalkingPoints, setShowTalkingPoints] = useState(false)
@@ -485,10 +488,12 @@ export default function MainInteraction() {
   async function handleCollabQueryHelp() {
     if (isAlexActive) return
 
+    setShowCollabQuestionPrompt(false)
+    setCollabQuestionPromptText(null)
     setCollabSuggestion({
       id: uid(),
       type: 'query',
-      text: 'Want help thinking of a question to ask Dr. Alex?',
+      text: 'Want help thinking of a question to ask Alex?',
       suggestion: null,
       loading: true,
       source: 'collab_manual_query_help',
@@ -601,7 +606,11 @@ export default function MainInteraction() {
   }
 
   function markGoalCovered(goalId) {
-    setCoveredGoals((prev) => new Set(prev).add(goalId))
+    setCoveredGoals((prev) => {
+      const next = new Set(prev)
+      next.add(goalId)
+      return next
+    })
   }
 
   function toggleGoalCovered(goalId) {
@@ -644,22 +653,39 @@ export default function MainInteraction() {
   function handleGoalEvalResult(evalData, alexMsgId, sourcesForTurn = []) {
     const matches = evalData.matches || []
 
-    if (matches.length === 0) {
-      const allCovered = evalData.all_goals_covered_message
+    if (proactivity === 'collaborative' && allGoalsCovered) {
+      setCollabSuggestion(null)
+      setCollabQuestionPromptText(
+        evalData.all_goals_covered_message ||
+          'Looks like we covered your goals, but we can keep exploring!',
+      )
+      setShowCollabQuestionPrompt(true)
+      return
+    }
 
-      const jordanSuggestion = {
-        id: uid(),
-        type: 'query',
-        text:
-          evalData.all_goals_covered_message ||
-          evalData.no_match_jordan_message ||
-          "That didn't seem connected to your goals yet. You could ask:",
-        forMessageId: alexMsgId,
+    if (matches.length === 0) {
+      if (proactivity === 'collaborative') {
+        setCollabSuggestion(null)
+        setCollabQuestionPromptText("That didn't seem connected to your goals.")
+        setShowCollabQuestionPrompt(true)
+        return
       }
 
       if (proactivity === 'passive') {
-        showJordanSuggestion(jordanSuggestion)
+        showJordanSuggestion({
+          id: uid(),
+          type: 'query',
+          text:
+            evalData.all_goals_covered_message ||
+            evalData.no_match_jordan_message ||
+            "That didn't seem connected to your goals yet. You could ask:",
+          suggestion:
+            evalData.suggested_goal_question ||
+            'What else should I ask about clinical trials?',
+          forMessageId: alexMsgId,
+        })
       }
+
       return
     }
 
@@ -668,22 +694,30 @@ export default function MainInteraction() {
     )
 
     if (goodMatches.length === 0) {
-      const jordanSuggestion = {
-        id: uid(),
-        type: 'query',
-        text:
-          evalData.next_step_message ||
-          evalData.no_match_jordan_message ||
-          "That didn't fully answer your goal. You could try asking:",
-        suggestion:
-          evalData.suggested_goal_question ||
-          'What should I ask next about my clinical trial goals?',
-        forMessageId: alexMsgId,
+      if (proactivity === 'collaborative') {
+        setCollabSuggestion(null)
+        setCollabQuestionPromptText("I'm not sure Alex fully answered that.")
+        setShowCollabQuestionPrompt(true)
+        return
       }
 
       if (proactivity === 'passive') {
-        showJordanSuggestion(jordanSuggestion)
+        showJordanSuggestion({
+          id: uid(),
+          type: 'query',
+          text:
+            evalData.next_step_message ||
+            evalData.no_match_jordan_message ||
+            matches[0]?.jordan_message ||
+            "I'm not sure Alex fully answered that yet. You could try asking:",
+          suggestion:
+            evalData.suggested_goal_question ||
+            matches[0]?.suggested_goal_question ||
+            'What should I ask next about my clinical trial goals?',
+          forMessageId: alexMsgId,
+        })
       }
+
       return
     }
 
@@ -899,6 +933,8 @@ export default function MainInteraction() {
     setActiveJordanSuggestion(null)
     setActiveQuerySuggestion('')
     setActiveQueryLoading(false)
+    setShowCollabQuestionPrompt(false)
+    setCollabQuestionPromptText(null)
 
     setMessages((prev) => [
       ...prev,
@@ -1137,7 +1173,7 @@ export default function MainInteraction() {
               <span>Your goals</span>
               <div className="sticky-note">
                 I'll keep track of your goals below and add notes based on your
-                conversation with Dr. Alex as we go!
+                conversation with Alex as we go!
               </div>
               <button type="button" onClick={closeJordanPopup}>
                 <FontAwesomeIcon icon={faXmark} />
@@ -1227,6 +1263,8 @@ export default function MainInteraction() {
           onOpenSource={setActiveSourcePopout}
           hasSentFirstMessage={hasSentFirstMessage}
           alexIntroDone={alexIntroDone}
+          showCollabQuestionPrompt={showCollabQuestionPrompt}
+          collabQuestionPromptText={collabQuestionPromptText}
         />
 
         <section className="mi-chat-card fade-in-up">
@@ -1418,6 +1456,8 @@ function JordanSidebar({
   onOpenSource,
   hasSentFirstMessage,
   alexIntroDone,
+  showCollabQuestionPrompt,
+  collabQuestionPromptText,
 }) {
   const isActive = proactivity === 'active'
 
@@ -1432,6 +1472,8 @@ function JordanSidebar({
           collabSuggestion={collabSuggestion}
           hasSentFirstMessage={hasSentFirstMessage}
           alexIntroDone={alexIntroDone}
+          showCollabQuestionPrompt={showCollabQuestionPrompt}
+          collabQuestionPromptText={collabQuestionPromptText}
         />
 
         {!isActive && collabSuggestion && (
@@ -1477,6 +1519,8 @@ function JordanSidebarHeader({
   collabSuggestion,
   hasSentFirstMessage,
   alexIntroDone,
+  showCollabQuestionPrompt,
+  collabQuestionPromptText,
 }) {
   const isActive = proactivity === 'active'
   const isPassive = proactivity === 'passive'
@@ -1508,12 +1552,12 @@ function JordanSidebarHeader({
         !isAlexActive &&
         !isPassive &&
         alexIntroDone &&
-        !hasSentFirstMessage &&
+        (!hasSentFirstMessage || showCollabQuestionPrompt) &&
         !collabSuggestion && (
           <div className="mi-collab-question-btn">
             <p>
               <FontAwesomeIcon icon={faLightbulb} />
-              <span>Not sure what to ask?</span>
+              <span>{collabQuestionPromptText || 'Not sure what to ask?'}</span>
             </p>
 
             <button
@@ -1553,8 +1597,8 @@ function GoalsSection({
         {isActive
           ? 'Use this space to track your own goals and save notes you want to remember.'
           : isPassive
-            ? "I'll mark goals complete and save notes with sources as you talk with Dr. Alex."
-            : "I'll keep track of your goals below and suggest notes based on your conversation with Dr. Alex."}
+            ? "I'll mark goals complete and save notes with sources as you talk with Alex."
+            : "I'll keep track of your goals below and suggest notes based on your conversation with Alex."}
       </div>
 
       <div className="mi-goals-header">
@@ -1730,7 +1774,7 @@ function ActiveNoteComposer({
 
     if (!noteText.trim() && selectedSources.length === 0) return
 
-    const textToSave = noteText.trim() || 'Saved Dr. Alex resource.'
+    const textToSave = noteText.trim() || 'Saved Alex resource.'
     onAddManualNote?.(textToSave, selectedSources)
     setNoteText('')
     setSelectedSourceKeys(new Set())
@@ -1762,7 +1806,7 @@ function ActiveNoteComposer({
 
       {sources.length > 0 && (
         <div className="mi-active-source-picker">
-          <span>Attach resources from Dr. Alex's last answer:</span>
+          <span>Attach resources from Alex's last answer:</span>
           {sources.map((source, index) => {
             const key = getSourceKey(source)
             const selected = selectedSourceKeys.has(key)
@@ -1850,7 +1894,11 @@ function CollaborativeSuggestionCard({
   }
 
   function handleAcceptGoal() {
-    if (!suggestion.goalId) return
+    if (!suggestion.goalId) {
+      console.warn('Missing goalId on suggestion:', suggestion)
+      return
+    }
+
     onAcceptGoal?.(suggestion.goalId)
     setGoalDecision('marked')
   }
@@ -2260,7 +2308,7 @@ function AlexHeader({
 
         <div className="alex-title-area">
           <span className="mi-eyebrow">Chatting with</span>
-          <h2>Dr. Alex</h2>
+          <h2>Alex</h2>
         </div>
 
         {introCue?.type === 'goals-review' && (
@@ -2452,7 +2500,7 @@ function ChatMessage({ message }) {
   return (
     <div className={`mi-msg mi-msg-${message.from}`}>
       <span className="mi-msg-sender">
-        {message.from === 'alex' ? 'Dr. Alex' : 'You'}
+        {message.from === 'alex' ? 'Alex' : 'You'}
       </span>
 
       <div className="mi-msg-bubble">{message.text}</div>
@@ -2487,8 +2535,8 @@ function ChatInput({
           onFocus={onFocus}
           placeholder={
             disabled
-              ? 'Please wait while Dr. Alex is speaking...'
-              : 'Type your message to Dr. Alex here...'
+              ? 'Please wait while Alex is speaking...'
+              : 'Type your message to Alex here...'
           }
           rows={3}
           disabled={disabled}
@@ -2572,7 +2620,7 @@ function HistoryModal({ messages, onClose }) {
             >
               <span className="history-msg-sender">
                 {message.from === 'alex'
-                  ? 'Dr. Alex'
+                  ? 'Alex'
                   : message.from === 'jordan-nudge'
                     ? 'Jordan'
                     : 'You'}
