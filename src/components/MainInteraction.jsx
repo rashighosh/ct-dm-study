@@ -1490,6 +1490,7 @@ function JordanSidebar({
           onAddManualNote={onAddManualNote}
           availableSources={availableSources}
           onOpenSource={onOpenSource}
+          isAlexActive={isAlexActive}
         />
       </div>
     </aside>
@@ -1512,7 +1513,7 @@ function JordanSidebarHeader({
       ? "I'll track your goals, save notes, attach sources, and suggest questions automatically."
       : proactivity === 'collaborative'
         ? 'I can help suggest questions and notes, but you have the final say.'
-        : 'Use this space to track your own goals and notes.'
+        : 'Use the space below to track your own goals and notes.'
 
   return (
     <div className="mi-collab-jordan-header mi-jordan-sidebar-header">
@@ -1569,6 +1570,7 @@ function GoalsSection({
   onAddManualNote,
   availableSources,
   onOpenSource,
+  isAlexActive = false,
 }) {
   const isActive = proactivity === 'active'
   const isPassive = proactivity === 'passive'
@@ -1591,7 +1593,11 @@ function GoalsSection({
       {goalObjects.length === 0 ? (
         <p className="mi-goals-empty">No goals selected yet.</p>
       ) : (
-        <div className="mi-goals-list">
+        <div
+          className={`mi-goals-list ${
+            isActive && isAlexActive ? 'mi-goals-list-disabled' : ''
+          }`}
+        >
           {goalObjects.map((goal) => (
             <GoalChip
               key={goal.id}
@@ -1609,6 +1615,7 @@ function GoalsSection({
               }
               availableSources={availableSources}
               onOpenSource={onOpenSource}
+              disabled={isActive && isAlexActive}
             />
           ))}
         </div>
@@ -1630,6 +1637,7 @@ function GoalChip({
   onAddManualNote,
   availableSources = [],
   onOpenSource,
+  disabled = false,
 }) {
   const isActive = proactivity === 'active'
 
@@ -1648,6 +1656,7 @@ function GoalChip({
           type="button"
           className={`mi-active-goal-toggle ${covered ? 'is-covered' : ''}`}
           onClick={onToggleGoalCovered}
+          disabled={disabled}
         >
           {covered ? 'Reopen' : 'Mark complete'}
         </button>
@@ -1681,6 +1690,7 @@ function GoalChip({
           availableSources={availableSources}
           onAddManualNote={onAddManualNote}
           onOpenSource={onOpenSource}
+          disabled={disabled}
         />
       )}
 
@@ -1720,6 +1730,7 @@ function ActiveNoteComposer({
   availableSources = [],
   onAddManualNote,
   onOpenSource,
+  disabled = false,
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [noteText, setNoteText] = useState('')
@@ -1740,6 +1751,7 @@ function ActiveNoteComposer({
   }
 
   function handleSave() {
+    if (disabled) return
     const selectedSources = sources.filter((source) =>
       selectedSourceKeys.has(getSourceKey(source)),
     )
@@ -1759,6 +1771,7 @@ function ActiveNoteComposer({
         type="button"
         className="mi-active-add-note-btn"
         onClick={() => setIsOpen(true)}
+        disabled={disabled}
       >
         Add my own note
       </button>
@@ -1772,6 +1785,7 @@ function ActiveNoteComposer({
         onChange={(e) => setNoteText(e.target.value)}
         placeholder="Write a note for yourself..."
         rows={3}
+        disabled={disabled}
       />
 
       {sources.length > 0 && (
@@ -1788,6 +1802,7 @@ function ActiveNoteComposer({
                     type="checkbox"
                     checked={selected}
                     onChange={() => toggleSource(source)}
+                    disabled={disabled}
                   />
                   [{index + 1}] {source.source || 'Source'}
                 </label>
@@ -1796,6 +1811,7 @@ function ActiveNoteComposer({
                   type="button"
                   className="mi-active-source-preview"
                   onClick={() => onOpenSource?.(source)}
+                  disabled={disabled}
                 >
                   Preview
                 </button>
@@ -1810,6 +1826,7 @@ function ActiveNoteComposer({
           type="button"
           className="mi-nudge-btn mi-nudge-btn-primary"
           onClick={handleSave}
+          disabled={disabled}
         >
           Save note
         </button>
@@ -1817,6 +1834,7 @@ function ActiveNoteComposer({
         <button
           type="button"
           className="mi-nudge-btn"
+          disabled={disabled}
           onClick={() => {
             setNoteText('')
             setSelectedSourceKeys(new Set())

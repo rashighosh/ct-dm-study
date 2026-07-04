@@ -878,6 +878,11 @@
   transform: scale(0.995);
 }
 
+.mi-goals-list-disabled {
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+}
+
 .gs-row-text {
   display: flex;
   flex-direction: column;

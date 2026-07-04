@@ -90,7 +90,7 @@
     color 0.15s;
 }
 
-.mi-proactivity-btn:hover {
+.mi-proactivity-btn:not(:disabled):hover {
   color: #2c2c2a;
 }
 
@@ -119,7 +119,7 @@
   transition: 0.2s ease-in-out;
 }
 
-.history-btn:hover {
+.history-btn:not(:disabled):hover {
   background: #f0ede6;
   color: #2c2c2a;
 }
@@ -1494,7 +1494,7 @@
   margin: 0 3px;
 }
 
-.mi-passive-goals-link:hover {
+.mi-passive-goals-link:not(:disabled):hover {
   transform: none;
   font-weight: 700;
 }
@@ -1662,7 +1662,7 @@
   transition: background 0.15s;
 }
 
-.history-close-btn:hover {
+.history-close-btn:not(:disabled):hover {
   background: #f0ede6;
   color: #2c2c2a;
 }
@@ -1867,7 +1867,7 @@
   height: 2.8em;
 }
 
-.tutorial-button:hover {
+.tutorial-button:not(:disabled):hover {
   background: linear-gradient(
     135deg,
     rgba(var(--primary-purple)) 0%,
@@ -1959,7 +1959,7 @@
   cursor: pointer;
 }
 
-.mi-note-citation:hover {
+.mi-note-citation:not(:disabled):hover {
   background: rgb(var(--primary-blue) / 8%);
 }
 
@@ -2153,11 +2153,11 @@
   padding: 6px 10px;
   font-size: 11.5px;
   font-weight: 700;
-  cursor: pointer;
 }
 
-.mi-active-goal-toggle:hover {
+.mi-active-goal-toggle:not(:disabled):hover {
   background: rgb(var(--primary-blue) / 8%);
+  cursor: pointer;
 }
 
 .mi-active-goal-toggle.is-covered {
@@ -2174,11 +2174,11 @@
   padding: 8px 10px;
   font-size: 12px;
   font-weight: 700;
-  cursor: pointer;
 }
 
-.mi-active-add-note-btn:hover {
+.mi-active-add-note-btn:not(:disabled):hover {
   background: rgb(var(--primary-blue) / 7%);
+  cursor: pointer;
 }
 
 .mi-active-note-composer {
