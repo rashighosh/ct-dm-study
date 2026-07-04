@@ -89,15 +89,21 @@ export default function NotesReview() {
     return (
       <div className="start-overlay">
         <div className="start-overlay-content">
-          <h2>One last thing!</h2>
-          <p>Click below to enable audio for Dr. Alex and Jordan's farewell.</p>
-
-          <button
-            className="cssbuttons-io-button"
-            onClick={() => setAudioReady(true)}
-          >
-            Continue
-          </button>
+          <div className="information-notes">
+            <p>
+              Before continuing to the post survey, Alex and Jordan have some
+              resources they'd like to share with you.
+            </p>
+            <button
+              className="cssbuttons-io-button"
+              onClick={() => setAudioReady(true)}
+            >
+              Continue
+              <span className="icon">
+                <FontAwesomeIcon icon={faArrowRight} size="xs" />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     )

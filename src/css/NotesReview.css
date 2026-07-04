@@ -16,6 +16,22 @@
   margin: 15px 0 25px;
 }
 
+.start-overlay-content .information-notes {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 3rem;
+  border-radius: 35px;
+  width: 55%;
+  margin: 0 auto;
+}
+
+.start-overlay-content .information-notes p {
+  font-size: 25px;
+}
+
 .nr-back-btn {
   border: none;
   background: white;
@@ -119,7 +135,7 @@
 }
 
 .nr-header-text p {
-  margin: 0;
+  margin-top: 15px;
   color: #667085;
 }
 
