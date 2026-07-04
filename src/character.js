@@ -162,6 +162,11 @@ export async function lookright() {
   head1?.playGesture('lookright', Infinity, true, 1500)
 }
 
+export async function lookleft() {
+  head1?.stopGesture(1500)
+  head1?.playGesture('lookright', Infinity, false, 1500)
+}
+
 export async function indexFingerRaise() {
   head1?.stopGesture(1500)
   head1?.playGesture('indexFingerRaise', Infinity, false, 1500)
@@ -353,7 +358,8 @@ export async function speakWithLipsyncStatic(
   if (audioPath === '/intro-voices/doctor-alexIntro1-intro.mp3' && gestures) {
     // define word -> gesture mappings here
     const wordGestures = [
-      { word: 'hello', gesture: 'handup', dur: 2, transition: 1500 },
+      { word: 'hi', gesture: 'handup', dur: 2, transition: 1500 },
+      { word: 'reminder', gesture: 'rightGesture', dur: 2, transition: 1500 },
       { word: 'choices', gesture: 'talkopen', dur: 2, transition: 1500 },
       { word: 'help', gesture: 'rightGesture', dur: 2, transition: 1500 },
       { word: 'think', gesture: 'talkopen', dur: 2, transition: 1500 },
@@ -483,12 +489,14 @@ export const gestures = {
   lookup,
   lookdown,
   lookright,
+  lookleft,
   indexFingerRaise,
   headNod,
   startSwiping,
   stopSwiping,
   wave,
   rightGesture,
+  stopCompanionGesture,
   // add more here
 }
 

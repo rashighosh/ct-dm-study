@@ -865,6 +865,11 @@
   font-family: inherit;
 }
 
+.gs-row:disabled,
+.gs-row:disabled * {
+  cursor: default;
+}
+
 .gs-row:hover {
   border-color: #c9c4b6;
 }

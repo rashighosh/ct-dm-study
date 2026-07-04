@@ -15,6 +15,7 @@ import {
   faObjectGroup,
   faListCheck,
   faArrowRight,
+  faPenToSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -124,6 +125,8 @@ export default function MainInteraction() {
   const [messages, setMessages] = useState([])
   const [transcript, setTranscript] = useState([])
 
+  const hasSentFirstMessage = messages.some((m) => m.from === 'user')
+
   const participantId = goals?.participantId || 'test-participant'
 
   const goalLabels = goalObjects.map((goal) => goal.title)
@@ -207,6 +210,7 @@ export default function MainInteraction() {
 
         setIsAlexActive(true)
         playAlexIntroCues()
+        playGesture('lookleft')
 
         await speakWithLipsyncStatic(
           '/intro-voices/doctor-alexIntro1-intro.mp3',
@@ -232,6 +236,7 @@ export default function MainInteraction() {
           intro_part: 'static',
         })
 
+        clearAlexIntroCues()
         setAlexIntroCue({
           type: 'goals-review',
         })
@@ -272,7 +277,7 @@ export default function MainInteraction() {
           ]),
         )
 
-        clearAlexIntroCues()
+        playGesture('stopCompanionGesture')
         setIsAlexActive(false)
         setAlexIntroDone(true)
       } catch (err) {
@@ -336,6 +341,7 @@ export default function MainInteraction() {
     navigate('/notes-review', {
       state: {
         participantId,
+        condition: goals?.condition,
         goalObjects,
         goalLabels,
         goalNotes,
@@ -652,11 +658,6 @@ export default function MainInteraction() {
           evalData.all_goals_covered_message ||
           evalData.no_match_jordan_message ||
           "That didn't seem connected to your goals yet. You could ask:",
-        suggestion:
-          evalData.suggested_goal_question ||
-          (allCovered
-            ? 'What should I ask my doctor before deciding about a clinical trial?'
-            : 'What else should I know about clinical trials?'),
         forMessageId: alexMsgId,
       }
 
@@ -713,11 +714,16 @@ export default function MainInteraction() {
         text:
           evalData.next_step_message ||
           match.jordan_message ||
-          `I think Dr. Alex may have addressed your goal about ${goalTitle}.`,
+          `I think Alex <b>may have addressed your goal</b> about ${goalTitle}. Should we mark it as complete?`,
         goalId: match.goal_id,
         goalTitle,
         noteToAdd: match.note_to_add || '',
         sources: dedupeSources(sourcesForTurn),
+        suggestion:
+          evalData.suggested_goal_question ||
+          (allGoalsCoveredNow
+            ? 'What should I ask my doctor before deciding about a clinical trial?'
+            : 'What else should I know about clinical trials?'),
         forMessageId: alexMsgId,
       })
       return
@@ -736,11 +742,11 @@ export default function MainInteraction() {
 
       showJordanSuggestion({
         id: uid(),
-        type: 'passive_update',
+        type: 'goal_note',
         text:
           evalData.next_step_message ||
           match.jordan_message ||
-          `I updated your goal about ${goalTitle}.`,
+          `I think Alex <b>may have addressed your goal</b> about ${goalTitle}. Should we mark it as complete?`,
         goalId: match.goal_id,
         goalTitle,
         noteToAdd: match.note_to_add || '',
@@ -750,7 +756,6 @@ export default function MainInteraction() {
           (allGoalsCoveredNow
             ? 'What should I ask my doctor before deciding about a clinical trial?'
             : 'What else should I know about clinical trials?'),
-        allGoalsCovered: allGoalsCoveredNow,
         forMessageId: alexMsgId,
       })
       return
@@ -891,6 +896,7 @@ export default function MainInteraction() {
     setShowTalkingPoints(false)
     setIsAlexActive(true)
     playGesture('startSwiping')
+    playGesture('lookleft')
     setShowCards(true)
     setAlexSources([])
     clearJordanUI()
@@ -967,18 +973,6 @@ export default function MainInteraction() {
 
       setAlexSources(data.sources || [])
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: alexMsgId,
-          from: 'alex',
-          text: data.answer,
-          sources: data.sources || [],
-          explanation: data.relevance_explanation,
-          confidence: data.confidence,
-        },
-      ])
-
       console.log('Sources', data.sources)
 
       updateTranscript('alex', data.answer, {
@@ -988,13 +982,26 @@ export default function MainInteraction() {
       setAlexTalkingPoints(data.talking_points || [])
       setShowTalkingPoints(false)
 
-      const talkingPointsTimer = setTimeout(() => {
-        setShowTalkingPoints(true)
-      }, 5000)
+      let talkingPointsTimer
 
       await speakWithLipsync(data.answer, 'doctor', null, () => {
         setShowCards(false)
         playGesture('stopSwiping')
+        playGesture('stopCompanionGesture')
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: alexMsgId,
+            from: 'alex',
+            text: data.answer,
+            sources: data.sources || [],
+            explanation: data.relevance_explanation,
+            confidence: data.confidence,
+          },
+        ])
+        talkingPointsTimer = setTimeout(() => {
+          setShowTalkingPoints(true)
+        }, 5000)
       })
 
       clearTimeout(talkingPointsTimer)
@@ -1247,6 +1254,8 @@ export default function MainInteraction() {
           onDismissPendingGoalNote={dismissPendingGoalNote}
           goalNotes={goalNotes}
           onOpenSource={setActiveSourcePopout}
+          hasSentFirstMessage={hasSentFirstMessage}
+          alexIntroDone={alexIntroDone}
         />
 
         <section className="mi-chat-card fade-in-up">
@@ -1436,6 +1445,8 @@ function JordanSidebar({
   onDismissPendingGoalNote,
   goalNotes,
   onOpenSource,
+  hasSentFirstMessage,
+  alexIntroDone,
 }) {
   const isActive = proactivity === 'active'
 
@@ -1448,6 +1459,8 @@ function JordanSidebar({
           onRequestQuestion={onRequestCollabQuestion}
           isAlexActive={isAlexActive}
           collabSuggestion={collabSuggestion}
+          hasSentFirstMessage={hasSentFirstMessage}
+          alexIntroDone={alexIntroDone}
         />
 
         {!isActive && collabSuggestion && (
@@ -1489,6 +1502,8 @@ function JordanSidebarHeader({
   onRequestQuestion,
   isAlexActive,
   collabSuggestion,
+  hasSentFirstMessage,
+  alexIntroDone,
 }) {
   const isActive = proactivity === 'active'
   const isPassive = proactivity === 'passive'
@@ -1516,17 +1531,28 @@ function JordanSidebarHeader({
         </div>
       </div>
 
-      {!isActive && !isPassive && !collabSuggestion && (
-        <button
-          type="button"
-          className="mi-collab-question-btn"
-          onClick={onRequestQuestion}
-          disabled={isAlexActive}
-        >
-          <FontAwesomeIcon icon={faLightbulb} />
-          <span>Not sure what to ask?</span>
-        </button>
-      )}
+      {!isActive &&
+        !isAlexActive &&
+        !isPassive &&
+        alexIntroDone &&
+        !hasSentFirstMessage &&
+        !collabSuggestion && (
+          <div className="mi-collab-question-btn">
+            <p>
+              <FontAwesomeIcon icon={faLightbulb} />
+              <span>Not sure what to ask?</span>
+            </p>
+
+            <button
+              type="button"
+              className="mi-nudge-btn mi-nudge-btn-primary mi-nudge-btn-suggestion"
+              onClick={onRequestQuestion}
+              disabled={isAlexActive}
+            >
+              Suggest a question
+            </button>
+          </div>
+        )}
     </div>
   )
 }
@@ -1813,6 +1839,8 @@ function CollaborativeSuggestionCard({
   onSaveNote,
   onOpenSource,
 }) {
+  const [requestedExtraSuggestion, setRequestedExtraSuggestion] =
+    useState(false)
   const [isExiting, setIsExiting] = useState(false)
   const [noteDraft, setNoteDraft] = useState(suggestion.noteToAdd || '')
   const [goalDecision, setGoalDecision] = useState(null)
@@ -1821,6 +1849,8 @@ function CollaborativeSuggestionCard({
   const isGoalNote = suggestion.type === 'goal_note'
   const isPassiveUpdate = suggestion.type === 'passive_update'
   const sources = dedupeSources(suggestion.sources || []).slice(0, 2)
+  const isResolved = !!suggestion.resolved
+  const wasUsed = suggestion.resolution === 'used'
 
   function closeWithAnimation(action) {
     setIsExiting(true)
@@ -1845,15 +1875,6 @@ function CollaborativeSuggestionCard({
         isExiting ? 'mi-collab-suggestion-card-exiting' : ''
       }`}
     >
-      <div className="mi-collab-suggestion-card-suggestion">
-        <FontAwesomeIcon icon={faLightbulb} />
-        <p>
-          {suggestion.loading
-            ? 'Thinking of a helpful question...'
-            : suggestion.text}
-        </p>
-      </div>
-
       {isQuery && (
         <>
           <div className="mi-collab-suggestion-quote">
@@ -1865,23 +1886,36 @@ function CollaborativeSuggestionCard({
           </div>
 
           {!suggestion.loading && (
-            <div className="mi-collab-suggestion-actions">
-              <button
-                type="button"
-                className="mi-nudge-btn mi-nudge-btn-primary"
-                onClick={onAcceptQuery}
-              >
-                Use this
-              </button>
+            <>
+              {!isResolved ? (
+                <div className="mi-collab-suggestion-actions">
+                  <button
+                    type="button"
+                    className="mi-nudge-btn mi-nudge-btn-primary"
+                    onClick={onAcceptQuery}
+                  >
+                    Use this
+                  </button>
 
-              <button
-                type="button"
-                className="mi-nudge-btn"
-                onClick={() => closeWithAnimation(onDismiss)}
-              >
-                Not now
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    className="mi-nudge-btn"
+                    onClick={onDismiss}
+                  >
+                    Not now
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`mi-suggestion-status ${
+                    wasUsed ? 'used' : 'dismissed'
+                  }`}
+                >
+                  <FontAwesomeIcon icon={wasUsed ? faCheck : faBan} />
+                  {wasUsed ? 'Question added to your message' : 'Dismissed'}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -1889,20 +1923,15 @@ function CollaborativeSuggestionCard({
       {isPassiveUpdate && (
         <div className="mi-collab-review mi-passive-review">
           <div className="mi-passive-auto-status">
-            <FontAwesomeIcon icon={faCheck} />
-            <span>
-              I marked {suggestion.goalTitle || 'this goal'} complete
-              {suggestion.noteToAdd ? ' and saved a note.' : '.'}
-            </span>
-          </div>
-
-          {suggestion.noteToAdd && (
-            <div className="mi-collab-review-section">
-              <div className="mi-collab-review-label">Saved note</div>
-              <div className="mi-passive-saved-note">
-                {suggestion.noteToAdd}
-              </div>
-
+            <div className="mi-passive-auto-info">
+              <FontAwesomeIcon icon={faCheck} />
+              <span>
+                I marked "{suggestion.goalTitle || 'this goal'}" complete
+                {suggestion.noteToAdd ? ' and saved the following note:' : '.'}
+              </span>
+            </div>
+            <div className="mi-passive-saved-note">
+              {suggestion.noteToAdd}
               {sources.length > 0 && (
                 <div
                   className="mi-note-citations"
@@ -1922,32 +1951,47 @@ function CollaborativeSuggestionCard({
                 </div>
               )}
             </div>
-          )}
+          </div>
 
           {suggestion.suggestion && (
-            <div className="mi-collab-review-section">
-              <div className="mi-collab-review-label">Suggested question</div>
+            <div className="mi-collab-suggestion-next-suggestion">
+              <div className="mi-collab-suggestion-card-suggestion">
+                <FontAwesomeIcon icon={faCheck} />
+                <p>Here's what I suggest asking next:</p>
+              </div>
+
               <div className="mi-collab-suggestion-quote">
                 {suggestion.suggestion}
               </div>
 
-              <div className="mi-collab-suggestion-actions">
-                <button
-                  type="button"
-                  className="mi-nudge-btn mi-nudge-btn-primary"
-                  onClick={onAcceptQuery}
-                >
-                  Use this
-                </button>
+              {!isResolved ? (
+                <div className="mi-collab-suggestion-actions">
+                  <button
+                    type="button"
+                    className="mi-nudge-btn mi-nudge-btn-primary"
+                    onClick={onAcceptQuery}
+                  >
+                    Use this
+                  </button>
 
-                <button
-                  type="button"
-                  className="mi-nudge-btn"
-                  onClick={() => closeWithAnimation(onDismiss)}
+                  <button
+                    type="button"
+                    className="mi-nudge-btn"
+                    onClick={onDismiss}
+                  >
+                    Not now
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`mi-suggestion-status ${
+                    wasUsed ? 'used' : 'dismissed'
+                  }`}
                 >
-                  Not now
-                </button>
-              </div>
+                  <FontAwesomeIcon icon={wasUsed ? faCheck : faBan} />
+                  {wasUsed ? 'Question added to your message' : 'Dismissed'}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1956,103 +2000,179 @@ function CollaborativeSuggestionCard({
       {isGoalNote && (
         <div className="mi-collab-review">
           <div className="mi-collab-review-section">
-            <div className="mi-collab-review-label">Goal progress</div>
-            <p>
-              I think Dr. Alex may have addressed your goal
-              {suggestion.goalTitle ? `: ${suggestion.goalTitle}` : ''}.
-            </p>
-
             {goalDecision ? (
-              <span className="mi-nudge-resolution">
-                {goalDecision === 'marked' ? 'Marked complete' : 'Left open'}
-              </span>
-            ) : (
-              <div className="mi-collab-suggestion-actions">
-                <button
-                  type="button"
-                  className="mi-nudge-btn mi-nudge-btn-primary"
-                  onClick={handleAcceptGoal}
-                >
-                  Mark complete
-                </button>
-
-                <button
-                  type="button"
-                  className="mi-nudge-btn"
-                  onClick={() => setGoalDecision('open')}
-                >
-                  Not yet
-                </button>
-              </div>
-            )}
-          </div>
-
-          {suggestion.noteToAdd && (
-            <div className="mi-collab-review-section">
-              <div className="mi-collab-review-label">Suggested note</div>
-
-              <textarea
-                className="mi-collab-note-editor"
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                rows={4}
-                disabled={noteDecision === 'saved'}
-              />
-
-              {sources.length > 0 && (
-                <div
-                  className="mi-note-citations"
-                  aria-label="Sources for this note"
-                >
-                  {sources.map((source, index) => (
-                    <button
-                      key={source.id || getSourceKey(source)}
-                      type="button"
-                      className="mi-note-citation"
-                      onClick={() => onOpenSource?.(source)}
-                      title={source.title || source.source || source.file}
-                    >
-                      [{index + 1}] {source.source || 'Source'}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {noteDecision ? (
-                <span className="mi-nudge-resolution">
-                  {noteDecision === 'saved' ? 'Note saved' : 'Note dismissed'}
+              <div className="mi-collab-collapsed-status">
+                <FontAwesomeIcon
+                  icon={goalDecision === 'marked' ? faCheck : faBan}
+                />
+                <span>
+                  {goalDecision === 'marked'
+                    ? 'Goal marked complete below.'
+                    : 'Goal left open for now.'}
                 </span>
-              ) : (
+              </div>
+            ) : (
+              <>
+                <p>
+                  <FontAwesomeIcon icon={faBullseye} />
+                  <span>
+                    I think Alex <b>may have addressed your goal</b>
+                    {suggestion.goalTitle ? `: ${suggestion.goalTitle}` : ''}.
+                    Should we mark it as complete?
+                  </span>
+                </p>
+
                 <div className="mi-collab-suggestion-actions">
                   <button
                     type="button"
                     className="mi-nudge-btn mi-nudge-btn-primary"
-                    onClick={handleSaveNote}
+                    onClick={handleAcceptGoal}
                   >
-                    Save note
+                    Mark complete
                   </button>
 
                   <button
                     type="button"
                     className="mi-nudge-btn"
-                    onClick={() => setNoteDecision('dismissed')}
+                    onClick={() => setGoalDecision('open')}
                   >
-                    Dismiss note
+                    Not yet
                   </button>
                 </div>
+              </>
+            )}
+          </div>
+
+          {suggestion.noteToAdd && (
+            <div className="mi-collab-review-section">
+              {noteDecision ? (
+                <div className="mi-collab-collapsed-status">
+                  <FontAwesomeIcon
+                    icon={noteDecision === 'saved' ? faCheck : faBan}
+                  />
+                  <span>
+                    {noteDecision === 'saved'
+                      ? 'Note saved below.'
+                      : 'Note not added.'}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <p>
+                    <FontAwesomeIcon icon={faPenToSquare} />
+                    <span>
+                      Also, <b>this might be a good note</b> to add along with
+                      the source. Feel free to edit, save, or ignore it!
+                    </span>
+                  </p>
+
+                  <textarea
+                    className="mi-collab-note-editor"
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                    rows={4}
+                  />
+
+                  {sources.length > 0 && (
+                    <div
+                      className="mi-note-citations"
+                      aria-label="Sources for this note"
+                    >
+                      {sources.map((source, index) => (
+                        <button
+                          key={source.id || getSourceKey(source)}
+                          type="button"
+                          className="mi-note-citation"
+                          onClick={() => onOpenSource?.(source)}
+                          title={source.title || source.source || source.file}
+                        >
+                          [{index + 1}] {source.source || 'Source'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mi-collab-suggestion-actions">
+                    <button
+                      type="button"
+                      className="mi-nudge-btn mi-nudge-btn-primary"
+                      onClick={handleSaveNote}
+                    >
+                      Save note
+                    </button>
+
+                    <button
+                      type="button"
+                      className="mi-nudge-btn"
+                      onClick={() => setNoteDecision('dismissed')}
+                    >
+                      Dismiss note
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           )}
 
-          <div className="mi-collab-suggestion-actions">
-            <button
-              type="button"
-              className="mi-nudge-btn"
-              onClick={() => closeWithAnimation(onDismiss)}
-            >
-              Done
-            </button>
-          </div>
+          {requestedExtraSuggestion ? (
+            <div className="mi-collab-suggestion-next-suggestion">
+              <div className="mi-collab-suggestion-card-suggestion">
+                <FontAwesomeIcon icon={faLightbulb} />
+                <p>Here's another question you could ask:</p>
+              </div>
+
+              <div className="mi-collab-suggestion-quote">
+                {suggestion.suggestion ||
+                  'What else should I know about clinical trials?'}
+              </div>
+
+              {!isResolved ? (
+                <div className="mi-collab-suggestion-actions">
+                  <button
+                    type="button"
+                    className="mi-nudge-btn mi-nudge-btn-primary"
+                    onClick={onAcceptQuery}
+                  >
+                    Use this
+                  </button>
+
+                  <button
+                    type="button"
+                    className="mi-nudge-btn"
+                    onClick={() => setRequestedExtraSuggestion(false)}
+                  >
+                    Not now
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className={`mi-suggestion-status ${
+                    wasUsed ? 'used' : 'dismissed'
+                  }`}
+                >
+                  <FontAwesomeIcon icon={wasUsed ? faCheck : faBan} />
+                  {wasUsed ? 'Question added to your message' : 'Dismissed'}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mi-collab-review-section">
+              <p>
+                <FontAwesomeIcon icon={faLightbulb} />
+                <span>
+                  Finally, I can suggest another question if you'd like!
+                </span>
+              </p>
+
+              <button
+                type="button"
+                className="mi-nudge-btn mi-nudge-btn-primary mi-nudge-btn-suggestion"
+                onClick={() => setRequestedExtraSuggestion(true)}
+              >
+                Suggest another question
+              </button>
+            </div>
+          )}
         </div>
       )}
 

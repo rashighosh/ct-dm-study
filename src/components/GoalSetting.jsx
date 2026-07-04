@@ -31,7 +31,7 @@ import {
 } from '../character.js'
 import { logSession, logGoalSetting } from '../api/logging.js'
 
-function ToggleRow({ item, checked, onToggle, accent }) {
+function ToggleRow({ item, checked, onToggle, accent, disabled = false }) {
   const label = item.label
   const description = item.description
 
@@ -39,8 +39,12 @@ function ToggleRow({ item, checked, onToggle, accent }) {
     <button
       type="button"
       className={`gs-row gs-row-${accent}${checked ? ' gs-row-checked' : ''}`}
-      onClick={() => onToggle(item.id)}
+      onClick={() => {
+        if (disabled) return
+        onToggle(item.id)
+      }}
       aria-pressed={checked}
+      disabled={disabled}
     >
       <div className="gs-row-text">
         <span className="gs-row-label">{label}</span>
@@ -55,10 +59,17 @@ function ToggleRow({ item, checked, onToggle, accent }) {
   )
 }
 
-function SuggestedGoalList({ title, goals, selectedGoals, onToggle }) {
+function SuggestedGoalList({
+  title,
+  goals,
+  selectedGoals,
+  onToggle,
+  disabled = false,
+}) {
   if (!goals.length) return null
   console.log('GOALS ARE', goals)
 
+  console.log(selectedGoals)
   return (
     <div className="gs-subsection">
       <h3 className="gs-subsection-title">{title}</h3>
@@ -75,6 +86,7 @@ function SuggestedGoalList({ title, goals, selectedGoals, onToggle }) {
             accent="alex"
             checked={selectedGoals.includes(goal.id)}
             onToggle={onToggle}
+            disabled={disabled}
           />
         ))}
       </div>
@@ -90,6 +102,7 @@ function CustomGoalForm({
   onRemoveCustomGoal,
   title,
   placeholder,
+  disabled = false,
 }) {
   return (
     <div className="gs-subsection">
@@ -103,12 +116,13 @@ function CustomGoalForm({
           value={customInput}
           onChange={(e) => setCustomInput(e.target.value)}
           maxLength={120}
+          disabled={disabled}
         />
 
         <button
           type="submit"
           className="gs-custom-add-btn"
-          disabled={!customInput.trim()}
+          disabled={disabled || !customInput.trim()}
         >
           <FontAwesomeIcon icon={faPlus} size="xs" />
           Add
@@ -125,6 +139,7 @@ function CustomGoalForm({
                 type="button"
                 className="gs-custom-chip-remove"
                 onClick={() => onRemoveCustomGoal(goal.id)}
+                disabled={disabled}
                 aria-label={`Remove "${goal.label}"`}
               >
                 <FontAwesomeIcon icon={faXmark} />
@@ -269,6 +284,7 @@ export default function GoalSetting({ onComplete }) {
   })
 
   const canStart = Object.values(startChecks).every(Boolean)
+  const goalInputsDisabled = isJordanSpeaking || suggestingMoreGoals
 
   const navigate = useNavigate()
 
@@ -289,13 +305,12 @@ export default function GoalSetting({ onComplete }) {
   const proactivity = CONDITION_MAP[conditionParam] || 'passive'
 
   const JORDAN_INTRO_ICON_TIMELINE = [
-    { time: 4.6, icon: 'doctor', label: 'Talk with Alex' },
-    { time: 10.1, icon: 'ai', label: 'Not real people' },
-    { time: 14.0, icon: 'survey', label: 'Tailor survey' },
-    { time: 20.0, icon: 'goals', label: 'Set goals' },
-    { time: 25.0, icon: 'notes', label: 'Keep notes' },
-    { time: 28.3, icon: 'no-search', label: 'No trial search' },
-    { time: 35.5, icon: 'decision', label: 'Think it through' },
+    { time: 5, icon: 'doctor', label: 'Talk with Alex' },
+    { time: 11, icon: 'ai', label: 'Not real people' },
+    { time: 15, icon: 'survey', label: 'Tailor survey' },
+    { time: 19.5, icon: 'goals', label: 'Set goals' },
+    { time: 23, icon: 'no-search', label: 'No trial search' },
+    { time: 30, icon: 'decision', label: 'Think it through' },
   ]
 
   useEffect(() => {
@@ -374,10 +389,6 @@ export default function GoalSetting({ onComplete }) {
         const goals = data.suggestedGoals || []
 
         setSuggestedGoals(goals)
-
-        if (proactivity === 'passive') {
-          setSelectedGoals(goals.map((goal) => goal.id))
-        }
       } catch (error) {
         console.error('Could not load suggested goals:', error)
       }
@@ -392,23 +403,11 @@ export default function GoalSetting({ onComplete }) {
     introRanRef.current = true
     ;(async () => {
       try {
-        const SHARED_JORDAN_OPENING = `
-          Hi, I’m Jordan, a virtual companion. In this activity, you’ll talk with Doctor Alex, a virtual doctor, about clinical trials.
-          I’ll help you get ready by setting goals for the conversation, and I’ll help keep track of useful notes as you go.
-          This activity will not search for specific clinical trials or tell you whether a trial is right for you. Instead, it’s meant to help you think through what people may want to understand, ask, and consider before deciding whether to participate.
-        `
+        const SHARED_JORDAN_OPENING = `Hi, I'm Jordan, a virtual companion created for this health information seeking tool. During this activity, you'll meet Alex, a virtual health assistant who'll help you explore and understand clinical trial participation. Alex and I are A.I. powered virtual characters, not real people, and we may use your pre survey responses to help tailor the experience. Before you meet Alex, I'll help you get ready by setting goals for the conversation. Now, keep in mind that this activity won't search for specific clinical trials or tell you whether a trial is right for you. Instead, it's meant to help you think through what people may want to understand, ask, and consider before deciding whether to participate.`
         const JORDAN_INTRO_SCRIPTS = {
-          passive: `First, I’ll help set up some goals for your conversation. 
-          I’ve suggested a few common topics to start with here next to me.
-          Feel free to change them, or click the continue button below me to meet Doctor Alex.`,
-
-          collaborative: `First, we’ll set up some goals for your conversation together. 
-          Here next to me, I've shown a few suggestions you can choose from, or you enter your own goals.
-          When you feel good about them, click the continue button below me to meet Doctor Alex.`,
-
-          active: `First, you’ll set up your own goals for the conversation. 
-          Here next to me, you can add whatever goals you have in mind. You can also ask me for suggestions if you'd like.
-          When you feel good about them, click the continue button below me to meet Doctor Alex.`,
+          passive: `First I'll help set up some goals for your conversation with Alex. Next to me, I've suggested a few goals based on your pre survey responses that you can choose from. Once you feel good about them, click the continue button below me to meet Alex.`,
+          collaborative: `First let's set up some goals for your conversation together. Next to me, I've suggested a few goals based on your pre survey responses. You can choose from these or add your own. Once you feel good about them, click the continue button below me to meet Alex.`,
+          active: `First you'll set up your own goals for the conversation with Alex. Next to me, you can add any goals you have in mind that you'd like to discuss. Once you feel good about them, click the continue button below me to meet Alex.`,
         }
         await initCompanionCharacter(companionRef.current)
         const iconTimeouts = JORDAN_INTRO_ICON_TIMELINE.map(({ time, icon }) =>
@@ -427,11 +426,18 @@ export default function GoalSetting({ onComplete }) {
         setShowDiv(true)
         setIntroFinished(true)
 
-        const secondIntroHighlightTimeouts = [
-          setTimeout(() => setHighlightTarget('goals'), 2500),
-          setTimeout(() => setHighlightTarget('continue'), 7500),
-          setTimeout(() => setHighlightTarget(null), 11500),
-        ]
+        const secondIntroHighlightTimeouts =
+          proactivity === 'collaborative'
+            ? [
+                setTimeout(() => setHighlightTarget('goals'), 2500),
+                setTimeout(() => setHighlightTarget('continue'), 9500),
+                setTimeout(() => setHighlightTarget(null), 13500),
+              ]
+            : [
+                setTimeout(() => setHighlightTarget('goals'), 2500),
+                setTimeout(() => setHighlightTarget('continue'), 7500),
+                setTimeout(() => setHighlightTarget(null), 11500),
+              ]
 
         setIsJordanSpeaking(true)
         await playIntroWithAutoCaptions(
@@ -745,7 +751,7 @@ export default function GoalSetting({ onComplete }) {
               <button
                 type="button"
                 className="cssbuttons-io-button gs-continue-button"
-                disabled={totalSelected === 0}
+                disabled={goalInputsDisabled || totalSelected === 0}
                 onClick={handleContinue}
               >
                 Continue
@@ -784,6 +790,7 @@ export default function GoalSetting({ onComplete }) {
                   onRemoveCustomGoal={handleRemoveCustomGoal}
                   title="Your goals"
                   placeholder="Enter a goal in your own words."
+                  disabled={goalInputsDisabled}
                 />
               ) : (
                 <>
@@ -796,6 +803,7 @@ export default function GoalSetting({ onComplete }) {
                     }
                     selectedGoals={selectedGoals}
                     onToggle={toggleGoal}
+                    disabled={goalInputsDisabled}
                   />
 
                   {proactivity === 'collaborative' && (
@@ -807,6 +815,7 @@ export default function GoalSetting({ onComplete }) {
                       onRemoveCustomGoal={handleRemoveCustomGoal}
                       title="Your Ideas"
                       placeholder="Enter your own goals in your words here."
+                      disabled={goalInputsDisabled}
                     />
                   )}
                 </>

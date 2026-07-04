@@ -150,16 +150,18 @@
   transform: translateY(0);
 }
 
-.nr-goal-card {
-  border: 1px solid #e5e7eb;
+.nr-goal-card.nr-goal-card-selectable.nr-goal-card-selectable-jordan {
+  border: 1px solid rgba(var(--primary-blue) / 15%);
   border-radius: 20px;
   padding: 20px;
-  background: #fbfdff;
+  background: rgba(var(--primary-blue) / 3%);
 }
 
-.nr-goal-card-covered {
-  border-color: rgb(var(--primary-blue) / 55%);
-  background: rgb(var(--primary-blue) / 5%);
+.nr-goal-card.nr-goal-card-selectable.nr-goal-card-selectable-alex {
+  border: 1px solid rgba(var(--primary-orange) / 15%);
+  border-radius: 20px;
+  padding: 20px;
+  background: rgba(var(--primary-orange) / 3%);
 }
 
 .nr-goal-header {
@@ -390,4 +392,112 @@
   font-size: 15px;
   line-height: 1.45;
   text-align: center;
+}
+
+.nr-notes-review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.nr-note p {
+  margin: 0;
+}
+
+.nr-note-source-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.nr-goal-note-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  margin: 3px 0;
+}
+
+.nr-note-sources {
+  display: flex;
+  flex-direction: column;
+}
+
+.nr-note-source {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  color: #344054;
+}
+
+.nr-note-source span {
+  flex: 1;
+}
+
+.nr-note-source-selected {
+  border-color: rgb(var(--primary-blue));
+  background: rgb(var(--primary-blue) / 8%);
+  font-weight: 700;
+}
+
+.nr-goal-card-selectable {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nr-goal-card-selected {
+  box-shadow: 0 12px 28px rgba(35, 80, 60, 0.14);
+}
+
+.nr-goal-card-selectable-jordan.nr-goal-card-selected {
+  border-color: rgb(var(--primary-blue));
+  background: rgb(var(--primary-blue) / 8%);
+}
+
+.nr-goal-card-selectable-alex.nr-goal-card-selected {
+  border-color: rgb(var(--primary-orange) / 55%);
+  background: rgb(var(--primary-orange) / 5%);
+}
+
+.nr-selected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgb(var(--primary-blue));
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.nr-select-checkbox {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #d0d5dd;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: white;
+  background: white;
+}
+
+.nr-select-checkbox-checked {
+  border-color: rgb(var(--primary-blue));
+  background: rgb(var(--primary-blue));
+}
+
+.nr-select-checkbox-checked.nr-select-checkbox-alex {
+  border-color: rgb(var(--primary-orange));
+  background: rgb(var(--primary-orange));
+}
+
+.nr-resource-option-selected-alex .nr-select-checkbox-checked {
+  border-color: rgb(var(--primary-orange));
+  background: rgb(var(--primary-orange));
 }

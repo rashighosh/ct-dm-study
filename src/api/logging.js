@@ -43,3 +43,25 @@ export async function logSession(participantId, condition, proactivity) {
     }),
   })
 }
+
+export async function logNotesReview(
+  participantId,
+  selectedNotes,
+  selectedAlexResources,
+  allNotes,
+  allAlexResources,
+) {
+  if (!participantId) return
+
+  await fetch(`${BASE_URL}/save-notes-review`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      participant_id: participantId,
+      selected_notes: selectedNotes,
+      selected_alex_resources: selectedAlexResources,
+      all_notes: allNotes,
+      all_alex_resources: allAlexResources,
+    }),
+  })
+}

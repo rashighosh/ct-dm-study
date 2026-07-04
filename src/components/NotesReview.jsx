@@ -9,6 +9,7 @@ import {
   faLink,
   faUserDoctor,
   faHeart,
+  faPenToSquare,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   initCompanionCharacter,
@@ -16,6 +17,7 @@ import {
   speakWithLipsyncStatic,
 } from '../character.js'
 import logo from '../assets/logo-transparent.png'
+import { logNotesReview } from '../api/logging.js'
 
 export default function NotesReview() {
   const companionRef = useRef(null)
@@ -23,6 +25,7 @@ export default function NotesReview() {
   const navigate = useNavigate()
   const { state } = useLocation()
 
+  const [selectedGoalCards, setSelectedGoalCards] = useState([])
   const [showResourceCard, setShowResourceCard] = useState(false)
   const [speakingCharacter, setSpeakingCharacter] = useState(null)
   const [selectedResources, setSelectedResources] = useState([])
@@ -32,6 +35,9 @@ export default function NotesReview() {
   const goalLabels = state?.goalLabels || []
   const goalNotes = state?.goalNotes || {}
   const coveredGoals = new Set(state?.coveredGoals || [])
+  const proactivity = state?.proactivity || 'collaborative'
+  const condition = state?.condition || ''
+  const participantId = state?.participantId || 'test-id'
 
   useEffect(() => {
     if (!audioReady) return
@@ -97,59 +103,125 @@ export default function NotesReview() {
     )
   }
 
-  const escapeHtml = (value) =>
-    String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;')
+  const noteReviewItems = goalObjects.map((goal) => ({
+    id: goal.id,
+    title: goal.title,
+    covered: coveredGoals.has(goal.id),
+    notes: goalNotes[goal.id] || [],
+  }))
 
-  const jordanResources = goalObjects
-    .filter(
-      (goal) => coveredGoals.has(goal.id) || goalNotes[goal.id]?.length > 0,
-    )
-    .map((goal) => ({
-      id: `jordan-${goal.id}`,
-      title: `Source links related to: ${goal.title}`,
-      source: 'Suggested by Jordan',
-      description:
-        goalNotes[goal.id]?.[0]?.text ||
-        'Based on one of the goals you explored with Dr. Alex.',
-      url: '',
-      type: 'jordan',
-    }))
+  const noteResources = noteReviewItems.flatMap((goal) =>
+    goal.notes.flatMap((note) =>
+      (note.sources || []).map((source, index) => ({
+        id: `${goal.id}-${note.id}-${source.id || index}`,
+        goalId: goal.id,
+        goalTitle: goal.title,
+        noteId: note.id,
+        noteText: note.text,
+        title: source.title || source.source || source.file || 'Trusted source',
+        source: source.source || null,
+        file: source.file || null,
+        url: source.url || null,
+        content: source.content || null,
+        relevance_explanation: source.relevance_explanation || null,
+        type: 'note-source',
+      })),
+    ),
+  )
 
   const alexResources = [
     {
       id: 'clinicaltrials-gov',
-      title: 'Search ClinicalTrials.gov',
-      description:
-        'A public database where you can search for clinical studies.',
-      url: 'https://clinicaltrials.gov/',
+      title: 'Browse clinical trials',
+      notes: [
+        {
+          id: 'clinicaltrials-gov-note',
+          text: 'A public database where you can search for clinical trials.',
+          sources: [
+            {
+              id: 'clinicaltrials-gov-source',
+              title: 'ClinicalTrials.gov',
+              url: 'https://clinicaltrials.gov/',
+            },
+          ],
+        },
+      ],
       type: 'alex',
     },
     {
       id: 'nci-clinical-trials-search',
-      title: 'Browse NCI-supported cancer clinical trials',
-      description:
-        'A National Cancer Institute page for finding cancer clinical trials.',
-      url: 'https://www.cancer.gov/research/participate/clinical-trials-search',
+      title: 'Browse cancer clinical trials',
+      notes: [
+        {
+          id: 'nci-clinical-trials-search-note',
+          text: 'A National Cancer Institute page where you can search for cancer clinical trials.',
+          sources: [
+            {
+              id: 'nci-clinical-trials-search-source',
+              title: 'NCI-supported cancer clinical trials',
+              url: 'https://www.cancer.gov/research/participate/clinical-trials-search',
+            },
+          ],
+        },
+      ],
       type: 'alex',
     },
   ]
 
-  const allResources = [...jordanResources, ...alexResources]
+  const allResources = [...noteResources, ...alexResources]
 
-  function toggleResource(id) {
-    setSelectedResources((prev) =>
-      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id],
+  const selectedNoteObjects = noteReviewItems.filter((goal) =>
+    selectedGoalCards.includes(goal.id),
+  )
+
+  function toggleGoalCard(goalId) {
+    setSelectedGoalCards((prev) =>
+      prev.includes(goalId)
+        ? prev.filter((id) => id !== goalId)
+        : [...prev, goalId],
     )
   }
 
-  const selectedResourceObjects = allResources.filter((resource) =>
+  function toggleAlexResource(resourceId) {
+    setSelectedResources((prev) =>
+      prev.includes(resourceId)
+        ? prev.filter((id) => id !== resourceId)
+        : [...prev, resourceId],
+    )
+  }
+
+  const notesTitle =
+    proactivity === 'active'
+      ? 'Your conversation notes'
+      : "Jordan's notes from your goals"
+
+  const notesDescription =
+    proactivity === 'active'
+      ? "These are the notes you saved while talking with Dr. Alex. Choose any notes you'd like to receive, along with their attached sources."
+      : "Jordan saved these notes based on the goals you explored with Alex. Choose any notes you'd like to receive, along with their attached sources."
+
+  const selectedResourceObjects = alexResources.filter((resource) =>
     selectedResources.includes(resource.id),
   )
+
+  async function handleContinueToPostSurvey() {
+    try {
+      await logNotesReview(
+        state?.participantId,
+        selectedNoteObjects,
+        selectedResourceObjects,
+        noteReviewItems,
+        alexResources,
+      )
+
+      window.location.href =
+        `https://ufl.qualtrics.com/jfe/form/SV_5d3HxZpa1fP1r2S` +
+        `?id=${encodeURIComponent(participantId)}` +
+        `&c=${encodeURIComponent(condition)}`
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   return (
     <main className="nr-root">
@@ -186,34 +258,68 @@ export default function NotesReview() {
                     These links provide next steps to start looking for clinical
                     trials!
                   </p>
-                  <div className="nr-resource-list">
-                    {alexResources.map((resource) => (
-                      <button
-                        key={resource.id}
-                        type="button"
-                        className={`nr-resource-option-alex ${
-                          selectedResources.includes(resource.id)
-                            ? 'nr-resource-option-selected-alex'
-                            : ''
-                        }`}
-                        onClick={() => toggleResource(resource.id)}
-                      >
-                        <span className="nr-resource-icon nr-resource-icon-alex">
-                          <FontAwesomeIcon icon={faUserDoctor} />
-                        </span>
+                  <div className="nr-notes-review-list">
+                    {alexResources.map((resource) => {
+                      const selected = selectedResources.includes(resource.id)
 
-                        <span className="nr-resource-copy">
-                          <strong>{resource.title}</strong>
-                        </span>
+                      return (
+                        <button
+                          key={resource.id}
+                          type="button"
+                          className={`nr-goal-card nr-goal-card-selectable nr-goal-card-selectable-alex ${
+                            selected
+                              ? 'nr-goal-card-selected nr-goal-card-selected-alex'
+                              : ''
+                          }`}
+                          onClick={() => toggleAlexResource(resource.id)}
+                        >
+                          <div className="nr-goal-header">
+                            <h2>{resource.title}</h2>
 
-                        {selectedResources.includes(resource.id) && (
-                          <FontAwesomeIcon
-                            className="nr-resource-check"
-                            icon={faCheck}
-                          />
-                        )}
-                      </button>
-                    ))}
+                            <span
+                              className={`nr-select-checkbox ${
+                                selected
+                                  ? 'nr-select-checkbox-checked nr-select-checkbox-alex'
+                                  : ''
+                              }`}
+                            >
+                              {selected && <FontAwesomeIcon icon={faCheck} />}
+                            </span>
+                          </div>
+
+                          <div className="nr-notes">
+                            {resource.notes.map((note) => (
+                              <div key={note.id} className="nr-note">
+                                <div className="nr-goal-note-header">
+                                  <FontAwesomeIcon icon={faPenToSquare} />
+                                  <span>Note:</span>
+                                </div>
+
+                                <p>{note.text}</p>
+
+                                <div className="nr-note-source-list">
+                                  <div className="nr-goal-note-header">
+                                    <FontAwesomeIcon icon={faLink} />
+                                    <span>Source Included:</span>
+                                  </div>
+
+                                  <div className="nr-note-sources">
+                                    {note.sources.map((source) => (
+                                      <div
+                                        key={source.id}
+                                        className="nr-note-source"
+                                      >
+                                        <span>{source.title}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -235,45 +341,76 @@ export default function NotesReview() {
               </div>
               {showResourceCard && (
                 <div className="nr-resource-card">
-                  <h2>Jordan's sources based on your goals</h2>
-                  <p>
-                    These are links to resources Dr. Alex used during your
-                    conversation to address your goals.
-                  </p>
+                  <h2>{notesTitle}</h2>
+                  <p>{notesDescription}</p>
 
-                  {jordanResources.length > 0 && (
-                    <>
-                      <div className="nr-resource-list">
-                        {jordanResources.slice(0, 2).map((resource) => (
-                          <button
-                            key={resource.id}
-                            type="button"
-                            className={`nr-resource-option ${
-                              selectedResources.includes(resource.id)
-                                ? 'nr-resource-option-selected'
-                                : ''
-                            }`}
-                            onClick={() => toggleResource(resource.id)}
-                          >
-                            <span className="nr-resource-icon nr-resource-icon-jordan">
-                              <FontAwesomeIcon icon={faHeart} />
+                  <div className="nr-notes-review-list">
+                    {noteReviewItems.map((goal) => {
+                      const selected = selectedGoalCards.includes(goal.id)
+
+                      return (
+                        <button
+                          key={goal.id}
+                          type="button"
+                          className={`nr-goal-card nr-goal-card-selectable nr-goal-card-selectable-jordan ${selected ? 'nr-goal-card-selected' : ''}`}
+                          onClick={() => toggleGoalCard(goal.id)}
+                        >
+                          <div className="nr-goal-header">
+                            <h2>{goal.title}</h2>
+
+                            <span
+                              className={`nr-select-checkbox ${
+                                selected ? 'nr-select-checkbox-checked' : ''
+                              }`}
+                            >
+                              {selected && <FontAwesomeIcon icon={faCheck} />}
                             </span>
+                          </div>
 
-                            <span className="nr-resource-copy">
-                              <strong>{resource.title}</strong>
-                            </span>
-
-                            {selectedResources.includes(resource.id) && (
-                              <FontAwesomeIcon
-                                className="nr-resource-check"
-                                icon={faCheck}
-                              />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                          {goal.notes.length > 0 ? (
+                            <div className="nr-notes">
+                              {goal.notes.map((note) => (
+                                <div key={note.id} className="nr-note">
+                                  <div className="nr-goal-note-header">
+                                    <FontAwesomeIcon icon={faPenToSquare} />{' '}
+                                    <span>Note:</span>
+                                  </div>
+                                  <p>{note.text}</p>
+                                  <div className="nr-note-source-list">
+                                    <div className="nr-goal-note-header">
+                                      <FontAwesomeIcon icon={faLink} />{' '}
+                                      <span>Sources Included:</span>
+                                    </div>
+                                    {note.sources?.length > 0 && (
+                                      <div className="nr-note-sources">
+                                        {note.sources.map((source, index) => (
+                                          <div
+                                            key={`${goal.id}-${note.id}-${source.id || index}`}
+                                            className="nr-note-source"
+                                          >
+                                            <span>
+                                              {source.title ||
+                                                source.source ||
+                                                source.file ||
+                                                `Source ${index + 1}`}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="nr-empty-note">
+                              No notes were saved for this goal.
+                            </p>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -284,21 +421,7 @@ export default function NotesReview() {
         <button
           type="button"
           className="nr-continue-btn"
-          onClick={() => {
-            const encodedHtml = encodeURIComponent(
-              JSON.stringify(
-                goalNotesHtml.replace(/\n/g, '').replace(/\s{2,}/g, ' '),
-              ),
-            )
-            const encodedResources = encodeURIComponent(
-              JSON.stringify(selectedResourceObjects),
-            )
-
-            window.location.href =
-              `https://ufl.qualtrics.com/jfe/form/SV_5d3HxZpa1fP1r2S` +
-              `?selected_resources=${encodedResources}` +
-              `&goal_notes_html=${encodedHtml}`
-          }}
+          onClick={handleContinueToPostSurvey}
         >
           Continue to Post Survey
           <FontAwesomeIcon icon={faArrowRight} />
