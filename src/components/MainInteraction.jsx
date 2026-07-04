@@ -758,13 +758,11 @@ export default function MainInteraction() {
       })
       return
     } else if (proactivity === 'passive') {
-      goodMatches.forEach((goodMatch) => {
-        if (goodMatch.note_to_add) {
-          addGoalNote(goodMatch.goal_id, goodMatch.note_to_add, sourcesForTurn)
-        } else {
-          markGoalCovered(goodMatch.goal_id)
-        }
-      })
+      if (match.note_to_add) {
+        addGoalNote(match.goal_id, match.note_to_add, sourcesForTurn)
+      } else {
+        markGoalCovered(match.goal_id)
+      }
 
       const goalTitle =
         goalObjects.find((goal) => goal.id === match.goal_id)?.title ||
