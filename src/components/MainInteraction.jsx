@@ -1917,6 +1917,12 @@ function CollaborativeSuggestionCard({
     >
       {isQuery && (
         <>
+          {isPassive && suggestion.text && (
+            <div className="mi-collab-suggestion-card-suggestion">
+              <FontAwesomeIcon icon={faLightbulb} />
+              <p>{suggestion.text}</p>
+            </div>
+          )}
           <div className="mi-collab-suggestion-quote">
             {suggestion.loading ? (
               <em>One moment...</em>
