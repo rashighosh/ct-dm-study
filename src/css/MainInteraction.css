@@ -135,8 +135,6 @@
   opacity: 0;
   pointer-events: none;
   background: rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
   transition: opacity 0.3s ease;
 }
 
@@ -528,9 +526,24 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
+  background: url('../assets/bg.jpg') center/cover no-repeat;
+  filter: blur(7px);
+  transform: scale(1.04);
+  z-index: 0;
+}
+
+.mi-jordan-stage-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.mi-jordan-stage-avatar,
+.mi-jordan-stage-text {
+  z-index: 2;
 }
 
 .mi-jordan-stage-avatar {
@@ -539,7 +552,7 @@
   bottom: -18px;
   width: 185px;
   height: 185px;
-  z-index: 1;
+  z-index: 3;
 }
 
 .mi-jordan-stage-avatar .virtual-companion {
@@ -765,6 +778,31 @@
   height: 500px;
 }
 
+.mi-avatar-alex::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../assets/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: blur(7px);
+  transform: scale(1.04);
+  z-index: 0;
+}
+
+.mi-avatar-alex::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.5);
+  z-index: 0;
+}
+
+.mi-avatar-alex > * {
+  position: relative;
+  z-index: 1;
+}
+
 .mi-avatar-alex {
   position: relative;
   width: 100%;
@@ -772,8 +810,6 @@
   flex-shrink: 0;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
 }
 
 .alex-source-panel {
@@ -783,8 +819,6 @@
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .alex-source-panel-collaborative {
@@ -864,7 +898,6 @@
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(8px);
   font-size: 13px;
   font-weight: 600;
   line-height: normal;
@@ -897,7 +930,6 @@
   padding: 18px;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(9px);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 14px 34px rgba(40, 50, 70, 0.18);
   transform: translateY(-50%);
@@ -1093,6 +1125,7 @@
   height: 210px;
   overflow: hidden;
   animation: fadeIn 0.4s ease forwards;
+  z-index: 999;
 }
 
 .swipe-card {
@@ -1102,7 +1135,6 @@
   width: 400px;
   height: 200px;
   background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 14px;
   padding: 14px 18px;
@@ -1996,6 +2028,7 @@
 
 /* Collaborative condition additions */
 .mi-collab-question-btn {
+  max-width: 75%;
   margin-top: -35px;
   z-index: 99;
   background: white;
