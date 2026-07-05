@@ -1057,78 +1057,79 @@ export default function MainInteraction() {
   /* Render                                                                   */
   /* ------------------------------------------------------------------------ */
 
-  return (
-    <div className={`mi-root mi-root-${proactivity}`}>
-      {!audioReady && (
-        <div className="start-overlay">
-          <div className="start-overlay-content tutorial-start-content">
-            <img src={logo} className="logo" alt="Study logo" />
-            <h2>Before you begin</h2>
-            <p>
-              Please carefully review the instructions on how interact with the
-              virtual characters below.
-            </p>
+  if (!audioReady) {
+    return (
+      <div className="start-overlay">
+        <div className="start-overlay-content tutorial-start-content">
+          <img src={logo} className="logo" alt="Study logo" />
+          <h2>Before you begin</h2>
+          <p>
+            Please carefully review the instructions on how interact with the
+            virtual characters below.
+          </p>
 
-            {currentTutorialImage && (
-              <div className="tutorial-image-frame">
-                <img
-                  src={currentTutorialImage}
-                  alt={`${proactivity} tutorial step ${tutorialIndex + 1}`}
-                  className="tutorial-image"
-                />
-              </div>
-            )}
-
-            <div className="tutorial-progress">
-              {tutorialImages.map((_, index) => (
-                <span
-                  key={index}
-                  className={`tutorial-dot ${
-                    index === tutorialIndex ? 'tutorial-dot-active' : ''
-                  }`}
-                />
-              ))}
+          {currentTutorialImage && (
+            <div className="tutorial-image-frame">
+              <img
+                src={currentTutorialImage}
+                alt={`${proactivity} tutorial step ${tutorialIndex + 1}`}
+                className="tutorial-image"
+              />
             </div>
+          )}
 
-            <div className="tutorial-actions">
+          <div className="tutorial-progress">
+            {tutorialImages.map((_, index) => (
+              <span
+                key={index}
+                className={`tutorial-dot ${
+                  index === tutorialIndex ? 'tutorial-dot-active' : ''
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="tutorial-actions">
+            <button
+              type="button"
+              className="tutorial-secondary-btn"
+              disabled={tutorialIndex === 0}
+              onClick={() => setTutorialIndex((prev) => Math.max(0, prev - 1))}
+            >
+              Back
+            </button>
+
+            {isLastTutorial ? (
+              <button
+                className="cssbuttons-io-button"
+                onClick={() => setAudioReady(true)}
+              >
+                Start chatting
+                <span className="icon">
+                  <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                </span>
+              </button>
+            ) : (
               <button
                 type="button"
-                className="tutorial-secondary-btn"
-                disabled={tutorialIndex === 0}
+                className="tutorial-button"
                 onClick={() =>
-                  setTutorialIndex((prev) => Math.max(0, prev - 1))
+                  setTutorialIndex((prev) =>
+                    Math.min(tutorialImages.length - 1, prev + 1),
+                  )
                 }
               >
-                Back
+                Next
               </button>
-
-              {isLastTutorial ? (
-                <button
-                  className="cssbuttons-io-button"
-                  onClick={() => setAudioReady(true)}
-                >
-                  Start chatting
-                  <span className="icon">
-                    <FontAwesomeIcon icon={faArrowRight} size="xs" />
-                  </span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="tutorial-button"
-                  onClick={() =>
-                    setTutorialIndex((prev) =>
-                      Math.min(tutorialImages.length - 1, prev + 1),
-                    )
-                  }
-                >
-                  Next
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div className={`mi-root mi-root-${proactivity}`}>
       <div className="tool-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>
@@ -2576,8 +2577,8 @@ function SourcePopout({ source, onClose }) {
             </p>
           </div>
           <div className="source-link-later-note">
-            Jordan will save this resource with your notes. You can receive the
-            full link at the end of the activity.
+            If a note with this source is saved, you'll be able to request
+            access to the original link at the end of the conversation.
           </div>
         </div>
       </div>

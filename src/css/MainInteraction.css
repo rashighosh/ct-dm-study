@@ -1344,8 +1344,9 @@
   background: #fff7ed;
   border: 1px solid #fed7aa;
   border-radius: 14px;
-  font-size: 0.9rem;
+  font-size: 0.13px;
   color: #7c2d12;
+  line-height: normal;
 }
 
 /* Passive/inline Jordan nudges */
