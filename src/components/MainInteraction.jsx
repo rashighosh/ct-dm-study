@@ -123,11 +123,11 @@ export default function MainInteraction() {
     goalObjects.length > 0 &&
     goalObjects.every((goal) => coveredGoals.has(goal.id))
 
-  const alexAnswerCount = messages.filter(
-    (m) => m.from === 'alex' && !m.intro,
+  const completedAlexResponses = messages.filter(
+    (m) => m.from === 'alex',
   ).length
 
-  const showFinishButton = alexAnswerCount >= 2
+  const showFinishButton = completedAlexResponses >= 4
 
   const jordanPopupOpen = proactivity === 'active' && openJordanPanel !== null
 
