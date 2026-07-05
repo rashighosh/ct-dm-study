@@ -610,6 +610,50 @@ export default function MainInteraction() {
     })
   }
 
+  function acceptCollabGoal(goalId) {
+    markGoalCovered(goalId)
+
+    updateTranscript('goal_marked', 'Goal marked complete', {
+      goal_id: goalId,
+      suggestion_id: collabSuggestion?.id || null,
+    })
+  }
+
+  function dismissCollabGoal(goalId) {
+    updateTranscript('goal_dismissed', 'Goal not marked complete', {
+      goal_id: goalId,
+      suggestion_id: collabSuggestion?.id || null,
+    })
+  }
+
+  function saveCollabNote(goalId, noteText, sources) {
+    addGoalNote(goalId, noteText, sources, false)
+
+    updateTranscript('note_marked', 'Note saved', {
+      goal_id: goalId,
+      note_text: noteText,
+      suggestion_id: collabSuggestion?.id || null,
+      sources: sources || [],
+    })
+  }
+
+  function dismissCollabNote(goalId, noteText) {
+    updateTranscript('note_dismissed', 'Note dismissed', {
+      goal_id: goalId,
+      note_text: noteText,
+      suggestion_id: collabSuggestion?.id || null,
+    })
+  }
+
+  function logCollabExtraSuggestion(suggestion) {
+    if (proactivity !== 'collaborative') return
+    logJordanSuggestion({
+      ...suggestion,
+      type: 'query',
+      text: "Here's another question you could ask:",
+    })
+  }
+
   function logJordanSuggestion(suggestion, shownAs = proactivity) {
     if (suggestion.suggestion) {
       previousJordanSuggestions.current.add(suggestion.suggestion.trim())
@@ -630,7 +674,9 @@ export default function MainInteraction() {
       return
     }
 
-    logJordanSuggestion(suggestion)
+    if (proactivity === 'passive') {
+      logJordanSuggestion(suggestion)
+    }
 
     setCollabSuggestion(suggestion)
   }
@@ -1231,10 +1277,6 @@ export default function MainInteraction() {
           onDismissCollabSuggestion={dismissCollabSuggestion}
           onCollabEvalResponse={handleCollabEvalResponse}
           onRequestCollabQuestion={handleCollabQueryHelp}
-          onAcceptCollabGoal={markGoalCovered}
-          onSaveCollabNote={(goalId, noteText, sources) =>
-            addGoalNote(goalId, noteText, sources, false)
-          }
           onToggleGoalCovered={toggleGoalCovered}
           onAddManualNote={(goalId, noteText, sources) =>
             addGoalNote(goalId, noteText, sources, false)
@@ -1250,6 +1292,11 @@ export default function MainInteraction() {
           alexIntroDone={alexIntroDone}
           showCollabQuestionPrompt={showCollabQuestionPrompt}
           collabQuestionPromptText={collabQuestionPromptText}
+          onAcceptCollabGoal={acceptCollabGoal}
+          onSaveCollabNote={saveCollabNote}
+          onDismissGoal={dismissCollabGoal}
+          onDismissNote={dismissCollabNote}
+          onRequestExtraSuggestion={logCollabExtraSuggestion}
         />
 
         <section className="mi-chat-card fade-in-up">
@@ -1443,6 +1490,9 @@ function JordanSidebar({
   alexIntroDone,
   showCollabQuestionPrompt,
   collabQuestionPromptText,
+  onDismissGoal,
+  onDismissNote,
+  onRequestExtraSuggestion,
 }) {
   const isActive = proactivity === 'active'
 
@@ -1471,8 +1521,11 @@ function JordanSidebar({
               onEvalResponse={onCollabEvalResponse}
               onAcceptGoal={onAcceptCollabGoal}
               onSaveNote={onSaveCollabNote}
+              onDismissGoal={onDismissGoal}
+              onDismissNote={onDismissNote}
               onOpenSource={onOpenSource}
               proactivity={proactivity}
+              onRequestExtraSuggestion={onRequestExtraSuggestion}
             />
           </div>
         )}
@@ -1856,8 +1909,11 @@ function CollaborativeSuggestionCard({
   onEvalResponse,
   onAcceptGoal,
   onSaveNote,
+  onDismissGoal,
+  onDismissNote,
   onOpenSource,
   proactivity,
+  onRequestExtraSuggestion,
 }) {
   const [requestedExtraSuggestion, setRequestedExtraSuggestion] =
     useState(false)
@@ -1892,6 +1948,18 @@ function CollaborativeSuggestionCard({
     if (!suggestion.goalId || !noteDraft.trim()) return
     onSaveNote?.(suggestion.goalId, noteDraft.trim(), suggestion.sources || [])
     setNoteDecision('saved')
+  }
+
+  function handleDismissGoal() {
+    if (!suggestion.goalId) return
+    onDismissGoal?.(suggestion.goalId)
+    setGoalDecision('open')
+  }
+
+  function handleDismissNote() {
+    if (!suggestion.goalId) return
+    onDismissNote?.(suggestion.goalId, noteDraft.trim())
+    setNoteDecision('dismissed')
   }
 
   return (
@@ -2107,7 +2175,7 @@ function CollaborativeSuggestionCard({
                     <button
                       type="button"
                       className="mi-nudge-btn"
-                      onClick={() => setGoalDecision('open')}
+                      onClick={handleDismissGoal}
                     >
                       Not yet
                     </button>
@@ -2180,7 +2248,7 @@ function CollaborativeSuggestionCard({
                       <button
                         type="button"
                         className="mi-nudge-btn"
-                        onClick={() => setNoteDecision('dismissed')}
+                        onClick={handleDismissNote}
                       >
                         Dismiss note
                       </button>
@@ -2245,7 +2313,10 @@ function CollaborativeSuggestionCard({
               <button
                 type="button"
                 className="mi-nudge-btn mi-nudge-btn-primary mi-nudge-btn-suggestion"
-                onClick={() => setRequestedExtraSuggestion(true)}
+                onClick={() => {
+                  onRequestExtraSuggestion?.(suggestion)
+                  setRequestedExtraSuggestion(true)
+                }}
               >
                 Suggest another question
               </button>
