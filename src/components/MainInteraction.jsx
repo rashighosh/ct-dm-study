@@ -127,7 +127,7 @@ export default function MainInteraction() {
     (m) => m.from === 'alex',
   ).length
 
-  const showFinishButton = completedAlexResponses >= 4
+  const showFinishButton = completedAlexResponses >= 5
 
   const jordanPopupOpen = proactivity === 'active' && openJordanPanel !== null
 
@@ -1192,7 +1192,7 @@ export default function MainInteraction() {
         Chat history
       </button>
 
-      {showFinishButton && (
+      {(allGoalsCovered || showFinishButton) && (
         <button className="mi-continue-btn" onClick={handleContinue}>
           Finish
         </button>
