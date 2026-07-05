@@ -1635,7 +1635,6 @@
   cursor: pointer;
   margin: 1em 2em;
   text-transform: uppercase;
-  animation: pulse-animation 2s infinite;
 }
 
 @keyframes pulse-animation {
