@@ -33,27 +33,12 @@ import { logMainInteraction } from '../api/logging.js'
 /* -------------------------------------------------------------------------- */
 
 const TUTORIAL_IMAGES = {
-  passive: [
-    '/tutorials/passive1.png',
-    '/tutorials/passive2.png',
-    '/tutorials/passive3.png',
-    '/tutorials/passive4.png',
-    '/tutorials/passive5.png',
-  ],
+  passive: ['/tutorials/passive1.png'],
   collaborative: [
     '/tutorials/collaborative1.png',
     '/tutorials/collaborative2.png',
-    '/tutorials/collaborative3.png',
-    '/tutorials/collaborative4.png',
   ],
-  active: [
-    '/tutorials/active1.png',
-    '/tutorials/active2.png',
-    '/tutorials/active3.png',
-    '/tutorials/active4.png',
-    '/tutorials/active5.png',
-    '/tutorials/active6.png',
-  ],
+  active: ['/tutorials/active1.png'],
 }
 
 const uid = () => crypto.randomUUID()
@@ -1080,7 +1065,8 @@ export default function MainInteraction() {
             <img src={logo} className="logo" alt="Study logo" />
             <h2>Before you begin</h2>
             <p>
-              Take a quick look at how this version of Jordan will support you.
+              Please carefully review the instructions on how interact with the
+              virtual characters below.
             </p>
 
             {currentTutorialImage && (
