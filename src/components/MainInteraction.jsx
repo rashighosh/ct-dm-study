@@ -123,6 +123,12 @@ export default function MainInteraction() {
     goalObjects.length > 0 &&
     goalObjects.every((goal) => coveredGoals.has(goal.id))
 
+  const alexAnswerCount = messages.filter(
+    (m) => m.from === 'alex' && !m.intro,
+  ).length
+
+  const showFinishButton = alexAnswerCount >= 2
+
   const jordanPopupOpen = proactivity === 'active' && openJordanPanel !== null
 
   const tutorialImages = TUTORIAL_IMAGES[proactivity] || []
@@ -1186,7 +1192,7 @@ export default function MainInteraction() {
         Chat history
       </button>
 
-      {allGoalsCovered && (
+      {showFinishButton && (
         <button className="mi-continue-btn" onClick={handleContinue}>
           Finish
         </button>
