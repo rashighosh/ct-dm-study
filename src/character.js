@@ -7,6 +7,7 @@ const BASE_URL =
 let head = null
 let head1 = null
 let onSubtitleCallback = null
+let subtitleRunId = 0
 
 document.addEventListener(
   'click',
@@ -21,7 +22,7 @@ document.addEventListener(
   { once: true },
 )
 
-export async function initDoctorCharacter(containerNode, view = 'upper') {
+export async function initDoctorCharacter(containerNode, view = 'mid') {
   head = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: view, // full, mid, upper, head,
@@ -199,6 +200,7 @@ export async function speakWithLipsync(
   character = 'doctor',
   gesture = null,
   onStart = null,
+  onSubtitle = null,
 ) {
   const activeHead = character === 'companion' ? head1 : head
 
@@ -229,6 +231,32 @@ export async function speakWithLipsync(
   }
 
   onStart?.()
+  onSubtitle?.('')
+
+  const runId = ++subtitleRunId
+  const subtitleTimers = []
+
+  if (onSubtitle) {
+    if (timestamps.length > 0) {
+      const WORDS_PER_CAPTION = 8
+
+      for (let i = 0; i < timestamps.length; i += WORDS_PER_CAPTION) {
+        const timer = setTimeout(() => {
+          if (runId !== subtitleRunId) return
+          const caption = timestamps
+            .slice(i, Math.min(i + WORDS_PER_CAPTION, timestamps.length))
+            .map((item) => item.word)
+            .join(' ')
+
+          onSubtitle(caption)
+        }, timestamps[i].start * 1000)
+
+        subtitleTimers.push(timer)
+      }
+    } else {
+      onSubtitle(text)
+    }
+  }
 
   const { markers, mtimes } = createSpeechGestures(activeHead, audioBuffer)
 
@@ -246,7 +274,14 @@ export async function speakWithLipsync(
   )
 
   return new Promise((resolve) => {
-    setTimeout(resolve, audioBuffer.duration * 1000)
+    setTimeout(() => {
+      subtitleTimers.forEach(clearTimeout)
+      if (runId === subtitleRunId) {
+        onSubtitle?.('')
+      }
+
+      resolve()
+    }, audioBuffer.duration * 1000)
   })
 }
 
@@ -298,6 +333,7 @@ export async function speakWithLipsyncStatic(
   timestampsPath,
   character = 'doctor',
   gestures = true,
+  onSubtitle = null,
 ) {
   console.log(audioPath)
   const activeHead = character === 'companion' ? head1 : head
@@ -316,12 +352,24 @@ export async function speakWithLipsyncStatic(
   const wdurations = timestamps.map((t) => (t.end - t.start) * 1000)
   const subtitleWords = timestamps.map((t) => t.word.trim())
 
-  if (onSubtitleCallback) {
-    const chunkSize = 8
-    for (let i = 0; i < subtitleWords.length; i += chunkSize) {
-      const chunk = subtitleWords.slice(i, i + chunkSize).join(' ')
-      const triggerTime = wtimes[i]
-      setTimeout(() => onSubtitleCallback(chunk), triggerTime)
+  const runId = ++subtitleRunId
+  const subtitleTimers = []
+
+  if (onSubtitle && timestamps.length > 0) {
+    const WORDS_PER_CAPTION = 8
+
+    for (let i = 0; i < timestamps.length; i += WORDS_PER_CAPTION) {
+      const timer = setTimeout(() => {
+        if (runId !== subtitleRunId) return
+        const caption = timestamps
+          .slice(i, Math.min(i + WORDS_PER_CAPTION, timestamps.length))
+          .map((item) => item.word)
+          .join(' ')
+
+        onSubtitle(caption)
+      }, timestamps[i].start * 1000)
+
+      subtitleTimers.push(timer)
     }
   }
 
@@ -449,7 +497,14 @@ export async function speakWithLipsyncStatic(
   )
 
   return new Promise((resolve) => {
-    setTimeout(resolve, audioBuffer.duration * 1000)
+    setTimeout(() => {
+      subtitleTimers.forEach(clearTimeout)
+      if (runId === subtitleRunId) {
+        onSubtitle?.('')
+      }
+
+      resolve()
+    }, audioBuffer.duration * 1000)
   })
 }
 

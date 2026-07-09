@@ -102,9 +102,9 @@
 
 .history-btn {
   position: fixed;
-  top: 5px;
-  left: 5px;
-  display: none;
+  top: 15px;
+  left: 15px;
+  display: absolute;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -755,6 +755,7 @@
   position: relative;
   flex: 1;
   min-width: 0;
+  height: calc(100vh - 150px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -766,6 +767,12 @@
 
 .mi-chat-header {
   height: 250px;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  position: relative;
   border-bottom: 1px solid #e2ddd0;
   background: url('../assets/bg.jpg');
   background-size: cover;
@@ -776,6 +783,12 @@
 
 .mi-chat-header.mi-alex-area-active {
   height: 500px;
+}
+
+.mi-input-area,
+.mi-chat-input,
+.mi-chat-form {
+  flex-shrink: 0;
 }
 
 .mi-avatar-alex::before {
@@ -807,9 +820,38 @@
   position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.5);
+}
+
+.alex-subtitle {
+  position: absolute !important;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 20 !important;
+
+  width: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 11px 15px;
+  border-radius: 15px;
+  background: rgba(0, 0, 0, 0.68);
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: normal;
+  font-style: italic;
+  text-align: center;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
 }
 
 .alex-source-panel {
@@ -819,7 +861,7 @@
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.72);
-  max-width: 25%;
+  max-width: 29%;
 }
 
 .alex-source-label {
@@ -1052,7 +1094,6 @@
 
 .alex-goals-review-card {
   position: absolute;
-  bottom: -1rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9;
@@ -1102,13 +1143,89 @@
   }
 }
 
+.alex-foraging-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.alex-foraging-card {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.12);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #344054;
+  opacity: 0;
+  animation-name: alexCardEnter, alexForagingFloat;
+  animation-duration: 1s, 2.8s;
+  animation-timing-function: ease, ease-in-out;
+  animation-fill-mode: forwards, none;
+  animation-iteration-count: 1, infinite;
+}
+
+.alex-foraging-card svg {
+  font-size: 0.95rem;
+}
+
+.alex-foraging-card-1 {
+  top: 15%;
+  left: 11%;
+  animation-delay: 0s, 0.15s;
+}
+
+.alex-foraging-card-2 {
+  top: 60%;
+  right: 11%;
+  animation-delay:
+    0.75s,
+    -0.9s;
+}
+
+.alex-foraging-card-3 {
+  bottom: 15%;
+  left: 19%;
+  animation-delay:
+    1.75s,
+    -1.8s;
+}
+
+@keyframes alexCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes alexForagingFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Swipe cards                                                          */
 /* -------------------------------------------------------------------------- */
 
 .swipe-cards {
   position: absolute;
-  top: 50%;
+  top: 41%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 400px;
@@ -1568,13 +1685,25 @@
 /* Input row                                                                  */
 /* -------------------------------------------------------------------------- */
 
+.full-input-area {
+  display: flex;
+  flex-direction: column;
+  background: #fbfaf8;
+  padding: 15px 19px;
+  gap: 5px;
+}
+
+.full-input-area p {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500px;
+  color: #6b6b6b;
+}
+
 .mi-input-row {
   display: flex;
   align-items: stretch;
-  gap: 12px;
-  padding: 14px 18px;
-  border-top: 1px solid #e2ddd0;
-  background: #fbfaf8;
+  gap: 13px;
 }
 
 .mi-input-stack {

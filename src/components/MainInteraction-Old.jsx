@@ -97,7 +97,6 @@ export default function MainInteraction() {
   const suppressNextActivePopout = useRef(false)
   const previousJordanSuggestions = useRef(new Set())
   const introCueTimers = useRef([])
-  const historyBodyRef = useRef(null)
 
   const participantId = goals?.participantId || 'test-participant'
 
@@ -118,7 +117,6 @@ export default function MainInteraction() {
   const restoredInteractionRef = useRef(
     !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
   )
-  const [alexSubtitle, setAlexSubtitle] = useState('')
   const introStartedRef = useRef(false)
   const [showCollabQuestionPrompt, setShowCollabQuestionPrompt] =
     useState(false)
@@ -152,7 +150,6 @@ export default function MainInteraction() {
   )
   const [messages, setMessages] = useState(savedSession?.messages ?? [])
   const [transcript, setTranscript] = useState(savedSession?.transcript ?? [])
-  const [isForaging, setIsForaging] = useState(false)
 
   useEffect(() => {
     const session = {
@@ -285,8 +282,6 @@ export default function MainInteraction() {
           '/intro-voices/doctor-alexIntro1-intro.mp3',
           '/intro-voices/doctor-alexIntro1-intro-timestamps.json',
           'doctor',
-          true,
-          setAlexSubtitle,
         )
 
         setMessages((prev) => [
@@ -316,8 +311,6 @@ export default function MainInteraction() {
           '/intro-voices/doctor-alexIntro2-intro.mp3',
           '/intro-voices/doctor-alexIntro2-intro-timestamps.json',
           'doctor',
-          true,
-          setAlexSubtitle,
         )
 
         playGesture('thinkingDoctor')
@@ -336,21 +329,18 @@ export default function MainInteraction() {
           personalizedIntro,
           'doctor',
           null,
-          () => {
-            setAlexIntroCue(null)
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: uid(),
-                from: 'alex',
-                text: personalizedIntro,
-                sources: [],
-                explanation: null,
-                confidence: null,
-              },
-            ])
-          },
-          setAlexSubtitle,
+          () => setAlexIntroCue(null),
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uid(),
+              from: 'alex',
+              text: personalizedIntro,
+              sources: [],
+              explanation: null,
+              confidence: null,
+            },
+          ]),
         )
 
         playGesture('stopCompanionGesture')
@@ -362,17 +352,6 @@ export default function MainInteraction() {
     }
     initCharacters()
   }, [audioReady])
-
-  useEffect(() => {
-    if (!showHistory) return
-
-    requestAnimationFrame(() => {
-      historyBodyRef.current?.scrollTo({
-        top: historyBodyRef.current.scrollHeight,
-        behavior: 'smooth',
-      })
-    })
-  }, [showHistory, messages.length])
 
   useEffect(() => {
     if (proactivity !== 'passive') return
@@ -406,6 +385,17 @@ export default function MainInteraction() {
 
     return () => clearTimeout(timer)
   }, [proactivity, alexIntroDone])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'end',
+      })
+    }, 50)
+
+    return () => clearTimeout(timer)
+  }, [messages, isAlexActive, showCards])
 
   /* ------------------------------------------------------------------------ */
   /* Navigation                                               */
@@ -1032,19 +1022,6 @@ export default function MainInteraction() {
     introCueTimers.current.push(clearTimer)
   }
 
-  const handleKeyDown = (e) => {
-    if (e.key !== 'Enter') return
-
-    // Shift+Enter -> new line
-    if (e.shiftKey) {
-      return
-    }
-
-    // Enter -> send
-    e.preventDefault()
-    handleSend(e)
-  }
-
   async function handleSend(e) {
     e.preventDefault()
 
@@ -1067,7 +1044,6 @@ export default function MainInteraction() {
     setActiveQueryLoading(false)
     setShowCollabQuestionPrompt(false)
     setCollabQuestionPromptText(null)
-    setIsForaging(true)
 
     setMessages((prev) => [
       ...prev,
@@ -1134,34 +1110,27 @@ export default function MainInteraction() {
 
       setAlexTalkingPoints(data.talking_points || [])
       setShowTalkingPoints(false)
-      setIsForaging(false)
 
       let talkingPointsTimer
 
-      await speakWithLipsync(
-        data.answer,
-        'doctor',
-        null,
-        () => {
-          setShowCards(false)
-          playGesture('stopSwiping')
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: alexMsgId,
-              from: 'alex',
-              text: data.answer,
-              sources: data.sources || [],
-              explanation: data.relevance_explanation,
-              confidence: data.confidence,
-            },
-          ])
-          talkingPointsTimer = setTimeout(() => {
-            setShowTalkingPoints(true)
-          }, 5000)
-        },
-        setAlexSubtitle,
-      )
+      await speakWithLipsync(data.answer, 'doctor', null, () => {
+        setShowCards(false)
+        playGesture('stopSwiping')
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: alexMsgId,
+            from: 'alex',
+            text: data.answer,
+            sources: data.sources || [],
+            explanation: data.relevance_explanation,
+            confidence: data.confidence,
+          },
+        ])
+        talkingPointsTimer = setTimeout(() => {
+          setShowTalkingPoints(true)
+        }, 5000)
+      })
 
       playGesture('stopCompanionGesture')
       clearTimeout(talkingPointsTimer)
@@ -1421,11 +1390,9 @@ export default function MainInteraction() {
             introCue={alexIntroCue}
             proactivity={proactivity}
             onOpenSource={setActiveSourcePopout}
-            isForaging={isForaging}
-            subtitle={alexSubtitle}
           />
 
-          {/* <MessageThread
+          <MessageThread
             messages={messages}
             chatEndRef={chatEndRef}
             proactivity={proactivity}
@@ -1449,7 +1416,7 @@ export default function MainInteraction() {
             }}
             onInlineEvalResponse={handleInlineEvalResponse}
             onResolveNudge={resolveNudge}
-          /> */}
+          />
 
           <ChatInput
             input={input}
@@ -1457,7 +1424,6 @@ export default function MainInteraction() {
             onChange={handleInputChange}
             onSubmit={handleSend}
             disabled={isAlexActive}
-            onHandleKeyDown={handleKeyDown}
           />
         </section>
       </main>
@@ -1473,7 +1439,6 @@ export default function MainInteraction() {
         <HistoryModal
           messages={messages}
           onClose={() => setShowHistory(false)}
-          historyBodyRef={historyBodyRef}
         />
       )}
     </div>
@@ -2473,8 +2438,6 @@ function AlexHeader({
   introCue,
   proactivity,
   onOpenSource,
-  isForaging,
-  subtitle,
 }) {
   const uniqueSources = dedupeSources(sources)
   return (
@@ -2484,25 +2447,6 @@ function AlexHeader({
       <div className="mi-avatar-alex">
         {showCards && <SwipingCards />}
         <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
-
-        {isAlexActive && isForaging && (
-          <div className="alex-foraging-layer">
-            <div className="alex-foraging-card alex-foraging-card-1">
-              <FontAwesomeIcon icon={faMagnifyingGlass} />
-              <span>Searching trusted sources</span>
-            </div>
-
-            <div className="alex-foraging-card alex-foraging-card-2">
-              <FontAwesomeIcon icon={faObjectGroup} />
-              <span>Comparing information</span>
-            </div>
-
-            <div className="alex-foraging-card alex-foraging-card-3">
-              <FontAwesomeIcon icon={faListCheck} />
-              <span>Preparing an answer</span>
-            </div>
-          </div>
-        )}
 
         <div className="alex-title-area">
           <span className="mi-eyebrow">Chatting with</span>
@@ -2551,8 +2495,6 @@ function AlexHeader({
             </div>
           </div>
         )}
-
-        {subtitle && <div className="alex-subtitle">{subtitle}</div>}
 
         {uniqueSources.length > 0 && (
           <div className={`alex-source-panel`}>
@@ -2711,44 +2653,39 @@ function ChatInput({
   onFocus,
   onSubmit,
   disabled = false,
-  onHandleKeyDown,
 }) {
   return (
-    <div className="full-input-area">
-      <form
-        className="mi-input-row"
-        onSubmit={(e) => {
-          if (disabled) {
-            e.preventDefault()
-            return
+    <form
+      className="mi-input-row"
+      onSubmit={(e) => {
+        if (disabled) {
+          e.preventDefault()
+          return
+        }
+        onSubmit(e)
+      }}
+    >
+      <div className="mi-input-stack">
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={onFocus}
+          placeholder={
+            disabled
+              ? 'Please wait while Alex is speaking...'
+              : 'Type your message to Alex here...'
           }
-          onSubmit(e)
-        }}
-      >
-        <div className="mi-input-stack">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={onFocus}
-            placeholder={
-              disabled
-                ? 'Please wait while Alex is speaking...'
-                : 'Type your message to Alex here...'
-            }
-            rows={3}
-            disabled={disabled}
-            onKeyDown={onHandleKeyDown}
-          />
-        </div>
+          rows={3}
+          disabled={disabled}
+        />
+      </div>
 
-        <button type="submit" className="send-button" disabled={disabled}>
-          <FontAwesomeIcon icon={faPaperPlane} />
-          <span>Send</span>
-        </button>
-      </form>
-      <p>Press enter to send, or Shift + Enter for newline</p>
-    </div>
+      <button type="submit" className="send-button" disabled={disabled}>
+        <FontAwesomeIcon icon={faPaperPlane} />
+        <span>Send</span>
+      </button>
+    </form>
   )
 }
 
@@ -2796,7 +2733,7 @@ function SourcePopout({ source, onClose }) {
   )
 }
 
-function HistoryModal({ messages, onClose, historyBodyRef }) {
+function HistoryModal({ messages, onClose }) {
   return (
     <div className="history-overlay" onClick={onClose}>
       <div className="history-modal" onClick={(e) => e.stopPropagation()}>
@@ -2807,7 +2744,7 @@ function HistoryModal({ messages, onClose, historyBodyRef }) {
           </button>
         </div>
 
-        <div ref={historyBodyRef} className="history-modal-body">
+        <div className="history-modal-body">
           {messages.length === 0 && (
             <div className="history-empty">No messages yet.</div>
           )}
