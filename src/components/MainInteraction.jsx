@@ -16,6 +16,7 @@ import {
   faListCheck,
   faArrowRight,
   faPenToSquare,
+  faFileLines,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -56,9 +57,9 @@ const dedupeSources = (sources = []) =>
 /* -------------------------------------------------------------------------- */
 
 export default function MainInteraction() {
-  // const BASE_URL = 'http://127.0.0.1:8000'
-  const BASE_URL =
-    'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+  const BASE_URL = 'http://127.0.0.1:8000'
+  // const BASE_URL =
+  //   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
   const location = useLocation()
 
@@ -153,6 +154,7 @@ export default function MainInteraction() {
   const [messages, setMessages] = useState(savedSession?.messages ?? [])
   const [transcript, setTranscript] = useState(savedSession?.transcript ?? [])
   const [isForaging, setIsForaging] = useState(false)
+  const [isForagingFading, setIsForagingFading] = useState(false)
 
   useEffect(() => {
     const session = {
@@ -1101,6 +1103,7 @@ export default function MainInteraction() {
       })
 
       const data = await response.json()
+      console.log('DATA SOURCES ARE', data.sources)
 
       const evalResponse = await fetch(`${BASE_URL}/evaluate-goal-progress`, {
         method: 'POST',
@@ -1134,7 +1137,12 @@ export default function MainInteraction() {
 
       setAlexTalkingPoints(data.talking_points || [])
       setShowTalkingPoints(false)
-      setIsForaging(false)
+      setIsForagingFading(true)
+
+      setTimeout(() => {
+        setIsForaging(false)
+        setIsForagingFading(false)
+      }, 450)
 
       let talkingPointsTimer
 
@@ -1422,6 +1430,7 @@ export default function MainInteraction() {
             proactivity={proactivity}
             onOpenSource={setActiveSourcePopout}
             isForaging={isForaging}
+            isForagingFading={isForagingFading}
             subtitle={alexSubtitle}
           />
 
@@ -2474,6 +2483,7 @@ function AlexHeader({
   proactivity,
   onOpenSource,
   isForaging,
+  isForagingFading,
   subtitle,
 }) {
   const uniqueSources = dedupeSources(sources)
@@ -2485,8 +2495,12 @@ function AlexHeader({
         {showCards && <SwipingCards />}
         <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
 
-        {isAlexActive && isForaging && (
-          <div className="alex-foraging-layer">
+        {isAlexActive && (isForaging || isForagingFading) && (
+          <div
+            className={`alex-foraging-layer ${
+              isForagingFading ? 'is-fading-out' : ''
+            }`}
+          >
             <div className="alex-foraging-card alex-foraging-card-1">
               <FontAwesomeIcon icon={faMagnifyingGlass} />
               <span>Searching trusted sources</span>
@@ -2555,45 +2569,58 @@ function AlexHeader({
         {subtitle && <div className="alex-subtitle">{subtitle}</div>}
 
         {uniqueSources.length > 0 && (
-          <div className={`alex-source-panel`}>
-            <span className="alex-source-label">Trusted sources checked</span>
+          <div className="alex-source-panel">
+            <div className="alex-source-panel-header">
+              <span className="alex-source-label">Resources I found</span>
+            </div>
 
-            <div className="alex-source-list">
-              {uniqueSources.map((source, index) => (
+            <div className="alex-source-card-row">
+              {uniqueSources.slice(0, 3).map((source, index) => (
                 <button
                   key={getSourceKey(source)}
                   type="button"
-                  className="alex-source-chip alex-source-chip-verified"
-                  style={{ animationDelay: `${index * 120}ms` }}
-                  title={source.relevance_explanation}
+                  className="alex-source-card"
                   onClick={() => onOpenSource(source)}
                 >
-                  <FontAwesomeIcon icon={faCheck} />
-                  {source.source} - {source.title}
+                  <div className="alex-source-card-top">
+                    <div className="alex-source-card-title-area">
+                      <span className="alex-source-card-badge">
+                        {source.source || 'Source'}
+                      </span>
+                      <div className="alex-source-card-title">
+                        {source.title || source.file || 'Trusted resource'}
+                      </div>
+                    </div>
+
+                    <span className="alex-source-card-page">
+                      <FontAwesomeIcon icon={faFileLines} size="2x" />
+                    </span>
+                  </div>
+
+                  <div className="alex-source-card-excerpt">
+                    {(source.excerpt || source.content || '').slice(0, 145)}
+                    {(source.excerpt || source.content || '').length > 145
+                      ? '…'
+                      : ''}
+                  </div>
+
+                  <div className="alex-source-card-action">Explore →</div>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {isAlexActive && showTalkingPoints && talkingPoints?.length > 0 && (
-          <div
-            className={`alex-talking-points alex-talking-points-${proactivity}`}
-          >
+        {/* {isAlexActive && showTalkingPoints && talkingPoints?.length > 0 && (
+          <div className={`alex-talking-points`}>
             {talkingPoints.map((point, index) => (
-              <div
-                className="alex-talking-point"
-                style={{
-                  animationDelay: `${index * 550}ms`,
-                }}
-                key={`${point}-${index}`}
-              >
+              <div className="alex-talking-point" key={`${point}-${index}`}>
                 <FontAwesomeIcon icon={faCheck} />
                 <span>{point}</span>
               </div>
             ))}
           </div>
-        )}
+        )} */}
       </div>
     </div>
   )
@@ -2752,13 +2779,31 @@ function ChatInput({
   )
 }
 
-function SourcePopout({ source, onClose }) {
+function SourcePopout({ source, onClose, onSaveResource, isSaved }) {
+  if (!source) return null
+
+  const pdfSrc = source.file
+    ? `/resources/${encodeURIComponent(source.file)}#page=${source.page_number || 1}`
+    : null
+
   return (
     <div className="source-popout-overlay" onClick={onClose}>
-      <div className="source-popout" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="source-popout source-popout-large"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="source-popout-header">
           <div>
-            <h3>Source Preview</h3>
+            <div className="source-popout-eyebrow">
+              {source.source || 'Source'}
+            </div>
+            <h3>{source.title || source.file || 'Source preview'}</h3>
+
+            {source.page_number && (
+              <p className="source-page-note">
+                Alex found this around page {source.page_number}.
+              </p>
+            )}
           </div>
 
           <button type="button" onClick={onClose}>
@@ -2766,31 +2811,37 @@ function SourcePopout({ source, onClose }) {
           </button>
         </div>
 
-        <div className="source-preview-card">
-          <div className="source-preview-site">
-            <p>
-              <span>Source</span>{' '}
-              {source.source || 'Trusted clinical trials resource'}
-            </p>
-            <p>
-              <span>Source Title</span>{' '}
-              {source.title || source.source || source.file}
-            </p>
-            <p>
-              <span>Source Snippet</span>{' '}
-              {source.content && (
-                <div className="source-popout-content">
-                  {source.content.slice(0, 900)}
-                  {source.content.length > 900 ? '…' : ''}
-                </div>
-              )}
-            </p>
-          </div>
-          <div className="source-link-later-note">
-            If a note with this source is saved, you'll be able to request
-            access to the original link at the end of the conversation.
-          </div>
+        <div className="source-popout-actions">
+          <button
+            type="button"
+            className={`mi-nudge-btn ${isSaved ? '' : 'mi-nudge-btn-primary'}`}
+            onClick={() => onSaveResource?.(source)}
+            disabled={isSaved}
+          >
+            {isSaved ? 'Saved ✓' : 'Save resource'}
+          </button>
         </div>
+
+        {pdfSrc ? (
+          <iframe
+            title={source.title || source.file}
+            className="source-popout-iframe"
+            src={pdfSrc}
+          />
+        ) : (
+          <div className="source-preview-card">
+            <div className="source-preview-site">
+              <p>
+                <span>{source.source || 'Source'}</span>
+                {source.title || source.file || 'Trusted resource'}
+              </p>
+            </div>
+
+            <div className="source-preview-highlight">
+              {source.excerpt || source.content || 'No preview available.'}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

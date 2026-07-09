@@ -856,25 +856,145 @@
 
 .alex-source-panel {
   position: absolute;
-  right: 16px;
-  top: 16px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
-  max-width: 29%;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 12;
+  width: auto;
+  padding: 15px 25px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.76);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 18px 45px rgba(60, 70, 90, 0.16);
+}
+
+.alex-source-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 9px;
 }
 
 .alex-source-label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  opacity: 0.7;
+  font-size: 15px;
+  line-height: normal;
+  font-weight: 800;
+  color: #344054;
+}
+
+.alex-source-card-row {
+  display: flex;
+  gap: 15px;
+  padding-bottom: 5px;
+  flex-direction: column;
+}
+
+.alex-source-card {
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgb(var(--primary-orange) / 35%);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 22px rgba(60, 70, 90, 0.1);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+  animation: sourceChipIn 0.32s ease forwards;
+}
+
+.alex-source-card:nth-child(1) {
+  animation-delay: 0.05s;
+}
+
+.alex-source-card:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.alex-source-card:nth-child(3) {
+  animation-delay: 0.25s;
+}
+
+.alex-source-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(60, 70, 90, 0.16);
+  border-color: rgb(var(--primary-orange) / 75%);
+}
+
+.alex-source-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+}
+
+.alex-source-card-title-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+span.alex-source-card-badge {
+  border-radius: 15px;
+  background-color: rgb(var(--primary-orange) / 15%);
+  border: 1px solid rgb(var(--primary-orange) / 75%);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 11px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 7px 3px 7px;
+}
+
+.alex-source-card-top svg {
+  padding: 9px 11px;
+  border-radius: 9px;
+  color: rgb(var(--primary-orange));
+  background-color: rgb(var(--primary-orange) / 15%);
+}
+
+.alex-source-card-title {
+  color: #182230;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.alex-source-card-snippet-area {
+  display: flex;
+  flex-direction: row;
+  gap: 9px;
+}
+
+.alex-source-card-snippet {
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.3;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.alex-source-card-action {
+  margin-top: auto;
+  color: rgb(var(--primary-blue));
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .alex-source-list {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 5px;
 }
 
@@ -923,11 +1043,20 @@
   gap: 8px;
 
   z-index: 5;
-}
-
-.alex-talking-points-collaborative {
   right: 3rem;
   width: 200px;
+}
+
+.alex-talking-point:nth-child(1) {
+  animation-delay: 0.5s;
+}
+
+.alex-talking-point:nth-child(2) {
+  animation-delay: 1s;
+}
+
+.alex-talking-point:nth-child(3) {
+  animation-delay: 1.5s;
 }
 
 .alex-talking-point {
@@ -1148,6 +1277,13 @@
   inset: 0;
   pointer-events: none;
   z-index: 3;
+  opacity: 1;
+  transition: 0.45s ease-out;
+}
+
+.alex-foraging-layer.is-fading-out {
+  opacity: 0;
+  transform: translateY(-8px), scale(0.5);
 }
 
 .alex-foraging-card {
@@ -1156,18 +1292,40 @@
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 999px;
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 10px 30px rgba(16, 24, 40, 0.12);
   font-size: 0.85rem;
   font-weight: 700;
   color: #344054;
-  opacity: 0;
+
   animation-name: alexCardEnter, alexForagingFloat;
   animation-duration: 1s, 2.8s;
   animation-timing-function: ease, ease-in-out;
   animation-fill-mode: forwards, none;
   animation-iteration-count: 1, infinite;
+
+  opacity: 0;
+}
+
+.alex-foraging-card::before,
+.alex-foraging-card::after {
+  content: '';
+  position: absolute;
+  background: inherit;
+  border-radius: 50%;
+}
+
+/* medium bubble */
+.alex-foraging-card::before {
+  width: 12px;
+  height: 12px;
+}
+
+/* tiny bubble */
+.alex-foraging-card::after {
+  width: 7px;
+  height: 7px;
 }
 
 .alex-foraging-card svg {
@@ -1190,10 +1348,43 @@
 
 .alex-foraging-card-3 {
   bottom: 15%;
-  left: 19%;
+  left: 11%;
   animation-delay:
     1.75s,
     -1.8s;
+}
+
+/* top left bubble */
+.alex-foraging-card-1::before {
+  bottom: -15px;
+  right: 22px;
+}
+
+.alex-foraging-card-1::after {
+  bottom: -18px;
+  right: 12px;
+}
+
+/* top right bubble */
+.alex-foraging-card-2::before {
+  bottom: -15px;
+  left: 22px;
+}
+
+.alex-foraging-card-2::after {
+  bottom: -18px;
+  left: 12px;
+}
+
+/* bottom left bubble */
+.alex-foraging-card-3::before {
+  top: -15px;
+  right: 24px;
+}
+
+.alex-foraging-card-3::after {
+  top: -18px;
+  right: 12px;
 }
 
 @keyframes alexCardEnter {
@@ -1402,12 +1593,27 @@
   flex-direction: column;
 }
 
+.source-popout-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.source-page-note {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-style: italic;
+}
+
 .source-popout-iframe {
   flex: 1;
   width: 100%;
+  min-height: 480px;
   border: 1px solid #dbe3ef;
   border-radius: 16px;
-  margin-top: 16px;
+  margin-top: 12px;
+  background: white;
 }
 
 .source-preview-card {
@@ -2478,9 +2684,4 @@
 
 .mi-root-passive .mi-sidebar-suggestions-section {
   border-bottom: 1px solid rgb(var(--primary-blue) / 25%);
-}
-
-.mi-root-passive .alex-talking-points-passive {
-  right: 3rem;
-  width: 200px;
 }
