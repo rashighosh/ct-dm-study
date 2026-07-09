@@ -59,8 +59,24 @@ export default function MainInteraction() {
   // const BASE_URL = 'http://127.0.0.1:8000'
   const BASE_URL =
     'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+
   const location = useLocation()
-  const goals = location.state ?? {}
+
+  // Load goals from session storage
+  const initialGoals =
+    location.state ||
+    JSON.parse(sessionStorage.getItem('mainInteractionGoals') || '{}')
+
+  const goals = initialGoals
+
+  useEffect(() => {
+    if (location.state) {
+      sessionStorage.setItem(
+        'mainInteractionGoals',
+        JSON.stringify(location.state),
+      )
+    }
+  }, [location.state])
 
   const selectedGoalObjects = goals.selectedGoalObjects || []
 
@@ -82,6 +98,26 @@ export default function MainInteraction() {
   const previousJordanSuggestions = useRef(new Set())
   const introCueTimers = useRef([])
 
+  const participantId = goals?.participantId || 'test-participant'
+
+  // For using session storage
+  const SESSION_KEY = `mainInteractionSession-${participantId}`
+
+  function getSavedSession() {
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  }
+
+  const savedSession = getSavedSession()
+
+  const restoredInteractionRef = useRef(
+    !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
+  )
+  const introStartedRef = useRef(false)
   const [showCollabQuestionPrompt, setShowCollabQuestionPrompt] =
     useState(false)
   const [collabQuestionPromptText, setCollabQuestionPromptText] = useState(null)
@@ -89,33 +125,56 @@ export default function MainInteraction() {
   const [tutorialIndex, setTutorialIndex] = useState(0)
   const [showTalkingPoints, setShowTalkingPoints] = useState(false)
   const [alexIntroCue, setAlexIntroCue] = useState(null)
-  const [audioReady, setAudioReady] = useState(false)
+  const [audioReady, setAudioReady] = useState(
+    savedSession?.audioReady ?? false,
+  )
   const [alexTalkingPoints, setAlexTalkingPoints] = useState([])
   const [pendingGoalNotes, setPendingGoalNotes] = useState({})
   const [activeJordanSuggestion, setActiveJordanSuggestion] = useState(null)
   const [activeQuerySuggestion, setActiveQuerySuggestion] = useState('')
   const [activeQueryLoading, setActiveQueryLoading] = useState(false)
   const [showCards, setShowCards] = useState(false)
-  // Active condition only:
-  // null | "notes" | "query" | "eval"
   const [openJordanPanel, setOpenJordanPanel] = useState(null)
-  const [alexIntroDone, setAlexIntroDone] = useState(false)
-  // Collaborative condition only:
-  // null | { type: "query" | "eval", ... }
+  const [alexIntroDone, setAlexIntroDone] = useState(
+    savedSession?.alexIntroDone ?? false,
+  )
   const [collabSuggestion, setCollabSuggestion] = useState(null)
-  const [goalNotes, setGoalNotes] = useState({})
+  const [goalNotes, setGoalNotes] = useState(savedSession?.goalNotes ?? {})
   const [alexSources, setAlexSources] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
   const [proactivity] = useState(goals?.proactivity || 'collaborative')
   const [showHistory, setShowHistory] = useState(false)
-  const [input, setInput] = useState('')
-  const [coveredGoals, setCoveredGoals] = useState(new Set())
-  const [messages, setMessages] = useState([])
-  const [transcript, setTranscript] = useState([])
+  const [input, setInput] = useState(savedSession?.input ?? '')
+  const [coveredGoals, setCoveredGoals] = useState(
+    () => new Set(savedSession?.coveredGoals ?? []),
+  )
+  const [messages, setMessages] = useState(savedSession?.messages ?? [])
+  const [transcript, setTranscript] = useState(savedSession?.transcript ?? [])
+
+  useEffect(() => {
+    const session = {
+      audioReady,
+      alexIntroDone,
+      goalNotes,
+      input,
+      coveredGoals: Array.from(coveredGoals),
+      messages,
+      transcript,
+    }
+
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  }, [
+    SESSION_KEY,
+    audioReady,
+    alexIntroDone,
+    goalNotes,
+    input,
+    coveredGoals,
+    messages,
+    transcript,
+  ])
 
   const hasSentFirstMessage = messages.some((m) => m.from === 'user')
-
-  const participantId = goals?.participantId || 'test-participant'
 
   const goalLabels = goalObjects.map((goal) => goal.title)
 
@@ -141,12 +200,26 @@ export default function MainInteraction() {
 
   useEffect(() => {
     if (!audioReady) return
+
     async function initCharacters() {
       try {
         await initDoctorCharacter(doctorRef.current)
+
         if (companionRef.current) {
           await initCompanionCharacter(companionRef.current)
         }
+
+        // On refresh: load characters, but do not replay intro.
+        if (restoredInteractionRef.current) {
+          setIsAlexActive(false)
+          return
+        }
+
+        // Prevent intro from restarting when intro messages are added.
+        if (introStartedRef.current) return
+        introStartedRef.current = true
+
+        setIsAlexActive(true)
 
         console.log('GOALS ARE', goals)
 
@@ -202,7 +275,6 @@ export default function MainInteraction() {
           intro_part: 'static',
         })
 
-        setIsAlexActive(true)
         playAlexIntroCues()
         playGesture('lookleft')
 
@@ -332,6 +404,8 @@ export default function MainInteraction() {
   const navigate = useNavigate()
 
   function handleContinue() {
+    sessionStorage.removeItem(SESSION_KEY)
+    sessionStorage.removeItem('mainInteractionGoals')
     navigate('/notes-review', {
       state: {
         participantId,
@@ -2391,9 +2465,7 @@ function AlexHeader({
         )}
 
         {introCue?.type === 'boundary' && (
-          <div
-            className={`alex-intro-visual-card alex-intro-visual-card-${proactivity}`}
-          >
+          <div className={`alex-intro-visual-card`}>
             <div className="alex-search-icon">
               <FontAwesomeIcon icon={faClipboardList} size="5x" />
 
@@ -2408,9 +2480,7 @@ function AlexHeader({
           <div
             className={`alex-intro-visual-card alex-intro-visual-card-${proactivity}`}
           >
-            <div
-              className={`alex-source-stack alex-source-stack-${proactivity}`}
-            >
+            <div className={`alex-source-stack`}>
               <div className="alex-source-step alex-source-step-1">
                 <FontAwesomeIcon icon={faMagnifyingGlass} size="3x" />
               </div>
@@ -2427,7 +2497,7 @@ function AlexHeader({
         )}
 
         {uniqueSources.length > 0 && (
-          <div className={`alex-source-panel alex-source-panel-${proactivity}`}>
+          <div className={`alex-source-panel`}>
             <span className="alex-source-label">Trusted sources checked</span>
 
             <div className="alex-source-list">
