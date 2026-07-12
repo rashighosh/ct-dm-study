@@ -1,13 +1,42 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs'
+import { MotionEngine } from 'motion-engine'
+import motions from 'motion-engine/motions'
 
 // const BASE_URL = 'https://fastapi-rashi.onrender.com';
 // const BASE_URL = 'http://127.0.0.1:8000'
 const BASE_URL =
   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+
 let head = null
 let head1 = null
+let doctorMotionEngine = null
+let companionMotionEngine = null
+
 let onSubtitleCallback = null
 let subtitleRunId = 0
+
+function createMotionEngine(talkingHead) {
+  const engine = new MotionEngine(talkingHead, {
+    gestureFadeIn: 400,
+    gestureFadeOut: 900,
+    stopFade: 1200,
+    stopSettleTime: 1200,
+    poseFadeIn: 700,
+    poseSettleTime: 900,
+    nativeDuration: 2,
+  })
+
+  engine.registerMotions(motions)
+
+  const previousUpdate = talkingHead.opt.update
+
+  talkingHead.opt.update = (dt) => {
+    previousUpdate?.(dt)
+    engine.update(dt)
+  }
+
+  return engine
+}
 
 document.addEventListener(
   'click',
@@ -44,7 +73,7 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
     lipsyncLang: 'en',
   })
 
-  // focusCharacter(2)
+  doctorMotionEngine = createMotionEngine(head)
 
   return head
 }
@@ -69,7 +98,28 @@ export async function initCompanionCharacter(containerNode) {
     lipsyncLang: 'en',
   })
 
+  companionMotionEngine = createMotionEngine(head1)
+
   return head1
+}
+
+export async function playMotion(character, motionName, duration) {
+  const engine =
+    character === 'doctor' ? doctorMotionEngine : companionMotionEngine
+
+  if (!engine) {
+    console.warn(`MotionEngine is not initialized for ${character}`)
+    return
+  }
+
+  try {
+    await engine.play(motionName, duration)
+  } catch (error) {
+    console.error(
+      `Could not play motion "${motionName}" for ${character}:`,
+      error,
+    )
+  }
 }
 
 export function stopCharacter() {
@@ -163,6 +213,11 @@ export async function lookright() {
   head1?.playGesture('lookright', Infinity, true, 1500)
 }
 
+export async function lookrightalex() {
+  head?.stopGesture(1500)
+  head?.playGesture('lookright', Infinity, true, 1500)
+}
+
 export async function lookleft() {
   head1?.stopGesture(1500)
   head1?.playGesture('lookright', Infinity, false, 1500)
@@ -177,6 +232,10 @@ export async function rightGesture() {
   head1?.playGesture('rightGesture')
 }
 
+export async function introduceJordan() {
+  head?.playGesture('introduceJordan')
+}
+
 export async function headNod() {
   head.playGesture('yes', 5, false, 1500)
   // head.playAnimation('/animations/Looking Around.fbx')
@@ -185,6 +244,10 @@ export async function headNod() {
 export async function thumbsupQuick() {
   head1.playGesture('thumbup', 2, false, 1000)
   // head.playAnimation('/animations/Looking Around.fbx')
+}
+
+export async function stopAlexGesture() {
+  head?.stopGesture(3000)
 }
 
 export async function stopCompanionGesture() {
@@ -328,6 +391,233 @@ function createSpeechGestures(activeHead, audioBuffer) {
   return { markers, mtimes }
 }
 
+const STATIC_GESTURE_MAPS = {
+  '/intro-voices/doctor-audio-ALEX_INTRO_1.mp3': [
+    { engine: 'native', word: 'hi', gesture: 'handup', dur: 1.5, reset: false },
+    {
+      engine: 'native',
+      word: 'Jordan',
+      gesture: 'introduceJordan',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'are',
+      gesture: 'chest',
+      dur: 1.2,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'are',
+      gesture: 'chest',
+      dur: 1.2,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'help',
+      gesture: 'talkopen',
+      dur: 2,
+      resetTransition: 500,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_2.mp3': [
+    {
+      engine: 'native',
+      word: 'briefly',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'virtual',
+      gesture: 'talkopen',
+      dur: 1,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'search',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'pull',
+      gesture: 'chest',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'National',
+      gesture: 'talkopen',
+      dur: 2,
+      resetTransition: 200,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_3.mp3': [
+    {
+      engine: 'native',
+      word: 'cover',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'different',
+      gesture: 'talkopen',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'protected',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_4.mp3': [
+    {
+      engine: 'native',
+      word: 'one',
+      gesture: 'oneQuestion',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'that',
+      gesture: 'talkopen',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'so',
+      gesture: 'chest',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_5.mp3': [
+    {
+      engine: 'native',
+      word: 'now',
+      gesture: 'introduceJordan',
+      dur: 1.5,
+      reset: false,
+    },
+  ],
+}
+
+function normalizeWord(word) {
+  return word
+    .trim()
+    .toLowerCase()
+    .replace(/[.,!?;:]/g, '')
+}
+
+function buildGestureMarkers({
+  audioPath,
+  timestamps,
+  wtimes,
+  activeHead,
+  character,
+  gesturesEnabled,
+}) {
+  if (!gesturesEnabled) {
+    return { markers: [], mtimes: [] }
+  }
+
+  const gestureDefinitions = STATIC_GESTURE_MAPS[audioPath] || []
+
+  const normalizedTimestampWords = timestamps.map((item) =>
+    normalizeWord(item.word),
+  )
+
+  const markers = []
+  const mtimes = []
+
+  gestureDefinitions.forEach(
+    ({
+      word,
+      gesture,
+      engine = 'native',
+      dur = 2,
+      transition = 800,
+      resetTransition = 600,
+      mirror = false,
+      occurrence = 0,
+      reset = true,
+    }) => {
+      const targetWord = normalizeWord(word)
+
+      const matchingIndexes = normalizedTimestampWords
+        .map((timestampWord, index) =>
+          timestampWord === targetWord ? index : -1,
+        )
+        .filter((index) => index !== -1)
+
+      const index = matchingIndexes[occurrence]
+
+      if (index === undefined) {
+        console.warn(
+          `Gesture word "${word}" not found in timestamps for ${audioPath}`,
+        )
+        return
+      }
+
+      const startTime = wtimes[index]
+
+      markers.push(() => {
+        if (engine === 'motion') {
+          playMotion(character, gesture, dur).catch(console.error)
+        } else {
+          activeHead.playGesture(gesture, dur, mirror, transition)
+        }
+      })
+
+      mtimes.push(startTime)
+
+      if (reset) {
+        markers.push(() => {
+          if (engine === 'motion') {
+            const motionEngine =
+              character === 'doctor'
+                ? doctorMotionEngine
+                : companionMotionEngine
+
+            motionEngine?.stop?.()
+          } else {
+            activeHead.playGesture(null, 0, false, resetTransition)
+          }
+        })
+
+        mtimes.push(startTime + dur * 1000)
+      }
+    },
+  )
+
+  const scheduledMarkers = markers
+    .map((marker, index) => ({
+      marker,
+      time: mtimes[index],
+    }))
+    .sort((a, b) => a.time - b.time)
+
+  return {
+    markers: scheduledMarkers.map((item) => item.marker),
+    mtimes: scheduledMarkers.map((item) => item.time),
+  }
+}
+
 export async function speakWithLipsyncStatic(
   audioPath,
   timestampsPath,
@@ -335,163 +625,60 @@ export async function speakWithLipsyncStatic(
   gestures = true,
   onSubtitle = null,
 ) {
-  console.log(audioPath)
   const activeHead = character === 'companion' ? head1 : head
-  const [audioRes, tsRes] = await Promise.all([
+
+  const [audioRes, timestampsRes] = await Promise.all([
     fetch(audioPath),
     fetch(timestampsPath),
   ])
 
-  const audioBuffer = await activeHead.audioCtx.decodeAudioData(
-    await audioRes.arrayBuffer(),
-  )
-  const timestamps = await tsRes.json()
+  if (!audioRes.ok) {
+    throw new Error(`Could not load audio: ${audioPath}`)
+  }
 
-  const words = timestamps.map((t) => t.word.trim().replace(/[.,!?;:]/g, ''))
-  const wtimes = timestamps.map((t) => t.start * 1000)
-  const wdurations = timestamps.map((t) => (t.end - t.start) * 1000)
-  const subtitleWords = timestamps.map((t) => t.word.trim())
+  if (!timestampsRes.ok) {
+    throw new Error(`Could not load timestamps: ${timestampsPath}`)
+  }
+
+  const [audioArrayBuffer, timestamps] = await Promise.all([
+    audioRes.arrayBuffer(),
+    timestampsRes.json(),
+  ])
+
+  const audioBuffer =
+    await activeHead.audioCtx.decodeAudioData(audioArrayBuffer)
+
+  const words = timestamps.map((item) => normalizeWord(item.word))
+  const wtimes = timestamps.map((item) => item.start * 1000)
+  const wdurations = timestamps.map((item) => (item.end - item.start) * 1000)
 
   const runId = ++subtitleRunId
-  const subtitleTimers = []
+  const subtitleTimers = createSubtitleTimers({
+    timestamps,
+    runId,
+    onSubtitle,
+  })
 
-  if (onSubtitle && timestamps.length > 0) {
-    const WORDS_PER_CAPTION = 8
-
-    for (let i = 0; i < timestamps.length; i += WORDS_PER_CAPTION) {
-      const timer = setTimeout(() => {
-        if (runId !== subtitleRunId) return
-        const caption = timestamps
-          .slice(i, Math.min(i + WORDS_PER_CAPTION, timestamps.length))
-          .map((item) => item.word)
-          .join(' ')
-
-        onSubtitle(caption)
-      }, timestamps[i].start * 1000)
-
-      subtitleTimers.push(timer)
-    }
-  }
-
-  const markers = []
-  const mtimes = []
-
-  if (audioPath === '/intro-voices/companion-shared-intro.mp3' && gestures) {
-    // define word -> gesture mappings here
-    const wordGestures = [
-      { word: 'hi', gesture: 'handup', dur: 2, transition: 1500 },
-      { word: 'alex', gesture: 'talkopen', dur: 2, transition: 1500 },
-      { word: 'track', gesture: 'chest', dur: 2, transition: 1500 },
-      { word: 'setting', gesture: 'rightGesture', dur: 2, transition: 1500 },
-      { word: 'think', gesture: 'talkopen', dur: 2, transition: 1500 },
-    ]
-
-    wordGestures.forEach(({ word, gesture, dur, transition }) => {
-      const idx = timestamps.findIndex(
-        (t) =>
-          t.word
-            .trim()
-            .toLowerCase()
-            .replace(/[.,!?;:]/g, '') === word,
-      )
-      if (idx !== -1) {
-        markers.push(() =>
-          activeHead.playGesture(gesture, dur, false, transition),
-        )
-        mtimes.push(wtimes[idx])
-      }
-    })
-  }
-
-  if (audioPath === '/intro-voices/doctor-alexIntro1-intro.mp3' && gestures) {
-    // define word -> gesture mappings here
-    const wordGestures = [
-      { word: 'hi', gesture: 'handup', dur: 2, transition: 1500 },
-      { word: 'reminder', gesture: 'rightGesture', dur: 2, transition: 1500 },
-      { word: 'choices', gesture: 'talkopen', dur: 2, transition: 1500 },
-      { word: 'help', gesture: 'rightGesture', dur: 2, transition: 1500 },
-      { word: 'think', gesture: 'talkopen', dur: 2, transition: 1500 },
-    ]
-
-    wordGestures.forEach(({ word, gesture, dur, transition }) => {
-      const idx = timestamps.findIndex(
-        (t) =>
-          t.word
-            .trim()
-            .toLowerCase()
-            .replace(/[.,!?;:]/g, '') === word,
-      )
-      if (idx !== -1) {
-        markers.push(() =>
-          activeHead.playGesture(gesture, dur, false, transition),
-        )
-        mtimes.push(wtimes[idx])
-      }
-    })
-  }
-
-  if (audioPath === '/intro-voices/doctor-intro1.mp3' && gestures) {
-    // define word -> gesture mappings here
-    const wordGestures = [
-      { word: 'hi', gesture: 'handup', dur: 2, transition: 1500 },
-      { word: 'lot', gesture: 'talkopen', dur: 2, transition: 1500 },
-      { word: 'hard', gesture: 'shrug', dur: 2, transition: 1500 },
-      { word: "that's", gesture: 'chest', dur: 2, transition: 1500 },
-      { word: 'trusted', gesture: 'talkopen', dur: 2, transition: 1500 },
-      { word: 'whenever', gesture: 'rightGesture', dur: 2, transition: 1500 },
-    ]
-
-    wordGestures.forEach(({ word, gesture, dur, transition }) => {
-      const idx = timestamps.findIndex(
-        (t) =>
-          t.word
-            .trim()
-            .toLowerCase()
-            .replace(/[.,!?;:]/g, '') === word,
-      )
-      if (idx !== -1) {
-        markers.push(() =>
-          activeHead.playGesture(gesture, dur, false, transition),
-        )
-        mtimes.push(wtimes[idx])
-      }
-    })
-  }
-
-  if (audioPath === '/intro-voices/companion-intro2.mp3' && gestures) {
-    // define word -> gesture mappings here
-    const wordGestures = [
-      { word: 'hey', gesture: 'handup', dur: 1.5, transition: 1500 },
-      { word: 'type', gesture: 'talkopen', dur: 1.5, transition: 1500 },
-      { word: 'if', gesture: 'oneQuestion', dur: 2, transition: 1500 },
-      { word: 'silently', gesture: 'chest', dur: 2, transition: 1500 },
-      { word: 'hover', gesture: 'talkopen', dur: 2, transition: 1500 },
-      { word: 'it', gesture: 'chest', dur: 2, transition: 1500 },
-      { word: 'based', gesture: 'rightGesture', dur: 2, transition: 1500 },
-      { word: 'hovering', gesture: 'chest', dur: 2, transition: 1500 },
-      { word: 'ahead', gesture: 'talkopen', dur: 1, transition: 1500 },
-    ]
-
-    wordGestures.forEach(({ word, gesture, dur, transition }) => {
-      const idx = timestamps.findIndex(
-        (t) =>
-          t.word
-            .trim()
-            .toLowerCase()
-            .replace(/[.,!?;:]/g, '') === word,
-      )
-      if (idx !== -1) {
-        markers.push(() =>
-          activeHead.playGesture(gesture, dur, false, transition),
-        )
-        mtimes.push(wtimes[idx])
-      }
-    })
-  }
+  const { markers, mtimes } = buildGestureMarkers({
+    audioPath,
+    timestamps,
+    wtimes,
+    activeHead,
+    character,
+    gesturesEnabled: gestures,
+  })
 
   activeHead.stopGesture()
+
   activeHead.speakAudio(
-    { audio: audioBuffer, words, wtimes, wdurations, markers, mtimes },
+    {
+      audio: audioBuffer,
+      words,
+      wtimes,
+      wdurations,
+      markers,
+      mtimes,
+    },
     { isRaw: true },
     null,
   )
@@ -499,6 +686,7 @@ export async function speakWithLipsyncStatic(
   return new Promise((resolve) => {
     setTimeout(() => {
       subtitleTimers.forEach(clearTimeout)
+
       if (runId === subtitleRunId) {
         onSubtitle?.('')
       }
@@ -506,6 +694,36 @@ export async function speakWithLipsyncStatic(
       resolve()
     }, audioBuffer.duration * 1000)
   })
+}
+
+function createSubtitleTimers({
+  timestamps,
+  runId,
+  onSubtitle,
+  wordsPerCaption = 8,
+}) {
+  if (!onSubtitle || timestamps.length === 0) {
+    return []
+  }
+
+  const timers = []
+
+  for (let index = 0; index < timestamps.length; index += wordsPerCaption) {
+    const timer = setTimeout(() => {
+      if (runId !== subtitleRunId) return
+
+      const caption = timestamps
+        .slice(index, index + wordsPerCaption)
+        .map((item) => item.word.trim())
+        .join(' ')
+
+      onSubtitle(caption)
+    }, timestamps[index].start * 1000)
+
+    timers.push(timer)
+  }
+
+  return timers
 }
 
 export async function focusCharacter(character) {
@@ -544,6 +762,7 @@ export const gestures = {
   lookup,
   lookdown,
   lookright,
+  lookrightalex,
   lookleft,
   indexFingerRaise,
   headNod,
@@ -552,6 +771,7 @@ export const gestures = {
   wave,
   rightGesture,
   stopCompanionGesture,
+  stopAlexGesture,
   // add more here
 }
 

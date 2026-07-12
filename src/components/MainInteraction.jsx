@@ -17,6 +17,8 @@ import {
   faArrowRight,
   faPenToSquare,
   faFileLines,
+  faCode,
+  faCommentNodes,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -40,6 +42,37 @@ const TUTORIAL_IMAGES = {
     '/tutorials/collaborative2.png',
   ],
   active: ['/tutorials/active1.png'],
+}
+
+const ALEX_INTROS = [
+  "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation.",
+  "I'll quickly explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from sources recommended for understanding how clinical trials work, like the National Cancer Institute and ClinicalTrials.gov.",
+  'These sources cover topics like how trials work, the different types and phases, how participants are protected, and how insurance and study costs are handled.',
+  "One important thing to know is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
+  "Now, I'll hand it over to Jordan to quickly explain his role.",
+]
+
+const JORDAN_INTROS = [
+  "Thanks, Alex! So as Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process.",
+  "As you explore, I'll help you build on your questions and discover new ways to learn about clinical trial participation.",
+  'Sometimes that might mean making a question more specific, looking at something from a different perspective, or exploring a related idea.',
+  "Ultimately, you decide where the conversation goes. I'm just here to support your exploration.",
+  "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!",
+]
+
+const INTRO_VISUAL_TIMELINE = {
+  alex: {
+    1: [
+      { delay: 2500, duration: 2000, cue: { type: 'ai' } },
+      { delay: 5000, duration: 2200, cue: { type: 'explore' } },
+    ],
+    2: [
+      { delay: 3500, duration: 5500, cue: { type: 'search-documents' } },
+      { delay: 9500, duration: 3000, cue: { type: 'verified-document' } },
+    ],
+    3: [{ delay: 500, duration: 5000, cue: { type: 'topic-checklist' } }],
+    4: [{ delay: 1800, duration: 5000, cue: { type: 'no-specific-trials' } }],
+  },
 }
 
 const uid = () => crypto.randomUUID()
@@ -120,6 +153,7 @@ export default function MainInteraction() {
     !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
   )
   const [alexSubtitle, setAlexSubtitle] = useState('')
+  const [jordanSubtitle, setJordanSubtitle] = useState('')
   const introStartedRef = useRef(false)
   const [showCollabQuestionPrompt, setShowCollabQuestionPrompt] =
     useState(false)
@@ -145,6 +179,7 @@ export default function MainInteraction() {
   const [goalNotes, setGoalNotes] = useState(savedSession?.goalNotes ?? {})
   const [alexSources, setAlexSources] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
+  const [isJordanActive, setIsJordanActive] = useState(false)
   const [proactivity] = useState(goals?.proactivity || 'collaborative')
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState(savedSession?.input ?? '')
@@ -225,139 +260,101 @@ export default function MainInteraction() {
         introStartedRef.current = true
 
         setIsAlexActive(true)
+        setIsJordanActive(false)
 
-        console.log('GOALS ARE', goals)
+        /* ---------------------------------------------------------------------- */
+        /* Alex introduction                                                      */
+        /* ---------------------------------------------------------------------- */
 
-        const STATIC_ALEX_INTRO1 = `Hello, I am Doctor Alex, your virtual assistant for learning about clinical trials. I will not suggest specific trials or decide if one is right for you, since those choices are best discussed with your loved ones and health care provider, but I will help you find, summarize, and organize information from trusted sources.`
-
-        const STATIC_ALEX_INTRO2 = `Now, let me take a quick look at the goals that you set earlier with Jordan.`
-
-        const personalizedAlexPrompt = `
-        You are Doctor Alex, a warm and approachable virtual health assistant helping cancer patients learn about clinical trials as a treatment option.
-
-        The user's information-seeking goals are:
-        Selected goals:
-        ${goalObjects.map((goal) => goal.title).join(', ') || 'None'}
-
-        Custom goals:
-        ${(goals?.customGoals || []).join(', ') || 'None'}
-
-        Write exactly 2 sentences and keep the full response under 40 words:
-        1. Say that you reviewed the user's goals. Mention 2–3 examples from their goals, but frame them as examples rather than a complete list.
-        2. Ask one question about where the user would like to begin.
-
-        Do not use bullet points.
-        Do not list all of the user's goals.
-        Do not repeat the goals word-for-word.
-        Be conversational, supportive, concise, and easy to understand.
-      `
-
-        const personalizedPromise = fetch(`${BASE_URL}/simple-chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: personalizedAlexPrompt,
-          }),
-        }).then((res) => res.json())
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid(),
-            from: 'alex',
-            text: STATIC_ALEX_INTRO1,
-            sources: [],
-            explanation: null,
-            confidence: null,
-          },
-        ])
-
-        updateTranscript('alex', STATIC_ALEX_INTRO1, {
-          sources: [],
-          intro: true,
-          intro_part: 'static',
-        })
-
-        playAlexIntroCues()
         playGesture('lookleft')
+        for (const [index, text] of ALEX_INTROS.entries()) {
+          const introNumber = index + 1
 
-        await speakWithLipsyncStatic(
-          '/intro-voices/doctor-alexIntro1-intro.mp3',
-          '/intro-voices/doctor-alexIntro1-intro-timestamps.json',
-          'doctor',
-          true,
-          setAlexSubtitle,
-        )
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uid(),
+              from: 'alex',
+              text,
+              sources: [],
+              explanation: null,
+              confidence: null,
+            },
+          ])
 
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid(),
-            from: 'alex',
-            text: STATIC_ALEX_INTRO2,
+          updateTranscript('alex', text, {
             sources: [],
-            explanation: null,
-            confidence: null,
-          },
-        ])
+            intro: true,
+            intro_part: introNumber,
+            intro_character: 'alex',
+          })
 
-        updateTranscript('alex', STATIC_ALEX_INTRO2, {
-          sources: [],
-          intro: true,
-          intro_part: 'static',
-        })
+          scheduleIntroVisuals('alex', introNumber)
 
-        clearAlexIntroCues()
-        setAlexIntroCue({
-          type: 'goals-review',
-        })
+          await speakWithLipsyncStatic(
+            `/intro-voices/doctor-audio-ALEX_INTRO_${introNumber}.mp3`,
+            `/intro-voices/doctor-timestamps-ALEX_INTRO_${introNumber}.json`,
+            'doctor',
+            true,
+            setAlexSubtitle,
+          )
 
-        await speakWithLipsyncStatic(
-          '/intro-voices/doctor-alexIntro2-intro.mp3',
-          '/intro-voices/doctor-alexIntro2-intro-timestamps.json',
-          'doctor',
-          true,
-          setAlexSubtitle,
-        )
+          clearAlexIntroCues()
+        }
 
-        playGesture('thinkingDoctor')
+        /* ---------------------------------------------------------------------- */
+        /* Switch from Alex to Jordan                                              */
+        /* ---------------------------------------------------------------------- */
 
-        const data = await personalizedPromise
+        setAlexSubtitle('')
+        setIsAlexActive(false)
+        setIsJordanActive(true)
 
-        const personalizedIntro = data.reply
+        /* ---------------------------------------------------------------------- */
+        /* Jordan introduction                                                    */
+        /* ---------------------------------------------------------------------- */
+        playGesture('lookrightalex')
+        for (const [index, text] of JORDAN_INTROS.entries()) {
+          const introNumber = index + 1
 
-        updateTranscript('alex', personalizedIntro, {
-          sources: [],
-          intro: true,
-          intro_part: 'personalized',
-        })
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uid(),
+              from: 'jordan',
+              text,
+              sources: [],
+              explanation: null,
+              confidence: null,
+            },
+          ])
 
-        await speakWithLipsync(
-          personalizedIntro,
-          'doctor',
-          null,
-          () => {
-            setAlexIntroCue(null)
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: uid(),
-                from: 'alex',
-                text: personalizedIntro,
-                sources: [],
-                explanation: null,
-                confidence: null,
-              },
-            ])
-          },
-          setAlexSubtitle,
-        )
+          updateTranscript('jordan', text, {
+            sources: [],
+            intro: true,
+            intro_part: introNumber,
+            intro_character: 'jordan',
+          })
+
+          await speakWithLipsyncStatic(
+            `/intro-voices/companion-audio-JORDAN_INTRO_${introNumber}.mp3`,
+            `/intro-voices/companion-timestamps-JORDAN_INTRO_${introNumber}.json`,
+            'companion',
+            true,
+            setJordanSubtitle,
+          )
+        }
+
+        /* ---------------------------------------------------------------------- */
+        /* Introduction complete                                                  */
+        /* ---------------------------------------------------------------------- */
+
+        setJordanSubtitle('')
+        setIsJordanActive(false)
+        setAlexIntroDone(true)
 
         playGesture('stopCompanionGesture')
-        setIsAlexActive(false)
-        setAlexIntroDone(true)
+        playGesture('stopAlexGesture')
       } catch (err) {
         console.log(err)
       }
@@ -459,6 +456,34 @@ export default function MainInteraction() {
     introCueTimers.current.forEach(clearTimeout)
     introCueTimers.current = []
     setAlexIntroCue(null)
+  }
+
+  function scheduleIntroVisuals(character, introNumber) {
+    clearAlexIntroCues()
+
+    const visualCues = INTRO_VISUAL_TIMELINE[character]?.[introNumber] || []
+
+    visualCues.forEach(({ delay, duration, cue }) => {
+      const showTimer = setTimeout(() => {
+        setAlexIntroCue(cue)
+
+        if (duration) {
+          const fadeTimer = setTimeout(() => {
+            setAlexIntroCue((currentCue) =>
+              currentCue ? { ...currentCue, isExiting: true } : null,
+            )
+          }, duration)
+
+          const removeTimer = setTimeout(() => {
+            setAlexIntroCue(null)
+          }, duration + 450)
+
+          introCueTimers.current.push(fadeTimer, removeTimer)
+        }
+      }, delay)
+
+      introCueTimers.current.push(showTimer)
+    })
   }
 
   function toggleJordanPanel(panel) {
@@ -1002,38 +1027,6 @@ export default function MainInteraction() {
   /* Message send flow                                                        */
   /* ------------------------------------------------------------------------ */
 
-  function playAlexIntroCues() {
-    introCueTimers.current.forEach(clearTimeout)
-    introCueTimers.current = []
-
-    const cues = [
-      {
-        delay: 5840, // fix later
-        cue: {
-          type: 'boundary',
-          title: 'What I will not do',
-          text: 'I will not suggest specific trials or decide if one is right for you.',
-        },
-      },
-      {
-        delay: 15100, // fix later
-        cue: {
-          type: 'sources',
-          title: 'How I can help',
-          text: 'I can find, summarize, and organize information from trusted sources.',
-        },
-      },
-    ]
-
-    cues.forEach(({ delay, cue }) => {
-      const timer = setTimeout(() => setAlexIntroCue(cue), delay)
-      introCueTimers.current.push(timer)
-    })
-
-    const clearTimer = setTimeout(() => setAlexIntroCue(null), 19000)
-    introCueTimers.current.push(clearTimer)
-  }
-
   const handleKeyDown = (e) => {
     if (e.key !== 'Enter') return
 
@@ -1402,6 +1395,8 @@ export default function MainInteraction() {
           }
           availableSources={alexSources}
           isAlexActive={isAlexActive}
+          isJordanActive={isJordanActive}
+          jordanSubtitle={jordanSubtitle}
           pendingGoalNotes={pendingGoalNotes}
           onSavePendingGoalNote={savePendingGoalNote}
           onDismissPendingGoalNote={dismissPendingGoalNote}
@@ -1465,7 +1460,7 @@ export default function MainInteraction() {
             textareaRef={textareaRef}
             onChange={handleInputChange}
             onSubmit={handleSend}
-            disabled={isAlexActive}
+            disabled={isAlexActive || isJordanActive}
             onHandleKeyDown={handleKeyDown}
           />
         </section>
@@ -1605,6 +1600,8 @@ function JordanSidebar({
   onAddManualNote,
   availableSources,
   isAlexActive,
+  isJordanActive,
+  jordanSubtitle,
   pendingGoalNotes,
   onSavePendingGoalNote,
   onDismissPendingGoalNote,
@@ -1628,6 +1625,8 @@ function JordanSidebar({
           companionRef={companionRef}
           onRequestQuestion={onRequestCollabQuestion}
           isAlexActive={isAlexActive}
+          isJordanActive={isJordanActive}
+          jordanSubtitle={jordanSubtitle}
           collabSuggestion={collabSuggestion}
           hasSentFirstMessage={hasSentFirstMessage}
           alexIntroDone={alexIntroDone}
@@ -1678,6 +1677,8 @@ function JordanSidebarHeader({
   companionRef,
   onRequestQuestion,
   isAlexActive,
+  isJordanActive,
+  jordanSubtitle,
   collabSuggestion,
   hasSentFirstMessage,
   alexIntroDone,
@@ -1696,12 +1697,19 @@ function JordanSidebarHeader({
   return (
     <div className="mi-collab-jordan-header mi-jordan-sidebar-header">
       <div className="mi-jordan-stage-header">
-        <div className="mi-jordan-stage-avatar">
+        <div
+          className={`mi-jordan-stage-avatar ${
+            isJordanActive ? 'mi-jordan-stage-avatar-active' : ''
+          }`}
+        >
           <div
             className="virtual-companion"
             id="virtualcompanion"
             ref={companionRef}
           />
+          {jordanSubtitle && (
+            <div className="jordan-subtitle">{jordanSubtitle}</div>
+          )}
         </div>
 
         <div className="mi-jordan-stage-text">
@@ -2487,6 +2495,10 @@ function AlexHeader({
   subtitle,
 }) {
   const uniqueSources = dedupeSources(sources)
+  const introVisualClass = (extraClass = '') =>
+    `alex-intro-visual-card ${extraClass} ${
+      introCue?.isExiting ? 'alex-intro-visual-exiting' : ''
+    }`
   return (
     <div
       className={`mi-chat-header ${isAlexActive ? 'mi-alex-area-active' : ''}`}
@@ -2523,45 +2535,98 @@ function AlexHeader({
           <h2>Alex</h2>
         </div>
 
-        {introCue?.type === 'goals-review' && (
-          <div className="alex-goals-review-card">
-            <div className="alex-goals-paper">
-              <div className="alex-goals-paper-title">Your goals</div>
-              <div className="alex-goals-paper-line" />
-              <div className="alex-goals-paper-line short" />
-              <div className="alex-goals-paper-line" />
-            </div>
-          </div>
-        )}
-
-        {introCue?.type === 'boundary' && (
-          <div className={`alex-intro-visual-card`}>
-            <div className="alex-search-icon">
-              <FontAwesomeIcon icon={faClipboardList} size="5x" />
-
-              <div className="alex-search-ban">
-                <FontAwesomeIcon icon={faBan} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {introCue?.type === 'sources' && (
+        {introCue?.type === 'ai' && (
           <div
-            className={`alex-intro-visual-card alex-intro-visual-card-${proactivity}`}
+            className={introVisualClass('alex-intro-icon-group alex-intro-ai')}
           >
-            <div className={`alex-source-stack`}>
-              <div className="alex-source-step alex-source-step-1">
-                <FontAwesomeIcon icon={faMagnifyingGlass} size="3x" />
-              </div>
+            <FontAwesomeIcon
+              className="alex-intro-icon alex-intro-icon-1"
+              icon={faCode}
+            />
+            <FontAwesomeIcon
+              className="alex-intro-icon alex-intro-icon-2"
+              icon={faCommentNodes}
+            />
+          </div>
+        )}
 
-              <div className="alex-source-step alex-source-step-2">
-                <FontAwesomeIcon icon={faObjectGroup} size="3x" />
-              </div>
+        {introCue?.type === 'explore' && (
+          <div
+            className={introVisualClass(
+              'alex-intro-icon-group alex-intro-explore',
+            )}
+          >
+            <FontAwesomeIcon
+              className="alex-intro-icon alex-intro-icon-single"
+              icon={faLightbulb}
+            />
+          </div>
+        )}
 
-              <div className="alex-source-step alex-source-step-3">
-                <FontAwesomeIcon icon={faListCheck} size="3x" />
+        {introCue?.type === 'search-documents' && (
+          <div className={introVisualClass('alex-intro-search-documents')}>
+            <FontAwesomeIcon
+              className="alex-intro-search-main"
+              icon={faMagnifyingGlass}
+            />
+            <div className="alex-intro-document-row">
+              <FontAwesomeIcon
+                className="alex-intro-document alex-intro-document-1"
+                icon={faFileLines}
+              />
+              <FontAwesomeIcon
+                className="alex-intro-document alex-intro-document-2"
+                icon={faFileLines}
+              />
+              <FontAwesomeIcon
+                className="alex-intro-document alex-intro-document-3"
+                icon={faFileLines}
+              />
+            </div>
+          </div>
+        )}
+
+        {introCue?.type === 'verified-document' && (
+          <div className={introVisualClass('alex-intro-verified-document')}>
+            <div className="alex-intro-verified-file">
+              <FontAwesomeIcon icon={faFileLines} />
+              <span className="alex-intro-verified-badge">
+                <FontAwesomeIcon icon={faCheck} />
+              </span>
+            </div>
+          </div>
+        )}
+
+        {introCue?.type === 'topic-checklist' && (
+          <div className={introVisualClass('alex-intro-topic-checklist')}>
+            {[0, 1, 2, 3].map((item) => (
+              <div
+                className={`alex-intro-check-row alex-intro-check-row-${item + 1}`}
+                key={item}
+              >
+                <span className="alex-intro-check-box">
+                  <FontAwesomeIcon icon={faCheck} />
+                </span>
+                <span className="alex-intro-check-line" />
               </div>
+            ))}
+          </div>
+        )}
+
+        {introCue?.type === 'no-specific-trials' && (
+          <div className={introVisualClass('alex-intro-no-specific-trials')}>
+            <div className="alex-intro-restricted-icons">
+              <FontAwesomeIcon
+                className="alex-intro-restricted-clipboard"
+                icon={faClipboardList}
+              />
+              <FontAwesomeIcon
+                className="alex-intro-restricted-search"
+                icon={faMagnifyingGlass}
+              />
+              <span className="alex-intro-restricted-ban">
+                <FontAwesomeIcon icon={faBan} />
+              </span>
             </div>
           </div>
         )}

@@ -1239,6 +1239,13 @@ class TalkingHead {
         'RightForeArm.rotation': { x: -1, y: 0, z: -1.5 },
         'RightHand.rotation': { x: -1, y: 0.8, z: 0.5 },
       },
+      introduceJordan: {
+        'LeftArm.rotation': { x: 1.1, y: 0, z: 0.7 },
+        'LeftForeArm.rotation': { x: -0.9, y: 0, z: 1.2 },
+        'LeftHand.rotation': { x: -1, y: -0.8, z: -0.4 },
+        'Neck.rotation': { x: 0, y: 0.25, z: 0 },
+        'Head.rotation': { x: 0, y: 0.6, z: 0 },
+      },
       chest: {
         'LeftArm.rotation': { x: 1, y: -0.1, z: 0.3 },
         'LeftForeArm.rotation': { z: 1.3, x: 1, y: 1.1 },

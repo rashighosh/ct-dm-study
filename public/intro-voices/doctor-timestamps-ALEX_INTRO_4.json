@@ -1,0 +1,162 @@
+[
+  {
+    "word": " One",
+    "start": 0,
+    "end": 0.16
+  },
+  {
+    "word": " important",
+    "start": 0.16,
+    "end": 0.48
+  },
+  {
+    "word": " thing",
+    "start": 0.48,
+    "end": 0.78
+  },
+  {
+    "word": " to",
+    "start": 0.78,
+    "end": 0.92
+  },
+  {
+    "word": " know",
+    "start": 0.92,
+    "end": 1.18
+  },
+  {
+    "word": " is",
+    "start": 1.18,
+    "end": 1.6
+  },
+  {
+    "word": " that",
+    "start": 1.6,
+    "end": 1.76
+  },
+  {
+    "word": " I",
+    "start": 1.76,
+    "end": 1.88
+  },
+  {
+    "word": " don't",
+    "start": 1.88,
+    "end": 2.14
+  },
+  {
+    "word": " have",
+    "start": 2.14,
+    "end": 2.24
+  },
+  {
+    "word": " information",
+    "start": 2.24,
+    "end": 2.68
+  },
+  {
+    "word": " on",
+    "start": 2.68,
+    "end": 3
+  },
+  {
+    "word": " specific",
+    "start": 3,
+    "end": 3.3
+  },
+  {
+    "word": " clinical",
+    "start": 3.3,
+    "end": 3.78
+  },
+  {
+    "word": " trials,",
+    "start": 3.78,
+    "end": 4.3
+  },
+  {
+    "word": " so",
+    "start": 4.46,
+    "end": 4.94
+  },
+  {
+    "word": " I",
+    "start": 4.94,
+    "end": 5.12
+  },
+  {
+    "word": " can't",
+    "start": 5.12,
+    "end": 5.46
+  },
+  {
+    "word": " help",
+    "start": 5.46,
+    "end": 5.56
+  },
+  {
+    "word": " you",
+    "start": 5.56,
+    "end": 5.74
+  },
+  {
+    "word": " find",
+    "start": 5.74,
+    "end": 5.9
+  },
+  {
+    "word": " a",
+    "start": 5.9,
+    "end": 6.02
+  },
+  {
+    "word": " trial",
+    "start": 6.02,
+    "end": 6.28
+  },
+  {
+    "word": " to",
+    "start": 6.28,
+    "end": 6.46
+  },
+  {
+    "word": " join",
+    "start": 6.46,
+    "end": 6.78
+  },
+  {
+    "word": " or",
+    "start": 6.78,
+    "end": 7.04
+  },
+  {
+    "word": " answer",
+    "start": 7.04,
+    "end": 7.3
+  },
+  {
+    "word": " questions",
+    "start": 7.3,
+    "end": 7.74
+  },
+  {
+    "word": " about",
+    "start": 7.74,
+    "end": 8.28
+  },
+  {
+    "word": " a",
+    "start": 8.28,
+    "end": 8.44
+  },
+  {
+    "word": " particular",
+    "start": 8.44,
+    "end": 8.72
+  },
+  {
+    "word": " study.",
+    "start": 8.72,
+    "end": 9.16
+  }
+]
