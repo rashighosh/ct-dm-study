@@ -2009,7 +2009,7 @@ span.alex-source-card-badge {
 
 /* Jordan listening */
 .mi-character-zone-jordan.mi-character-zone-listening .mi-character-content {
-  transform: translateX(35%) translateY(5%);
+  transform: translateX(25%) translateY(1%);
   filter: saturate(0.9);
 }
 
@@ -2020,7 +2020,7 @@ span.alex-source-card-badge {
 
 /* Alex listening */
 .mi-character-zone-alex.mi-character-zone-listening .mi-character-content {
-  transform: translateX(-35%) translateY(5%);
+  transform: translateX(-25%) translateY(1%);
   filter: saturate(0.9);
 }
 
