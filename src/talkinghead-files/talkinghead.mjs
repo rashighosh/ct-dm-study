@@ -1247,7 +1247,7 @@ class TalkingHead {
         'Head.rotation': { x: 0, y: 0.6, z: 0 },
       },
       chest: {
-        'LeftArm.rotation': { x: 1, y: -0.1, z: 0.3 },
+        'LeftArm.rotation': { x: 0.9, y: -0.4, z: 0.3 },
         'LeftForeArm.rotation': { z: 1.3, x: 1, y: 1.1 },
         'LeftHand.rotation': { x: -0.1, y: -0.2, z: 0.1 },
       },

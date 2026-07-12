@@ -12,8 +12,8 @@ import NotesReview from './components/NotesReview'
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <Routes>
-      <Route path="/" element={<GoalSetting />} />
-      <Route path="/main-interaction" element={<MainInteraction />} />
+      <Route path="/" element={<MainInteraction />} />
+      <Route path="/goal-setting" element={<GoalSetting />} />
       <Route path="/persona-chat" element={<PersonaChat />} />
       <Route path="/original" element={<App />} />
       <Route path="/trials-layout" element={<TrialLayout />} />

@@ -2,18 +2,32 @@ import { TalkingHead } from './talkinghead-files/talkinghead.mjs'
 import { MotionEngine } from 'motion-engine'
 import motions from 'motion-engine/motions'
 
+// ============================================================
+// Config
+// ============================================================
+
 // const BASE_URL = 'https://fastapi-rashi.onrender.com';
 // const BASE_URL = 'http://127.0.0.1:8000'
 const BASE_URL =
   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
-let head = null
-let head1 = null
+// ============================================================
+// Module state
+// ============================================================
+
+let head = null // Dr. Alex (doctor) TalkingHead instance
+let head1 = null // Jordan (companion) TalkingHead instance
 let doctorMotionEngine = null
 let companionMotionEngine = null
 
 let onSubtitleCallback = null
 let subtitleRunId = 0
+
+let isSwiping = false // kill switch for the swipe gesture loop
+
+// ============================================================
+// Motion engine setup
+// ============================================================
 
 function createMotionEngine(talkingHead) {
   const engine = new MotionEngine(talkingHead, {
@@ -38,6 +52,7 @@ function createMotionEngine(talkingHead) {
   return engine
 }
 
+// Resume suspended audio contexts on first user interaction (autoplay policy)
 document.addEventListener(
   'click',
   () => {
@@ -51,6 +66,10 @@ document.addEventListener(
   { once: true },
 )
 
+// ============================================================
+// Character initialization / lifecycle
+// ============================================================
+
 export async function initDoctorCharacter(containerNode, view = 'mid') {
   head = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
@@ -60,7 +79,7 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
     cameraZoomEnable: false,
     avatarSpeakingEyeContact: 1,
     avatarIdleEyeContact: 1,
-    cameraDistance: -1,
+
     avatarIdleHeadMove: 1,
   })
 
@@ -81,12 +100,11 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
 export async function initCompanionCharacter(containerNode) {
   head1 = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
-    cameraView: 'upper', // full, mid, upper, head,
+    cameraView: 'mid', // full, mid, upper, head,
     avatarSpeakingHeadMove: 1,
     cameraRotateEnable: false,
     cameraPanEnable: false,
     cameraZoomEnable: false,
-    cameraDistance: -1,
   })
 
   await head1.showAvatar({
@@ -102,6 +120,15 @@ export async function initCompanionCharacter(containerNode) {
 
   return head1
 }
+
+export function stopCharacter() {
+  head?.stop()
+}
+
+// ============================================================
+// Motion engine playback (procedural motions, separate from
+// the TalkingHead built-in gesture system below)
+// ============================================================
 
 export async function playMotion(character, motionName, duration) {
   const engine =
@@ -122,13 +149,12 @@ export async function playMotion(character, motionName, duration) {
   }
 }
 
-export function stopCharacter() {
-  head?.stop()
-}
-
-export function speakText(text) {
-  head?.speakText(text)
-}
+// ============================================================
+// Gestures (TalkingHead built-in gesture system)
+// Mostly act on head1 (Jordan/companion); a couple act on head
+// (Dr. Alex/doctor) - kept explicit per-function rather than
+// parameterized, so the target character stays obvious at a glance.
+// ============================================================
 
 export async function shrug() {
   head1?.stopGesture(3000)
@@ -150,6 +176,10 @@ export async function thumbsup() {
   head1?.playGesture('thumbup', Infinity, false, 1500)
 }
 
+export async function thumbsupQuick() {
+  head1.playGesture('thumbup', 2, false, 1000)
+}
+
 export async function wave() {
   head1?.playGesture('handup')
 }
@@ -157,45 +187,6 @@ export async function wave() {
 export async function ready() {
   head1?.stopGesture(3000)
   head1?.playGesture('ok')
-}
-
-async function playSmoothSequence(head, sequence) {
-  for (const item of sequence) {
-    head.playGesture(item.name, item.dur, item.mirror, item.ms)
-
-    // Overlap by 20ms to keep the engine's "exponential smoothing" active
-    const overlap = 20
-    const waitTime = item.dur * 1000 - overlap
-
-    await new Promise((resolve) => setTimeout(resolve, Math.max(0, waitTime)))
-  }
-}
-
-let isSwiping = false // Our "Kill Switch"
-
-export async function startSwiping() {
-  if (isSwiping) return // Prevent multiple loops starting at once
-  isSwiping = true
-
-  // 1. Initial lift (only happens ONCE at the start)
-  await playSmoothSequence(head, [{ name: 'swipeReady', dur: 1, ms: 1000 }])
-
-  // 2. The Repeat Loop
-  const loopMoves = [
-    { name: 'swipeDone', dur: 0.9, ms: 2000 },
-    { name: 'swipeReady', dur: 0.9, ms: 2000 },
-  ]
-
-  while (isSwiping) {
-    await playSmoothSequence(head, loopMoves)
-  }
-
-  // 3. Final Drop (only happens ONCE when isSwiping becomes false)
-  await playSmoothSequence(head, [{ name: null, dur: 0, ms: 200 }])
-}
-
-export function stopSwiping() {
-  isSwiping = false
 }
 
 export async function lookup() {
@@ -241,11 +232,6 @@ export async function headNod() {
   // head.playAnimation('/animations/Looking Around.fbx')
 }
 
-export async function thumbsupQuick() {
-  head1.playGesture('thumbup', 2, false, 1000)
-  // head.playAnimation('/animations/Looking Around.fbx')
-}
-
 export async function stopAlexGesture() {
   head?.stopGesture(3000)
 }
@@ -254,8 +240,161 @@ export async function stopCompanionGesture() {
   head1?.stopGesture(3000)
 }
 
+// --- Swipe gesture loop (stateful start/stop pair) ---
+
+async function playSmoothSequence(talkingHead, sequence) {
+  for (const item of sequence) {
+    talkingHead.playGesture(item.name, item.dur, item.mirror, item.ms)
+
+    // Overlap by 20ms to keep the engine's "exponential smoothing" active
+    const overlap = 20
+    const waitTime = item.dur * 1000 - overlap
+
+    await new Promise((resolve) => setTimeout(resolve, Math.max(0, waitTime)))
+  }
+}
+
+export async function startSwiping() {
+  if (isSwiping) return // prevent multiple loops starting at once
+  isSwiping = true
+
+  // Initial lift (only happens once at the start)
+  await playSmoothSequence(head, [{ name: 'swipeReady', dur: 1, ms: 1000 }])
+
+  const loopMoves = [
+    { name: 'swipeDone', dur: 0.9, ms: 2000 },
+    { name: 'swipeReady', dur: 0.9, ms: 2000 },
+  ]
+
+  while (isSwiping) {
+    await playSmoothSequence(head, loopMoves)
+  }
+
+  // Final drop (only happens once when isSwiping becomes false)
+  await playSmoothSequence(head, [{ name: null, dur: 0, ms: 200 }])
+}
+
+export function stopSwiping() {
+  isSwiping = false
+}
+
+// Registry mapping gesture names (strings) to their trigger functions,
+// used by playGesture() below to invoke a gesture dynamically by name.
+export const gestures = {
+  shrug,
+  thumbsup,
+  thumbsupQuick,
+  thinking,
+  thinkingDoctor,
+  ready,
+  lookup,
+  lookdown,
+  lookright,
+  lookrightalex,
+  lookleft,
+  indexFingerRaise,
+  headNod,
+  startSwiping,
+  stopSwiping,
+  wave,
+  rightGesture,
+  stopCompanionGesture,
+  stopAlexGesture,
+  // add more here
+}
+
+export function playGesture(name) {
+  console.log('GESTURE TRIGGERED', name)
+  gestures[name]?.()
+}
+
+// ============================================================
+// Subtitles
+// ============================================================
+
 export function setSubtitleCallback(fn) {
   onSubtitleCallback = fn
+}
+
+function createSubtitleTimers({
+  timestamps,
+  runId,
+  onSubtitle,
+  wordsPerCaption = 8,
+}) {
+  if (!onSubtitle || timestamps.length === 0) {
+    return []
+  }
+
+  const timers = []
+
+  for (let index = 0; index < timestamps.length; index += wordsPerCaption) {
+    const timer = setTimeout(() => {
+      if (runId !== subtitleRunId) return
+
+      const caption = timestamps
+        .slice(index, index + wordsPerCaption)
+        .map((item) => item.word.trim())
+        .join(' ')
+
+      onSubtitle(caption)
+    }, timestamps[index].start * 1000)
+
+    timers.push(timer)
+  }
+
+  return timers
+}
+
+// ============================================================
+// Speech / lipsync - dynamic TTS (calls backend /tts endpoint)
+// ============================================================
+
+export function speakText(text) {
+  head?.speakText(text)
+}
+
+function createSpeechGestures(activeHead, audioBuffer) {
+  const markers = []
+  const mtimes = []
+
+  const gesturePool = ['talkopen', 'rightGesture']
+  const durationMs = audioBuffer.duration * 1000
+
+  if (durationMs <= 2500) {
+    return { markers, mtimes }
+  }
+
+  const numberOfGestures = Math.min(
+    3,
+    Math.max(1, Math.floor(durationMs / 6000)),
+  )
+
+  const usedTimes = []
+
+  for (let i = 0; i < numberOfGestures; i++) {
+    const minTime = 1200
+    const maxTime = durationMs - 1200
+
+    if (maxTime <= minTime) break
+
+    const time = minTime + Math.random() * (maxTime - minTime)
+
+    const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2500)
+    if (tooClose) continue
+
+    usedTimes.push(time)
+
+    const gesture = gesturePool[Math.floor(Math.random() * gesturePool.length)]
+
+    markers.push(() => {
+      activeHead.playGesture(gesture, 1.6, false, 1200)
+    })
+
+    mtimes.push(time)
+  }
+
+  return { markers, mtimes }
 }
 
 export async function speakWithLipsync(
@@ -284,7 +423,6 @@ export async function speakWithLipsync(
 
   // Small lead-in helps lips start closer to the audio.
   const wtimes = timestamps.map((t) => t.start * 1000)
-
   const wdurations = timestamps.map((t) => (t.end - t.start) * 1000)
 
   activeHead.stopGesture()
@@ -348,48 +486,10 @@ export async function speakWithLipsync(
   })
 }
 
-function createSpeechGestures(activeHead, audioBuffer) {
-  const markers = []
-  const mtimes = []
-
-  const gesturePool = ['talkopen', 'rightGesture']
-  const durationMs = audioBuffer.duration * 1000
-
-  if (durationMs <= 2500) {
-    return { markers, mtimes }
-  }
-
-  const numberOfGestures = Math.min(
-    3,
-    Math.max(1, Math.floor(durationMs / 6000)),
-  )
-
-  const usedTimes = []
-
-  for (let i = 0; i < numberOfGestures; i++) {
-    const minTime = 1200
-    const maxTime = durationMs - 1200
-
-    if (maxTime <= minTime) break
-
-    const time = minTime + Math.random() * (maxTime - minTime)
-
-    const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2500)
-    if (tooClose) continue
-
-    usedTimes.push(time)
-
-    const gesture = gesturePool[Math.floor(Math.random() * gesturePool.length)]
-
-    markers.push(() => {
-      activeHead.playGesture(gesture, 1.6, false, 1200)
-    })
-
-    mtimes.push(time)
-  }
-
-  return { markers, mtimes }
-}
+// ============================================================
+// Speech / lipsync - static/pre-rendered audio, with hand-authored
+// gesture cue maps keyed by audio file path
+// ============================================================
 
 const STATIC_GESTURE_MAPS = {
   '/intro-voices/doctor-audio-ALEX_INTRO_1.mp3': [
@@ -696,35 +796,9 @@ export async function speakWithLipsyncStatic(
   })
 }
 
-function createSubtitleTimers({
-  timestamps,
-  runId,
-  onSubtitle,
-  wordsPerCaption = 8,
-}) {
-  if (!onSubtitle || timestamps.length === 0) {
-    return []
-  }
-
-  const timers = []
-
-  for (let index = 0; index < timestamps.length; index += wordsPerCaption) {
-    const timer = setTimeout(() => {
-      if (runId !== subtitleRunId) return
-
-      const caption = timestamps
-        .slice(index, index + wordsPerCaption)
-        .map((item) => item.word.trim())
-        .join(' ')
-
-      onSubtitle(caption)
-    }, timestamps[index].start * 1000)
-
-    timers.push(timer)
-  }
-
-  return timers
-}
+// ============================================================
+// Lighting / focus
+// ============================================================
 
 export async function focusCharacter(character) {
   if (character === 1) {
@@ -749,33 +823,4 @@ export async function focusCharacter(character) {
     document.querySelector('#virtualcompanion > canvas').classList.remove('dim')
     document.querySelector('#virtualdoctor > canvas').classList.add('dim')
   }
-}
-
-// map gesture names to functions
-export const gestures = {
-  shrug,
-  thumbsup,
-  thumbsupQuick,
-  thinking,
-  thinkingDoctor,
-  ready,
-  lookup,
-  lookdown,
-  lookright,
-  lookrightalex,
-  lookleft,
-  indexFingerRaise,
-  headNod,
-  startSwiping,
-  stopSwiping,
-  wave,
-  rightGesture,
-  stopCompanionGesture,
-  stopAlexGesture,
-  // add more here
-}
-
-export function playGesture(name) {
-  console.log('GESTURE TRIGGERED', name)
-  gestures[name]?.()
 }

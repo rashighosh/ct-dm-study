@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import logo from '../assets/logo-transparent.png'
 import '../css/MainInteraction.css'
+import stageBackground from '../assets/bg.jpg'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faPaperPlane,
@@ -85,6 +86,38 @@ const dedupeSources = (sources = []) =>
     new Map(sources.map((source) => [getSourceKey(source), source])).values(),
   )
 
+function waitForCharacterRender(container, timeout = 10000) {
+  return new Promise((resolve, reject) => {
+    if (!container) {
+      reject(new Error('Character container was not found.'))
+      return
+    }
+
+    const startedAt = performance.now()
+
+    function check() {
+      const canvas = container.querySelector('canvas')
+
+      if (canvas && canvas.width > 0 && canvas.height > 0) {
+        // Give WebGL two complete paint frames before continuing.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(resolve)
+        })
+        return
+      }
+
+      if (performance.now() - startedAt >= timeout) {
+        reject(new Error('Timed out waiting for character canvas.'))
+        return
+      }
+
+      requestAnimationFrame(check)
+    }
+
+    check()
+  })
+}
+
 /* -------------------------------------------------------------------------- */
 /* Main component                                                             */
 /* -------------------------------------------------------------------------- */
@@ -102,6 +135,17 @@ export default function MainInteraction() {
     JSON.parse(sessionStorage.getItem('mainInteractionGoals') || '{}')
 
   const goals = initialGoals
+
+  useEffect(() => {
+    const image = new Image()
+    image.src = stageBackground
+
+    if (image.decode) {
+      image.decode().catch(() => {
+        // The browser can still display it even if decode() rejects.
+      })
+    }
+  }, [])
 
   useEffect(() => {
     if (location.state) {
@@ -126,9 +170,7 @@ export default function MainInteraction() {
 
   const doctorRef = useRef(null)
   const companionRef = useRef(null)
-  const chatEndRef = useRef(null)
   const textareaRef = useRef(null)
-  const suppressNextActivePopout = useRef(false)
   const previousJordanSuggestions = useRef(new Set())
   const introCueTimers = useRef([])
   const historyBodyRef = useRef(null)
@@ -152,6 +194,9 @@ export default function MainInteraction() {
   const restoredInteractionRef = useRef(
     !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
   )
+  const [hideCharacterLoader, setHideCharacterLoader] = useState(false)
+  const [charactersReady, setCharactersReady] = useState(false)
+  const [charactersSettled, setCharactersSettled] = useState(false)
   const [alexSubtitle, setAlexSubtitle] = useState('')
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const introStartedRef = useRef(false)
@@ -160,18 +205,12 @@ export default function MainInteraction() {
   const [collabQuestionPromptText, setCollabQuestionPromptText] = useState(null)
   const [activeSourcePopout, setActiveSourcePopout] = useState(null)
   const [tutorialIndex, setTutorialIndex] = useState(0)
-  const [showTalkingPoints, setShowTalkingPoints] = useState(false)
   const [alexIntroCue, setAlexIntroCue] = useState(null)
   const [audioReady, setAudioReady] = useState(
     savedSession?.audioReady ?? false,
   )
-  const [alexTalkingPoints, setAlexTalkingPoints] = useState([])
   const [pendingGoalNotes, setPendingGoalNotes] = useState({})
-  const [activeJordanSuggestion, setActiveJordanSuggestion] = useState(null)
-  const [activeQuerySuggestion, setActiveQuerySuggestion] = useState('')
-  const [activeQueryLoading, setActiveQueryLoading] = useState(false)
   const [showCards, setShowCards] = useState(false)
-  const [openJordanPanel, setOpenJordanPanel] = useState(null)
   const [alexIntroDone, setAlexIntroDone] = useState(
     savedSession?.alexIntroDone ?? false,
   )
@@ -180,7 +219,7 @@ export default function MainInteraction() {
   const [alexSources, setAlexSources] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
   const [isJordanActive, setIsJordanActive] = useState(false)
-  const [proactivity] = useState(goals?.proactivity || 'collaborative')
+  const [proactivity] = useState(goals?.proactivity || 'passive')
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState(savedSession?.input ?? '')
   const [coveredGoals, setCoveredGoals] = useState(
@@ -228,8 +267,6 @@ export default function MainInteraction() {
 
   const showFinishButton = completedAlexResponses >= 5
 
-  const jordanPopupOpen = proactivity === 'active' && openJordanPanel !== null
-
   const tutorialImages = TUTORIAL_IMAGES[proactivity] || []
   const currentTutorialImage = tutorialImages[tutorialIndex]
   const isLastTutorial = tutorialIndex === tutorialImages.length - 1
@@ -243,21 +280,74 @@ export default function MainInteraction() {
 
     async function initCharacters() {
       try {
-        await initDoctorCharacter(doctorRef.current)
+        setCharactersReady(false)
+        setCharactersSettled(false)
+        setHideCharacterLoader(false)
+        setIsAlexActive(false)
+        setIsJordanActive(false)
 
-        if (companionRef.current) {
-          await initCompanionCharacter(companionRef.current)
-        }
+        /* Initialize both characters together */
+        await Promise.all([
+          initDoctorCharacter(doctorRef.current),
+          initCompanionCharacter(companionRef.current),
+        ])
 
-        // On refresh: load characters, but do not replay intro.
+        /* Wait until both character canvases exist and have rendered */
+        await Promise.all([
+          waitForCharacterRender(doctorRef.current),
+          waitForCharacterRender(companionRef.current),
+        ])
+
+        /* Reveal the character canvases behind the loading overlay */
+        setCharactersReady(true)
+
+        /* Let React paint the rendered avatars */
+        await new Promise((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(resolve)
+          })
+        })
+
+        /* Turn the characters toward each other */
+        playGesture('lookleft')
+        playGesture('lookrightalex')
+
+        /* Give the turning gestures time to settle */
+        await new Promise((resolve) => setTimeout(resolve, 1200))
+
+        playGesture('stopCompanionGesture')
+        playGesture('stopAlexGesture')
+
+        /* Let the stopped pose settle before removing the overlay */
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        await new Promise((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(resolve)
+          })
+        })
+
+        /* Start fading the loader while the finished scene is behind it */
+        setHideCharacterLoader(true)
+
+        /* Match the 350ms CSS fade, with a little safety room */
+        await new Promise((resolve) => setTimeout(resolve, 400))
+
+        /* Now unmount the loader */
+        setCharactersSettled(true)
+
+        /* On refresh, show the ready scene but do not replay the intro */
         if (restoredInteractionRef.current) {
           setIsAlexActive(false)
+          setIsJordanActive(false)
           return
         }
 
-        // Prevent intro from restarting when intro messages are added.
         if (introStartedRef.current) return
         introStartedRef.current = true
+
+        /* Brief pause before Alex becomes active and the camera pans */
+        await new Promise((resolve) => setTimeout(resolve, 300))
 
         setIsAlexActive(true)
         setIsJordanActive(false)
@@ -486,23 +576,8 @@ export default function MainInteraction() {
     })
   }
 
-  function toggleJordanPanel(panel) {
-    setOpenJordanPanel((prev) => (prev === panel ? null : panel))
-  }
-
-  function closeJordanPopup() {
-    setOpenJordanPanel(null)
-  }
-
   function clearJordanUI() {
-    closeJordanPopup()
     setCollabSuggestion(null)
-  }
-
-  function getQuerySuggestion() {
-    return input.trim()
-      ? `Could you tell me more about ${input.trim().replace(/\?$/, '')}?`
-      : 'What would you like to ask Alex about first?'
   }
 
   async function generateJordanOpeningSuggestion() {
@@ -559,34 +634,6 @@ export default function MainInteraction() {
   /* Query support                                                            */
   /* ------------------------------------------------------------------------ */
 
-  async function handleManualQueryHelp() {
-    setActiveQueryLoading(true)
-    const isAlreadyOpen = openJordanPanel === 'query'
-
-    if (isAlreadyOpen) {
-      setOpenJordanPanel(null)
-      setActiveQueryLoading(false)
-      return
-    }
-
-    setOpenJordanPanel('query')
-
-    const suggestion = await generateJordanOpeningSuggestion()
-
-    const manualSuggestion = {
-      id: uid(),
-      type: 'query',
-      text: 'Want help wording that question?',
-      suggestion,
-      source: 'manual_query_help',
-    }
-
-    logJordanSuggestion(manualSuggestion)
-    setActiveJordanSuggestion(manualSuggestion)
-    setActiveQuerySuggestion(suggestion)
-    setActiveQueryLoading(false)
-  }
-
   async function handleCollabQueryHelp() {
     if (isAlexActive) return
 
@@ -617,22 +664,6 @@ export default function MainInteraction() {
 
   function handleInputChange(value) {
     setInput(value)
-  }
-
-  function acceptQuerySuggestion(message) {
-    if (!message) return
-    updateTranscript('jordan_suggestion_action', 'used suggestion', {
-      action: 'used',
-      suggestion_id: message.id,
-      suggestion_text: message.text,
-      suggested_question: message.suggestion,
-      suggestion_type: message.type || message.nudgeType,
-    })
-
-    suppressNextActivePopout.current = proactivity === 'active'
-    setInput(message.suggestion)
-    textareaRef.current?.focus()
-    closeJordanPopup()
   }
 
   function acceptCollabSuggestion() {
@@ -971,35 +1002,6 @@ export default function MainInteraction() {
     showJordanSuggestion(jordanSuggestion)
   }
 
-  function handleActiveSaveNote() {
-    if (!activeJordanSuggestion?.goalId || !activeJordanSuggestion?.noteToAdd)
-      return
-
-    const pendingNote = pendingGoalNotes[activeJordanSuggestion.goalId]
-
-    addGoalNote(
-      activeJordanSuggestion.goalId,
-      activeJordanSuggestion.noteToAdd,
-      pendingNote?.sources || [],
-    )
-
-    setActiveJordanSuggestion((prev) =>
-      prev ? { ...prev, noteSaved: true } : prev,
-    )
-  }
-
-  function handleInlineEvalResponse(nudgeId, answer) {
-    resolveNudge(
-      nudgeId,
-      answer === 'yes' ? 'Yes, that answered it' : 'Not quite',
-    )
-
-    if (answer === 'no') {
-      setInput('Can you say more about ')
-      textareaRef.current?.focus()
-    }
-  }
-
   function handleCollabEvalResponse(answer) {
     setCollabSuggestion(null)
 
@@ -1012,16 +1014,6 @@ export default function MainInteraction() {
   /* ------------------------------------------------------------------------ */
   /* Goal/nudge updates                                                       */
   /* ------------------------------------------------------------------------ */
-
-  function resolveNudge(id, resolution) {
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === id
-          ? { ...message, resolved: true, resolution }
-          : message,
-      ),
-    )
-  }
 
   /* ------------------------------------------------------------------------ */
   /* Message send flow                                                        */
@@ -1049,17 +1041,12 @@ export default function MainInteraction() {
     updateTranscript('user', trimmed)
 
     clearAlexIntroCues()
-    setAlexTalkingPoints([])
-    setShowTalkingPoints(false)
     setIsAlexActive(true)
     playGesture('startSwiping')
     playGesture('lookleft')
     setShowCards(true)
     setAlexSources([])
     clearJordanUI()
-    setActiveJordanSuggestion(null)
-    setActiveQuerySuggestion('')
-    setActiveQueryLoading(false)
     setShowCollabQuestionPrompt(false)
     setCollabQuestionPromptText(null)
     setIsForaging(true)
@@ -1128,16 +1115,12 @@ export default function MainInteraction() {
         sources: data.sources || [],
       })
 
-      setAlexTalkingPoints(data.talking_points || [])
-      setShowTalkingPoints(false)
       setIsForagingFading(true)
 
       setTimeout(() => {
         setIsForaging(false)
         setIsForagingFading(false)
       }, 450)
-
-      let talkingPointsTimer
 
       await speakWithLipsync(
         data.answer,
@@ -1157,18 +1140,12 @@ export default function MainInteraction() {
               confidence: data.confidence,
             },
           ])
-          talkingPointsTimer = setTimeout(() => {
-            setShowTalkingPoints(true)
-          }, 5000)
         },
         setAlexSubtitle,
       )
 
       playGesture('stopCompanionGesture')
-      clearTimeout(talkingPointsTimer)
       setIsAlexActive(false)
-      setShowTalkingPoints(false)
-      setAlexTalkingPoints([])
 
       handleGoalEvalResult(evalData, alexMsgId, data.sources || [])
     } catch (err) {
@@ -1186,7 +1163,6 @@ export default function MainInteraction() {
       playGesture('stopSwiping')
       setShowCards(false)
       setIsAlexActive(false)
-      setAlexTalkingPoints([])
     }
   }
 
@@ -1222,7 +1198,7 @@ export default function MainInteraction() {
           <img src={logo} className="logo" alt="Study logo" />
           <h2>Before you begin</h2>
           <p>
-            Please carefully review the instructions on how interact with the
+            Please carefully review the instructions for interacting with the
             virtual characters below.
           </p>
 
@@ -1305,155 +1281,23 @@ export default function MainInteraction() {
       )}
 
       <main className="mi-main">
-        <div
-          className={`mi-overlay ${jordanPopupOpen ? 'mi-overlay-open' : ''}`}
-          onClick={closeJordanPopup}
-        />
-
-        {proactivity === 'passive' && openJordanPanel === 'notes' && (
-          <div className="mi-passive-goals-popover">
-            <div className="mi-passive-goals-header">
-              <span>Your goals</span>
-              <div className="sticky-note">
-                I'll keep track of your goals below and add notes based on your
-                conversation with Alex as we go!
-              </div>
-              <button type="button" onClick={closeJordanPopup}>
-                <FontAwesomeIcon icon={faXmark} />
-              </button>
-            </div>
-
-            <div className="mi-goals-list">
-              {goalObjects.map((goal) => (
-                <div
-                  key={goal.id}
-                  className={`mi-goal-chip mi-goal-chip-with-notes${
-                    coveredGoals.has(goal.id) ? ' mi-goal-chip-covered' : ''
-                  }`}
-                >
-                  <div className="mi-goal-chip-main">
-                    <span>{goal.title}</span>
-
-                    {coveredGoals.has(goal.id) && (
-                      <FontAwesomeIcon
-                        icon={faCheck}
-                        className="mi-goal-chip-check"
-                      />
-                    )}
-                  </div>
-
-                  {goalNotes[goal.id]?.length > 0 && (
-                    <div className="mi-goal-notes">
-                      {goalNotes[goal.id].map((note) => (
-                        <div key={note.id} className="mi-goal-note">
-                          <div>{note.text}</div>
-
-                          {note.sources?.length > 0 && (
-                            <div
-                              className="mi-note-citations"
-                              aria-label="Sources for this note"
-                            >
-                              {note.sources.map((source, index) => (
-                                <button
-                                  key={source.id}
-                                  type="button"
-                                  className="mi-note-citation"
-                                  onClick={() => setActiveSourcePopout(source)}
-                                  title={
-                                    source.title || source.source || source.file
-                                  }
-                                >
-                                  [{index + 1}] {source.source || 'Source'}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <JordanSidebar
-          proactivity={proactivity}
-          openJordanPanel={openJordanPanel}
-          companionRef={companionRef}
-          goalObjects={goalObjects}
-          coveredGoals={coveredGoals}
-          collabSuggestion={collabSuggestion}
-          onAcceptCollabSuggestion={acceptCollabSuggestion}
-          onDismissCollabSuggestion={dismissCollabSuggestion}
-          onCollabEvalResponse={handleCollabEvalResponse}
-          onRequestCollabQuestion={handleCollabQueryHelp}
-          onToggleGoalCovered={toggleGoalCovered}
-          onAddManualNote={(goalId, noteText, sources) =>
-            addGoalNote(goalId, noteText, sources, false)
-          }
-          availableSources={alexSources}
-          isAlexActive={isAlexActive}
-          isJordanActive={isJordanActive}
-          jordanSubtitle={jordanSubtitle}
-          pendingGoalNotes={pendingGoalNotes}
-          onSavePendingGoalNote={savePendingGoalNote}
-          onDismissPendingGoalNote={dismissPendingGoalNote}
-          goalNotes={goalNotes}
-          onOpenSource={setActiveSourcePopout}
-          hasSentFirstMessage={hasSentFirstMessage}
-          alexIntroDone={alexIntroDone}
-          showCollabQuestionPrompt={showCollabQuestionPrompt}
-          collabQuestionPromptText={collabQuestionPromptText}
-          onAcceptCollabGoal={acceptCollabGoal}
-          onSaveCollabNote={saveCollabNote}
-          onDismissGoal={dismissCollabGoal}
-          onDismissNote={dismissCollabNote}
-          onRequestExtraSuggestion={logCollabExtraSuggestion}
-        />
-
-        <section className="mi-chat-card fade-in-up">
+        <section className="mi-chat-card">
           <AlexHeader
+            charactersReady={charactersReady}
             doctorRef={doctorRef}
+            companionRef={companionRef}
             isAlexActive={isAlexActive}
+            isJordanActive={isJordanActive}
             sources={alexSources}
             showCards={showCards}
-            talkingPoints={alexTalkingPoints}
-            showTalkingPoints={showTalkingPoints}
             introCue={alexIntroCue}
             proactivity={proactivity}
             onOpenSource={setActiveSourcePopout}
             isForaging={isForaging}
             isForagingFading={isForagingFading}
-            subtitle={alexSubtitle}
+            alexSubtitle={alexSubtitle}
+            jordanSubtitle={jordanSubtitle}
           />
-
-          {/* <MessageThread
-            messages={messages}
-            chatEndRef={chatEndRef}
-            proactivity={proactivity}
-            companionRef={companionRef}
-            onOpenGoals={() => toggleJordanPanel('notes')}
-            onAcceptQuerySuggestion={acceptQuerySuggestion}
-            onDismissNudge={(id, resolution, message) => {
-              updateTranscript(
-                'jordan_suggestion_action',
-                'dismissed suggestion',
-                {
-                  action: 'dismissed',
-                  suggestion_id: id,
-                  suggested_question: message?.suggestion || null,
-                  suggestion_text: message?.text || null,
-                  suggestion_type: message?.type || message?.nudgeType || null,
-                },
-              )
-
-              resolveNudge(id, resolution)
-            }}
-            onInlineEvalResponse={handleInlineEvalResponse}
-            onResolveNudge={resolveNudge}
-          /> */}
 
           <ChatInput
             input={input}
@@ -1480,6 +1324,35 @@ export default function MainInteraction() {
           historyBodyRef={historyBodyRef}
         />
       )}
+
+      {audioReady && !charactersSettled && (
+        <div
+          className={`character-loading-overlay ${
+            hideCharacterLoader ? 'is-exiting' : ''
+          }`}
+          role="status"
+          aria-live="polite"
+          aria-label="Preparing the virtual characters"
+        >
+          <div className="character-loading-card">
+            <img
+              src={logo}
+              className="character-loading-logo"
+              alt=""
+              aria-hidden="true"
+            />
+
+            <div className="character-loading-animation" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+
+            <h2>Preparing Alex and Jordan</h2>
+            <p>Getting the virtual characters ready...</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1487,262 +1360,6 @@ export default function MainInteraction() {
 /* -------------------------------------------------------------------------- */
 /* Render helpers                                                             */
 /* -------------------------------------------------------------------------- */
-
-function ActiveJordanDock({
-  companionRef,
-  openJordanPanel,
-  coveredGoalsCount,
-  getQuerySuggestion,
-  activeJordanSuggestion,
-  activeQuerySuggestion,
-  activeQueryLoading,
-  onTogglePanel,
-  onClosePanel,
-  onManualQueryHelp,
-  onAcceptQuerySuggestion,
-  onActiveSaveNote,
-  disabled = false,
-}) {
-  return (
-    <div className="mi-jordan-active-area">
-      {openJordanPanel === 'query' && (
-        <div className="mi-dock-nudge">
-          <div className="mi-dock-nudge-content">
-            <span className="mi-dock-nudge-text">
-              {activeJordanSuggestion?.text ||
-                'Want help wording that question?'}
-            </span>
-
-            <div className="mi-dock-nudge-suggestion">
-              {activeQueryLoading ? (
-                <em>Thinking of a helpful question...</em>
-              ) : (
-                activeJordanSuggestion?.suggestion ||
-                activeQuerySuggestion ||
-                getQuerySuggestion()
-              )}
-            </div>
-
-            <div className="mi-dock-nudge-actions">
-              <button
-                type="button"
-                className="mi-nudge-btn mi-nudge-btn-primary"
-                onClick={() => onAcceptQuerySuggestion(activeJordanSuggestion)}
-                disabled={disabled}
-              >
-                Use this
-              </button>
-
-              <button
-                type="button"
-                className="mi-nudge-btn"
-                onClick={onClosePanel}
-                disabled={disabled}
-              >
-                No thanks
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mi-jordan-dock">
-        <div className="mi-jordan-dock-avatar">
-          <div
-            className="virtual-companion"
-            id="virtualcompanion"
-            ref={companionRef}
-          />
-        </div>
-
-        <div className="mi-jordan-dock-actions">
-          <button
-            type="button"
-            className="mi-jordan-action-btn"
-            onClick={() => onTogglePanel('notes')}
-            aria-label="Open Jordan's notes"
-            disabled={disabled}
-          >
-            <FontAwesomeIcon icon={faBullseye} />
-            {coveredGoalsCount > 0 && (
-              <span className="mi-notes-badge">{coveredGoalsCount}</span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            className="mi-jordan-action-btn"
-            onClick={onManualQueryHelp}
-            aria-label="Ask Jordan to help phrase a question"
-            disabled={disabled}
-          >
-            <FontAwesomeIcon icon={faLightbulb} />
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function JordanSidebar({
-  proactivity,
-  companionRef,
-  goalObjects,
-  coveredGoals,
-  collabSuggestion,
-  onAcceptCollabSuggestion,
-  onDismissCollabSuggestion,
-  onCollabEvalResponse,
-  onRequestCollabQuestion,
-  onAcceptCollabGoal,
-  onSaveCollabNote,
-  onToggleGoalCovered,
-  onAddManualNote,
-  availableSources,
-  isAlexActive,
-  isJordanActive,
-  jordanSubtitle,
-  pendingGoalNotes,
-  onSavePendingGoalNote,
-  onDismissPendingGoalNote,
-  goalNotes,
-  onOpenSource,
-  hasSentFirstMessage,
-  alexIntroDone,
-  showCollabQuestionPrompt,
-  collabQuestionPromptText,
-  onDismissGoal,
-  onDismissNote,
-  onRequestExtraSuggestion,
-}) {
-  const isActive = proactivity === 'active'
-
-  return (
-    <aside className="mi-sidebar mi-sidebar-open">
-      <div className={`mi-goals-panel ${isActive ? 'active' : ''}`}>
-        <JordanSidebarHeader
-          proactivity={proactivity}
-          companionRef={companionRef}
-          onRequestQuestion={onRequestCollabQuestion}
-          isAlexActive={isAlexActive}
-          isJordanActive={isJordanActive}
-          jordanSubtitle={jordanSubtitle}
-          collabSuggestion={collabSuggestion}
-          hasSentFirstMessage={hasSentFirstMessage}
-          alexIntroDone={alexIntroDone}
-          showCollabQuestionPrompt={showCollabQuestionPrompt}
-          collabQuestionPromptText={collabQuestionPromptText}
-        />
-
-        {!isActive && collabSuggestion && (
-          <div className="mi-sidebar-suggestions-section">
-            <CollaborativeSuggestionCard
-              key={collabSuggestion.id}
-              suggestion={collabSuggestion}
-              onAcceptQuery={onAcceptCollabSuggestion}
-              onDismiss={onDismissCollabSuggestion}
-              onEvalResponse={onCollabEvalResponse}
-              onAcceptGoal={onAcceptCollabGoal}
-              onSaveNote={onSaveCollabNote}
-              onDismissGoal={onDismissGoal}
-              onDismissNote={onDismissNote}
-              onOpenSource={onOpenSource}
-              proactivity={proactivity}
-              onRequestExtraSuggestion={onRequestExtraSuggestion}
-            />
-          </div>
-        )}
-
-        <GoalsSection
-          proactivity={proactivity}
-          goalObjects={goalObjects}
-          coveredGoals={coveredGoals}
-          goalNotes={goalNotes}
-          pendingGoalNotes={pendingGoalNotes}
-          onToggleGoalCovered={onToggleGoalCovered}
-          onSavePendingGoalNote={onSavePendingGoalNote}
-          onDismissPendingGoalNote={onDismissPendingGoalNote}
-          onAddManualNote={onAddManualNote}
-          availableSources={availableSources}
-          onOpenSource={onOpenSource}
-          isAlexActive={isAlexActive}
-        />
-      </div>
-    </aside>
-  )
-}
-
-function JordanSidebarHeader({
-  proactivity,
-  companionRef,
-  onRequestQuestion,
-  isAlexActive,
-  isJordanActive,
-  jordanSubtitle,
-  collabSuggestion,
-  hasSentFirstMessage,
-  alexIntroDone,
-  showCollabQuestionPrompt,
-  collabQuestionPromptText,
-}) {
-  const isActive = proactivity === 'active'
-  const isPassive = proactivity === 'passive'
-  const helperText =
-    proactivity === 'passive'
-      ? "I'll track your goals, save notes, attach sources, and suggest questions automatically."
-      : proactivity === 'collaborative'
-        ? 'I can help suggest questions and notes, but you have the final say.'
-        : 'Use the space below to track your own goals and notes.'
-
-  return (
-    <div className="mi-collab-jordan-header mi-jordan-sidebar-header">
-      <div className="mi-jordan-stage-header">
-        <div
-          className={`mi-jordan-stage-avatar ${
-            isJordanActive ? 'mi-jordan-stage-avatar-active' : ''
-          }`}
-        >
-          <div
-            className="virtual-companion"
-            id="virtualcompanion"
-            ref={companionRef}
-          />
-          {jordanSubtitle && (
-            <div className="jordan-subtitle">{jordanSubtitle}</div>
-          )}
-        </div>
-
-        <div className="mi-jordan-stage-text">
-          <h3>Jordan</h3>
-          <p>{helperText}</p>
-        </div>
-      </div>
-
-      {!isActive &&
-        !isAlexActive &&
-        !isPassive &&
-        alexIntroDone &&
-        (!hasSentFirstMessage || showCollabQuestionPrompt) &&
-        !collabSuggestion && (
-          <div className="mi-collab-question-btn">
-            <p>
-              <FontAwesomeIcon icon={faLightbulb} />
-              <span>{collabQuestionPromptText || 'Not sure what to ask?'}</span>
-            </p>
-
-            <button
-              type="button"
-              className="mi-nudge-btn mi-nudge-btn-primary mi-nudge-btn-suggestion"
-              onClick={onRequestQuestion}
-              disabled={isAlexActive}
-            >
-              Suggest a question
-            </button>
-          </div>
-        )}
-    </div>
-  )
-}
 
 function GoalsSection({
   proactivity,
@@ -1872,7 +1489,6 @@ function GoalChip({
 
       {isActive && (
         <ActiveNoteComposer
-          goalId={goalId}
           availableSources={availableSources}
           onAddManualNote={onAddManualNote}
           onOpenSource={onOpenSource}
@@ -2481,18 +2097,20 @@ function CollaborativeSuggestionCard({
 }
 
 function AlexHeader({
+  charactersReady,
   doctorRef,
+  companionRef,
   isAlexActive,
+  isJordanActive,
   sources,
   showCards,
-  talkingPoints,
-  showTalkingPoints,
   introCue,
   proactivity,
   onOpenSource,
   isForaging,
   isForagingFading,
-  subtitle,
+  alexSubtitle,
+  jordanSubtitle,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -2501,297 +2119,227 @@ function AlexHeader({
     }`
   return (
     <div
-      className={`mi-chat-header ${isAlexActive ? 'mi-alex-area-active' : ''}`}
+      className={`mi-chat-header mi-shared-character-stage
+    ${charactersReady ? 'characters-ready' : 'characters-loading'}
+    ${isAlexActive ? 'alex-speaking' : ''}
+    ${isJordanActive ? 'jordan-speaking' : ''}
+  `}
     >
-      <div className="mi-avatar-alex">
-        {showCards && <SwipingCards />}
-        <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
+      <div
+        className="mi-shared-stage-background"
+        style={{ backgroundImage: `url(${stageBackground})` }}
+      />
 
-        {isAlexActive && (isForaging || isForagingFading) && (
-          <div
-            className={`alex-foraging-layer ${
-              isForagingFading ? 'is-fading-out' : ''
-            }`}
-          >
-            <div className="alex-foraging-card alex-foraging-card-1">
-              <FontAwesomeIcon icon={faMagnifyingGlass} />
-              <span>Searching trusted sources</span>
+      <div
+        className={`mi-character-zone mi-character-zone-alex ${
+          isAlexActive ? 'mi-character-zone-speaking' : ''
+        } ${isJordanActive ? 'mi-character-zone-listening' : ''}`}
+      >
+        <div className="mi-character-content">
+          {showCards && <SwipingCards />}
+
+          <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
+
+          {alexSubtitle && (
+            <div className="character-subtitle character-subtitle-alex">
+              {alexSubtitle}
             </div>
+          )}
 
-            <div className="alex-foraging-card alex-foraging-card-2">
-              <FontAwesomeIcon icon={faObjectGroup} />
-              <span>Comparing information</span>
-            </div>
-
-            <div className="alex-foraging-card alex-foraging-card-3">
-              <FontAwesomeIcon icon={faListCheck} />
-              <span>Preparing an answer</span>
-            </div>
-          </div>
-        )}
-
-        <div className="alex-title-area">
-          <span className="mi-eyebrow">Chatting with</span>
-          <h2>Alex</h2>
-        </div>
-
-        {introCue?.type === 'ai' && (
-          <div
-            className={introVisualClass('alex-intro-icon-group alex-intro-ai')}
-          >
-            <FontAwesomeIcon
-              className="alex-intro-icon alex-intro-icon-1"
-              icon={faCode}
-            />
-            <FontAwesomeIcon
-              className="alex-intro-icon alex-intro-icon-2"
-              icon={faCommentNodes}
-            />
-          </div>
-        )}
-
-        {introCue?.type === 'explore' && (
-          <div
-            className={introVisualClass(
-              'alex-intro-icon-group alex-intro-explore',
-            )}
-          >
-            <FontAwesomeIcon
-              className="alex-intro-icon alex-intro-icon-single"
-              icon={faLightbulb}
-            />
-          </div>
-        )}
-
-        {introCue?.type === 'search-documents' && (
-          <div className={introVisualClass('alex-intro-search-documents')}>
-            <FontAwesomeIcon
-              className="alex-intro-search-main"
-              icon={faMagnifyingGlass}
-            />
-            <div className="alex-intro-document-row">
-              <FontAwesomeIcon
-                className="alex-intro-document alex-intro-document-1"
-                icon={faFileLines}
-              />
-              <FontAwesomeIcon
-                className="alex-intro-document alex-intro-document-2"
-                icon={faFileLines}
-              />
-              <FontAwesomeIcon
-                className="alex-intro-document alex-intro-document-3"
-                icon={faFileLines}
-              />
-            </div>
-          </div>
-        )}
-
-        {introCue?.type === 'verified-document' && (
-          <div className={introVisualClass('alex-intro-verified-document')}>
-            <div className="alex-intro-verified-file">
-              <FontAwesomeIcon icon={faFileLines} />
-              <span className="alex-intro-verified-badge">
-                <FontAwesomeIcon icon={faCheck} />
-              </span>
-            </div>
-          </div>
-        )}
-
-        {introCue?.type === 'topic-checklist' && (
-          <div className={introVisualClass('alex-intro-topic-checklist')}>
-            {[0, 1, 2, 3].map((item) => (
-              <div
-                className={`alex-intro-check-row alex-intro-check-row-${item + 1}`}
-                key={item}
-              >
-                <span className="alex-intro-check-box">
-                  <FontAwesomeIcon icon={faCheck} />
-                </span>
-                <span className="alex-intro-check-line" />
+          {isAlexActive && (isForaging || isForagingFading) && (
+            <div
+              className={`alex-foraging-layer ${
+                isForagingFading ? 'is-fading-out' : ''
+              }`}
+            >
+              <div className="alex-foraging-card alex-foraging-card-1">
+                <FontAwesomeIcon icon={faMagnifyingGlass} />
+                <span>Searching trusted sources</span>
               </div>
-            ))}
-          </div>
-        )}
 
-        {introCue?.type === 'no-specific-trials' && (
-          <div className={introVisualClass('alex-intro-no-specific-trials')}>
-            <div className="alex-intro-restricted-icons">
+              <div className="alex-foraging-card alex-foraging-card-2">
+                <FontAwesomeIcon icon={faObjectGroup} />
+                <span>Comparing information</span>
+              </div>
+
+              <div className="alex-foraging-card alex-foraging-card-3">
+                <FontAwesomeIcon icon={faListCheck} />
+                <span>Preparing an answer</span>
+              </div>
+            </div>
+          )}
+
+          {introCue?.type === 'ai' && (
+            <div
+              className={introVisualClass(
+                'alex-intro-icon-group alex-intro-ai',
+              )}
+            >
               <FontAwesomeIcon
-                className="alex-intro-restricted-clipboard"
-                icon={faClipboardList}
+                className="alex-intro-icon alex-intro-icon-1"
+                icon={faCode}
               />
               <FontAwesomeIcon
-                className="alex-intro-restricted-search"
+                className="alex-intro-icon alex-intro-icon-2"
+                icon={faCommentNodes}
+              />
+            </div>
+          )}
+
+          {introCue?.type === 'explore' && (
+            <div
+              className={introVisualClass(
+                'alex-intro-icon-group alex-intro-explore',
+              )}
+            >
+              <FontAwesomeIcon
+                className="alex-intro-icon alex-intro-icon-single"
+                icon={faLightbulb}
+              />
+            </div>
+          )}
+
+          {introCue?.type === 'search-documents' && (
+            <div className={introVisualClass('alex-intro-search-documents')}>
+              <FontAwesomeIcon
+                className="alex-intro-search-main"
                 icon={faMagnifyingGlass}
               />
-              <span className="alex-intro-restricted-ban">
-                <FontAwesomeIcon icon={faBan} />
-              </span>
+              <div className="alex-intro-document-row">
+                <FontAwesomeIcon
+                  className="alex-intro-document alex-intro-document-1"
+                  icon={faFileLines}
+                />
+                <FontAwesomeIcon
+                  className="alex-intro-document alex-intro-document-2"
+                  icon={faFileLines}
+                />
+                <FontAwesomeIcon
+                  className="alex-intro-document alex-intro-document-3"
+                  icon={faFileLines}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {subtitle && <div className="alex-subtitle">{subtitle}</div>}
-
-        {uniqueSources.length > 0 && (
-          <div className="alex-source-panel">
-            <div className="alex-source-panel-header">
-              <span className="alex-source-label">Resources I found</span>
+          {introCue?.type === 'verified-document' && (
+            <div className={introVisualClass('alex-intro-verified-document')}>
+              <div className="alex-intro-verified-file">
+                <FontAwesomeIcon icon={faFileLines} />
+                <span className="alex-intro-verified-badge">
+                  <FontAwesomeIcon icon={faCheck} />
+                </span>
+              </div>
             </div>
+          )}
 
-            <div className="alex-source-card-row">
-              {uniqueSources.slice(0, 3).map((source, index) => (
-                <button
-                  key={getSourceKey(source)}
-                  type="button"
-                  className="alex-source-card"
-                  onClick={() => onOpenSource(source)}
+          {introCue?.type === 'topic-checklist' && (
+            <div className={introVisualClass('alex-intro-topic-checklist')}>
+              {[0, 1, 2, 3].map((item) => (
+                <div
+                  className={`alex-intro-check-row alex-intro-check-row-${item + 1}`}
+                  key={item}
                 >
-                  <div className="alex-source-card-top">
-                    <div className="alex-source-card-title-area">
-                      <span className="alex-source-card-badge">
-                        {source.source || 'Source'}
-                      </span>
-                      <div className="alex-source-card-title">
-                        {source.title || source.file || 'Trusted resource'}
-                      </div>
-                    </div>
-
-                    <span className="alex-source-card-page">
-                      <FontAwesomeIcon icon={faFileLines} size="2x" />
-                    </span>
-                  </div>
-
-                  <div className="alex-source-card-excerpt">
-                    {(source.excerpt || source.content || '').slice(0, 145)}
-                    {(source.excerpt || source.content || '').length > 145
-                      ? '…'
-                      : ''}
-                  </div>
-
-                  <div className="alex-source-card-action">Explore →</div>
-                </button>
+                  <span className="alex-intro-check-box">
+                    <FontAwesomeIcon icon={faCheck} />
+                  </span>
+                  <span className="alex-intro-check-line" />
+                </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* {isAlexActive && showTalkingPoints && talkingPoints?.length > 0 && (
-          <div className={`alex-talking-points`}>
-            {talkingPoints.map((point, index) => (
-              <div className="alex-talking-point" key={`${point}-${index}`}>
-                <FontAwesomeIcon icon={faCheck} />
-                <span>{point}</span>
+          {introCue?.type === 'no-specific-trials' && (
+            <div className={introVisualClass('alex-intro-no-specific-trials')}>
+              <div className="alex-intro-restricted-icons">
+                <FontAwesomeIcon
+                  className="alex-intro-restricted-clipboard"
+                  icon={faClipboardList}
+                />
+                <FontAwesomeIcon
+                  className="alex-intro-restricted-search"
+                  icon={faMagnifyingGlass}
+                />
+                <span className="alex-intro-restricted-ban">
+                  <FontAwesomeIcon icon={faBan} />
+                </span>
               </div>
-            ))}
-          </div>
-        )} */}
+            </div>
+          )}
+
+          {uniqueSources.length > 0 && (
+            <div className="alex-source-panel">
+              <div className="alex-source-panel-header">
+                <span className="alex-source-label">Resources I found</span>
+              </div>
+
+              <div className="alex-source-card-row">
+                {uniqueSources.slice(0, 3).map((source, index) => (
+                  <button
+                    key={getSourceKey(source)}
+                    type="button"
+                    className="alex-source-card"
+                    onClick={() => onOpenSource(source)}
+                  >
+                    <div className="alex-source-card-top">
+                      <div className="alex-source-card-title-area">
+                        <span className="alex-source-card-badge">
+                          {source.source || 'Source'}
+                        </span>
+                        <div className="alex-source-card-title">
+                          {source.title || source.file || 'Trusted resource'}
+                        </div>
+                      </div>
+
+                      <span className="alex-source-card-page">
+                        <FontAwesomeIcon icon={faFileLines} size="2x" />
+                      </span>
+                    </div>
+
+                    <div className="alex-source-card-excerpt">
+                      {(source.excerpt || source.content || '').slice(0, 145)}
+                      {(source.excerpt || source.content || '').length > 145
+                        ? '…'
+                        : ''}
+                    </div>
+
+                    <div className="alex-source-card-action">Explore →</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="mi-character-label mi-character-label-alex">
+          <span>Information Guide</span>
+          <strong>Alex</strong>
+        </div>
       </div>
-    </div>
-  )
-}
 
-function MessageThread({
-  messages,
-  chatEndRef,
-  proactivity,
-  companionRef,
-  onOpenGoals,
-  onAcceptQuerySuggestion,
-  onDismissNudge,
-  onInlineEvalResponse,
-  onResolveNudge,
-}) {
-  const messagesRef = useRef(null)
-  const passiveJordanRef = useRef(null)
+      <div
+        className={`mi-character-zone mi-character-zone-jordan ${
+          isJordanActive ? 'mi-character-zone-speaking' : ''
+        } ${isAlexActive ? 'mi-character-zone-listening' : ''}`}
+      >
+        <div className="mi-character-content">
+          <div
+            className="virtual-companion"
+            id="virtualcompanion"
+            ref={companionRef}
+          />
 
-  const activeNudge = [...messages]
-    .reverse()
-    .find((message) => message.from === 'jordan-nudge')
+          {jordanSubtitle && (
+            <div className="character-subtitle character-subtitle-jordan">
+              {jordanSubtitle}
+            </div>
+          )}
+        </div>
 
-  useEffect(() => {
-    if (proactivity !== 'passive') return
-    if (!messagesRef.current || !passiveJordanRef.current) return
-
-    let cancelled = false
-
-    function positionJordan() {
-      if (cancelled) return
-      if (!messagesRef.current || !passiveJordanRef.current) return
-      if (!activeNudge) return
-
-      const nudgeEl = messagesRef.current.querySelector(
-        `[data-jordan-nudge-id="${activeNudge.id}"]`,
-      )
-
-      if (!nudgeEl) return
-
-      const containerRect = messagesRef.current.getBoundingClientRect()
-      const nudgeRect = nudgeEl.getBoundingClientRect()
-
-      const x = Math.max(8, nudgeRect.left - containerRect.left - 95)
-      const y =
-        nudgeRect.top - containerRect.top + messagesRef.current.scrollTop
-
-      passiveJordanRef.current.style.transform = `translate(${x}px, ${y}px)`
-    }
-
-    const frame1 = requestAnimationFrame(() => {
-      positionJordan()
-
-      requestAnimationFrame(() => {
-        positionJordan()
-      })
-    })
-
-    messagesRef.current.addEventListener('scroll', positionJordan)
-    window.addEventListener('resize', positionJordan)
-
-    return () => {
-      cancelled = true
-      cancelAnimationFrame(frame1)
-      messagesRef.current?.removeEventListener('scroll', positionJordan)
-      window.removeEventListener('resize', positionJordan)
-    }
-  }, [messages, activeNudge, proactivity])
-
-  return (
-    <div className="mi-messages" ref={messagesRef}>
-      {messages.map((message) => {
-        if (message.from === 'jordan-nudge') {
-          return (
-            <JordanNudge
-              key={message.id}
-              msg={message}
-              onAcceptQuery={() => {
-                onAcceptQuerySuggestion(message)
-                onResolveNudge(message.id, 'used')
-              }}
-              onDismiss={() => onDismissNudge(message.id, 'dismissed', message)}
-              onEvalYes={() => onInlineEvalResponse(message.id, 'yes')}
-              onEvalNo={() => onInlineEvalResponse(message.id, 'no')}
-              onOpenGoals={onOpenGoals}
-              proactivity={proactivity}
-            />
-          )
-        }
-
-        return <ChatMessage key={message.id} message={message} />
-      })}
-
-      <div ref={chatEndRef} />
-    </div>
-  )
-}
-
-function ChatMessage({ message }) {
-  return (
-    <div className={`mi-msg mi-msg-${message.from}`}>
-      <span className="mi-msg-sender">
-        {message.from === 'alex' ? 'Alex' : 'You'}
-      </span>
-
-      <div className="mi-msg-bubble">{message.text}</div>
+        <div className="mi-character-label mi-character-label-jordan">
+          <span>Exploration Guide</span>
+          <strong>Jordan</strong>
+        </div>
+      </div>
     </div>
   )
 }
@@ -2800,7 +2348,6 @@ function ChatInput({
   input,
   textareaRef,
   onChange,
-  onFocus,
   onSubmit,
   disabled = false,
   onHandleKeyDown,
@@ -2822,7 +2369,6 @@ function ChatInput({
             ref={textareaRef}
             value={input}
             onChange={(e) => onChange(e.target.value)}
-            onFocus={onFocus}
             placeholder={
               disabled
                 ? 'Please wait while Alex is speaking...'
@@ -2844,7 +2390,12 @@ function ChatInput({
   )
 }
 
-function SourcePopout({ source, onClose, onSaveResource, isSaved }) {
+function SourcePopout({
+  source,
+  onClose,
+  onSaveResource = null,
+  isSaved = false,
+}) {
   if (!source) return null
 
   const pdfSrc = source.file
@@ -2955,91 +2506,6 @@ function HistoryModal({ messages, onClose, historyBodyRef }) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  )
-}
-
-function JordanNudge({
-  msg,
-  proactivity,
-  onOpenGoals,
-  onAcceptQuery,
-  onDismiss,
-  onEvalYes,
-  onEvalNo,
-}) {
-  return (
-    <div
-      className={`mi-nudge${msg.resolved ? ' mi-nudge-resolved' : ''}`}
-      data-jordan-nudge-id={msg.id}
-    >
-      <FontAwesomeIcon icon={faLightbulb} className="mi-nudge-icon" />
-
-      <div className="mi-nudge-body">
-        <span className="mi-nudge-text">{msg.text}</span>
-
-        {msg.suggestion && (
-          <div className="mi-nudge-suggestion">{msg.suggestion}</div>
-        )}
-
-        {!msg.resolved && msg.nudgeType === 'query' && (
-          <div className="mi-nudge-actions">
-            <button
-              type="button"
-              className="mi-nudge-btn mi-nudge-btn-primary"
-              onClick={onAcceptQuery}
-            >
-              Use this
-            </button>
-
-            <button type="button" className="mi-nudge-btn" onClick={onDismiss}>
-              No thanks
-            </button>
-
-            {proactivity === 'passive' && (
-              <button
-                type="button"
-                className="mi-passive-goals-link"
-                onClick={onOpenGoals}
-              >
-                <FontAwesomeIcon icon={faBullseye} className="mi-nudge-icon" />
-                View my goals
-              </button>
-            )}
-          </div>
-        )}
-
-        {!msg.resolved && msg.nudgeType === 'eval' && (
-          <div className="mi-nudge-actions">
-            <button
-              type="button"
-              className="mi-nudge-btn mi-nudge-btn-primary"
-              onClick={onEvalYes}
-            >
-              Yes
-            </button>
-
-            <button type="button" className="mi-nudge-btn" onClick={onEvalNo}>
-              Not quite
-            </button>
-
-            {proactivity === 'passive' && (
-              <button
-                type="button"
-                className="mi-passive-goals-link"
-                onClick={onOpenGoals}
-              >
-                <FontAwesomeIcon icon={faBullseye} className="mi-nudge-icon" />
-                View my goals
-              </button>
-            )}
-          </div>
-        )}
-
-        {msg.resolved && (
-          <span className="mi-nudge-resolution">{msg.resolution}</span>
-        )}
       </div>
     </div>
   )

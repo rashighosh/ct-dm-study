@@ -24,9 +24,8 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  flex-direction: row-reverse;
-  align-items: stretch;
-  gap: 24px;
+  justify-content: center;
+  align-items: center;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -104,7 +103,7 @@
   position: fixed;
   top: 15px;
   left: 15px;
-  display: absolute;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -125,236 +124,14 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* Overlay for active Jordan popouts                                          */
-/* -------------------------------------------------------------------------- */
-
-.mi-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  opacity: 0;
-  pointer-events: none;
-  background: rgba(0, 0, 0, 0.18);
-  transition: opacity 0.3s ease;
-}
-
-.mi-overlay-open {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Active condition: Jordan dock                                              */
-/* -------------------------------------------------------------------------- */
-
-.mi-jordan-active-area {
-  position: fixed;
-  right: 35px;
-  bottom: 35px;
-  z-index: 40;
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-}
-
-.mi-jordan-dock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 9px;
-}
-
-.mi-jordan-dock-avatar {
-  width: 95px;
-  height: 95px;
-  overflow: hidden;
-  border: 1px solid rgb(var(--primary-blue));
-  border-radius: 50%;
-  background: rgb(var(--primary-blue));
-  box-shadow: 0 18px 45px rgba(60, 70, 90, 0.25);
-}
-
-.mi-jordan-dock-avatar .virtual-companion {
-  width: 100%;
-  height: 100%;
-}
-
-.mi-jordan-dock-actions {
-  display: flex;
-  flex-direction: row;
-  gap: 6px;
-  width: 75px;
-  padding: 10px;
-  border-radius: 35px;
-  background: white;
-  box-shadow: rgba(100, 100, 111, 0.2) 0 7px 29px 0;
-}
-
-.mi-jordan-action-btn {
-  position: relative;
-  width: 35px;
-  height: 35px;
-  border: 1px solid rgb(var(--primary-blue) / 5%);
-  border-radius: 50%;
-  background: #fff;
-  color: rgb(var(--primary-blue));
-  font-family: inherit;
-  font-size: 11.5px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    transform 0.12s;
-}
-
-.mi-jordan-action-btn:not(:disabled):hover {
-  background: rgb(var(--primary-blue) / 15%);
-  transform: scale(1.1);
-}
-
-.mi-jordan-action-btn:active {
-  transform: scale(0.98);
-}
-
-.mi-jordan-action-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.mi-notes-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: rgb(var(--primary-blue));
-  color: white;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Active dock bubble */
-
-.mi-dock-nudge {
-  width: 330px;
-  position: fixed;
-  right: 150px;
-  bottom: 100px;
-  overflow: hidden;
-  border: 1px solid rgb(var(--primary-blue) / 55%);
-  border-radius: 16px 16px 4px 16px;
-  background: white;
-  box-shadow: 0 10px 28px rgba(60, 70, 90, 0.18);
-  animation: dockNudgeIn 0.25s ease-out;
-}
-
-.mi-dock-nudge-content {
-  padding: 12px 14px;
-  background: linear-gradient(
-    180deg,
-    rgb(var(--primary-blue) / 5%) 0%,
-    rgba(238, 248, 242, 0) 55%
-  );
-}
-
-.mi-dock-nudge-text {
-  display: block;
-  margin-bottom: 8px;
-  color: rgb(var(--primary-blue));
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.mi-dock-nudge-suggestion {
-  margin-bottom: 10px;
-  padding: 8px 10px;
-  border: 1px solid #d4d0c8;
-  border-radius: 10px;
-  background: #fff;
-  color: #2c2c2a;
-  font-size: 12.5px;
-  line-height: 1.45;
-}
-
-.mi-dock-nudge-actions {
-  display: flex;
-  gap: 7px;
-}
-
-@keyframes dockNudgeIn {
-  from {
-    opacity: 0;
-    transform: translateX(10px) translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0) translateY(0);
-  }
-}
-
-/* -------------------------------------------------------------------------- */
 /* Sidebar / Jordan workspace                                                 */
 /* -------------------------------------------------------------------------- */
-
-.mi-sidebar {
-  width: 35%;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  background-color: white;
-  border-radius: 15px;
-}
-
-/* Active condition: sidebar behaves as a popout. */
-.mi-root-active .mi-sidebar {
-  position: fixed;
-  right: 150px;
-  bottom: 100px;
-  z-index: 30;
-  width: 330px;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(calc(100% + 40px));
-  transition:
-    transform 0.3s ease,
-    opacity 0.3s ease;
-}
-
-.mi-root-active .mi-sidebar.mi-sidebar-open {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(0);
-}
-
-.mi-goals-panel {
-  flex: 1;
-  min-height: 0;
-  overflow-y: scroll;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid rgb(var(--primary-blue) / 55%);
-  border-radius: 15px;
-  background: linear-gradient(
-    180deg,
-    rgb(var(--primary-blue) / 5%) 0%,
-    rgba(255, 255, 255, 1) 35%
-  );
-}
 
 .goals-area {
   padding: 20px 26px;
   display: flex;
   flex-direction: column;
   gap: 15px;
-}
-
-.mi-goals-panel.active {
-  border-radius: 15px 15px 0 15px;
 }
 
 .mi-goals-subtext {
@@ -502,92 +279,6 @@
   font-size: 10px;
 }
 
-/* Collaborative sidebar header */
-
-.mi-collab-jordan-header {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  gap: 15px;
-  margin-bottom: 10px;
-}
-
-.mi-jordan-stage-header {
-  position: relative;
-  height: 175px;
-  overflow: hidden;
-  border-radius: 15px 15px 0 0;
-  background: url('../assets/bg.jpg');
-  background-size: cover;
-  background-position: center;
-}
-
-.mi-jordan-stage-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('../assets/bg.jpg') center/cover no-repeat;
-  filter: blur(7px);
-  transform: scale(1.04);
-  z-index: 0;
-}
-
-.mi-jordan-stage-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.5);
-  z-index: 1;
-  pointer-events: none;
-}
-
-.mi-jordan-stage-avatar,
-.mi-jordan-stage-text {
-  z-index: 2;
-}
-
-.mi-jordan-stage-avatar {
-  position: absolute;
-  left: 8px;
-  bottom: -18px;
-  width: 185px;
-  height: 185px;
-  z-index: 3;
-}
-
-.mi-jordan-stage-avatar .virtual-companion {
-  width: 100%;
-  height: 100%;
-}
-
-.mi-jordan-stage-text {
-  position: absolute;
-  z-index: 2;
-  top: 28px;
-  right: 18px;
-  left: 175px;
-  padding: 14px 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  box-shadow: 0 12px 28px rgba(60, 70, 90, 0.14);
-}
-
-.mi-jordan-stage-text h3 {
-  margin: 0 0 4px;
-  color: rgb(var(--primary-blue));
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.mi-jordan-stage-text p {
-  margin: 0;
-  color: #24415f;
-  font-size: 12.5px;
-  line-height: 1.4;
-  font-style: italic;
-}
-
 .mi-collab-suggestion-card::before {
   content: '';
   position: absolute;
@@ -698,21 +389,6 @@
   }
 }
 
-.mi-collab-jordan-header h3 {
-  margin: 0;
-  color: rgb(var(--primary-blue));
-  font-size: 19px;
-  font-weight: 600;
-}
-
-.mi-collab-jordan-header p {
-  margin: 2px 0 0;
-  color: rgb(var(--primary-blue) / 75%);
-  font-size: 12px;
-  line-height: normal;
-  font-style: italic;
-}
-
 /* Collaborative suggestion/check-in card */
 
 .mi-collab-suggestion-label {
@@ -752,8 +428,8 @@
 /* -------------------------------------------------------------------------- */
 
 .mi-chat-card {
+  width: 75%;
   position: relative;
-  flex: 1;
   min-width: 0;
   height: calc(100vh - 150px);
   overflow: hidden;
@@ -762,96 +438,13 @@
   border: 1px solid #e2ddd0;
   border-radius: 18px;
   background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.mi-chat-header {
-  height: 250px;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  position: relative;
-  border-bottom: 1px solid #e2ddd0;
-  background: url('../assets/bg.jpg');
-  background-size: cover;
-  background-position: center;
-  transition: height 0.25s ease;
-  overflow: hidden;
-}
-
-.mi-chat-header.mi-alex-area-active {
-  height: 500px;
+  box-shadow: 0 8px 30px rgba(55, 65, 81, 0.08);
 }
 
 .mi-input-area,
 .mi-chat-input,
 .mi-chat-form {
   flex-shrink: 0;
-}
-
-.mi-avatar-alex::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('../assets/bg.jpg');
-  background-size: cover;
-  background-position: center;
-  filter: blur(7px);
-  transform: scale(1.04);
-  z-index: 0;
-}
-
-.mi-avatar-alex::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.5);
-  z-index: 0;
-}
-
-.mi-avatar-alex > * {
-  position: relative;
-  z-index: 1;
-}
-
-.mi-avatar-alex {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.5);
-}
-
-.alex-subtitle {
-  position: absolute !important;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  z-index: 20 !important;
-
-  width: auto;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  padding: 11px 15px;
-  border-radius: 15px;
-  background: rgba(0, 0, 0, 0.68);
-  color: white;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: normal;
-  font-style: italic;
-  text-align: center;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-  pointer-events: none;
 }
 
 .alex-source-panel {
@@ -1007,19 +600,6 @@ span.alex-source-card-badge {
   background: rgba(255, 255, 255, 0.85);
 }
 
-.alex-title-area {
-  position: absolute;
-  bottom: 5px;
-  left: 10px;
-}
-
-.mi-eyebrow {
-  color: black;
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-}
-
 .mi-chat-header h2 {
   color: white;
   font-size: 23px;
@@ -1028,65 +608,6 @@ span.alex-source-card-badge {
   border-radius: 5px;
   text-align: center;
   padding: 3px 0;
-}
-
-.alex-talking-points {
-  position: absolute;
-  left: 7rem;
-  top: 50%;
-  transform: translateY(-50%);
-
-  width: 280px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  z-index: 5;
-  right: 3rem;
-  width: 200px;
-}
-
-.alex-talking-point:nth-child(1) {
-  animation-delay: 0.5s;
-}
-
-.alex-talking-point:nth-child(2) {
-  animation-delay: 1s;
-}
-
-.alex-talking-point:nth-child(3) {
-  animation-delay: 1.5s;
-}
-
-.alex-talking-point {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.82);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: normal;
-  opacity: 0; /* start hidden */
-  animation: alexPointIn 0.5s ease forwards;
-}
-
-.alex-talking-point svg {
-  color: rgb(var(--primary-blue));
-}
-
-@keyframes alexPointIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 
 .alex-intro-visual-card {
@@ -1640,426 +1161,6 @@ span.alex-source-card-badge {
 /* -------------------------------------------------------------------------- */
 /* Chat messages                                                              */
 /* -------------------------------------------------------------------------- */
-
-.mi-messages {
-  position: relative;
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 26px;
-  background: linear-gradient(
-    180deg,
-    rgba(252, 243, 238, 0.75) 0%,
-    rgba(255, 255, 255, 0.85) 55%
-  );
-}
-
-.mi-root-passive .mi-nudge {
-  margin-left: 95px;
-}
-
-.mi-passive-jordan-floating {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 75px;
-  height: 75px;
-  border-radius: 50%;
-  overflow: hidden;
-  z-index: 6;
-  pointer-events: none;
-  opacity: 0.5;
-  filter: grayscale(25%);
-  transform: translate(5px, calc(var(--messages-height, 0px) - 59px));
-  transition:
-    transform 0.25s ease,
-    opacity 0.25s ease,
-    filter 0.25s ease;
-}
-
-.mi-passive-jordan-active {
-  opacity: 1;
-  visibility: visible;
-  filter: grayscale(0%);
-  background: rgb(var(--primary-blue));
-  border: 1px solid rgb(var(--primary-blue));
-}
-
-.mi-passive-jordan-floating .virtual-companion {
-  width: 100%;
-  height: 100%;
-}
-
-.mi-msg {
-  max-width: 72%;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.mi-msg-alex {
-  align-self: flex-start;
-}
-
-.mi-msg-user {
-  align-self: flex-end;
-}
-
-.mi-msg-sender {
-  padding: 0 2px;
-  color: #918f86;
-  font-size: 11px;
-}
-
-.mi-msg-bubble {
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 14.5px;
-  line-height: 1.55;
-}
-
-.mi-msg-alex .mi-msg-bubble {
-  border-radius: 3px 12px 12px 12px;
-  background: rgb(var(--primary-orange) / 15%);
-  color: black;
-}
-
-.mi-msg-user .mi-msg-bubble {
-  border: 1px solid #d4d0c8;
-  border-radius: 12px 12px 3px 12px;
-  background: #f5f4f0;
-  color: #2c2c2a;
-}
-
-.mi-sources {
-  margin-top: 10px;
-  font-size: 0.85rem;
-}
-
-.mi-sources summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.mi-source-item {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(0, 0, 0, 0.12);
-}
-
-.mi-source-item p {
-  margin: 4px 0;
-}
-
-.mi-source-excerpt {
-  margin-top: 4px;
-}
-
-.source-popout-large {
-  width: min(1000px, 94vw);
-  height: min(760px, 86vh);
-  display: flex;
-  flex-direction: column;
-}
-
-.source-popout-actions {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 12px;
-}
-
-.source-page-note {
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  font-style: italic;
-}
-
-.source-popout-iframe {
-  flex: 1;
-  width: 100%;
-  min-height: 480px;
-  border: 1px solid #dbe3ef;
-  border-radius: 16px;
-  margin-top: 12px;
-  background: white;
-}
-
-.source-preview-card {
-  margin-top: 16px;
-  border: 1px solid #dbe3ef;
-  border-radius: 18px;
-  padding: 16px;
-  background: #f8fafc;
-}
-
-.source-preview-site {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 10px;
-  gap: 5px;
-}
-
-.source-preview-site p {
-  font-weight: 400;
-  display: flex;
-  flex-direction: row;
-  align-items: first baseline;
-  gap: 5px;
-  margin: 0;
-  font-size: 15px;
-}
-
-.source-preview-site p span {
-  font-weight: 700;
-  line-height: 13px;
-  border: 1px solid #1a3d6e;
-  padding: 1px 5px;
-  border-radius: 15px;
-  text-transform: uppercase;
-  font-size: 11px;
-}
-
-.source-link-later-note {
-  margin-top: 14px;
-  padding: 12px;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  border-radius: 14px;
-  font-size: 0.13px;
-  color: #7c2d12;
-  line-height: normal;
-}
-
-/* Passive/inline Jordan nudges */
-
-.mi-nudge {
-  align-self: flex-start;
-  max-width: 78%;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 9px 12px;
-  border: 1px dashed rgb(var(--primary-blue) / 55%);
-  border-radius: 0 15px 15px 15px;
-  background: rgb(var(--primary-blue) / 5%);
-  animation: nudgeIn 0.25s ease-out;
-}
-
-.mi-nudge-resolved {
-  opacity: 0.6;
-  border-style: solid;
-}
-
-.mi-nudge-icon {
-  flex-shrink: 0;
-  margin-top: 3px;
-  color: rgb(var(--primary-blue));
-  font-size: 12px;
-}
-
-.mi-nudge-body {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.mi-nudge-text {
-  color: rgb(var(--primary-blue));
-  font-size: 15px;
-  font-style: italic;
-  line-height: normal;
-}
-
-.mi-nudge-suggestion {
-  color: rgb(var(--primary-blue));
-  font-size: 15px;
-  font-weight: bold;
-  line-height: normal;
-}
-
-.mi-nudge-actions {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 7px;
-  margin: 5px 0;
-}
-
-.mi-nudge-btn {
-  padding: 5px 11px;
-  border: 1px solid rgb(var(--primary-blue) / 55%);
-  border-radius: 8px;
-  background: #fff;
-  color: rgb(var(--primary-blue));
-  font-family: inherit;
-  font-size: 11.5px;
-  cursor: pointer;
-  transition: 0.2s ease-in-out;
-  margin: 5px 0;
-}
-
-.mi-nudge-btn:not(:disabled):hover {
-  background: rgb(var(--primary-blue) / 5%);
-}
-
-.mi-nudge-btn-primary {
-  border-color: rgb(var(--primary-blue) / 85%);
-  background: rgb(var(--primary-blue) / 85%);
-  color: #fff;
-}
-
-.mi-nudge-btn-primary:not(:disabled):hover {
-  background: rgb(var(--primary-blue));
-}
-
-.mi-nudge-btn-suggestion {
-  width: fit-content;
-  font-size: 13px;
-}
-
-.mi-nudge-resolution {
-  color: #6e6d66;
-  font-size: 11.5px;
-  font-style: italic;
-}
-
-@keyframes nudgeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.mi-collab-collapsed-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #667085;
-  font-style: italic;
-  font-size: 15px;
-  padding: 2px 0 4px;
-}
-
-.mi-collab-collapsed-status svg {
-  color: #667085;
-}
-
-.mi-root-passive .mi-main {
-  flex-direction: column;
-}
-
-.mi-root-passive .mi-chat-card {
-  width: 100%;
-}
-
-.mi-passive-goals-popover {
-  position: fixed;
-  right: 32px;
-  bottom: 32px;
-  width: 330px;
-  max-height: 55vh;
-  z-index: 45;
-  background: white;
-  border: 1px solid #e2ddd0;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 14px 36px rgba(60, 70, 90, 0.2);
-  overflow-y: auto;
-}
-
-.mi-passive-goals-header {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 14px;
-  font-weight: 600;
-  color: rgb(var(--primary-blue));
-}
-
-.mi-passive-goals-header button {
-  position: absolute;
-  right: 15px;
-  top: 15px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: #888780;
-}
-
-.mi-passive-goals-link {
-  border: none;
-  border-left: 1px solid !important;
-  border-radius: 0px;
-  background: transparent;
-  color: rgb(var(--primary-blue));
-  font-size: 13px;
-  padding: 0;
-  padding-left: 10px;
-  cursor: pointer;
-  text-decoration: underline;
-  margin: 0 3px;
-}
-
-.mi-passive-goals-link:not(:disabled):hover {
-  transform: none;
-  font-weight: 700;
-}
-
-.mi-goal-chip-with-notes {
-  display: block;
-}
-
-.mi-goal-chip-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.mi-goal-notes {
-  margin-top: 8px;
-  display: grid;
-  gap: 6px;
-}
-
-.mi-goal-note {
-  padding: 8px 10px;
-  border-radius: 10px;
-  font-size: 0.78rem;
-  line-height: 1.3;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.alex-source-chip-verified {
-  display: inline-flex;
-  align-items: first baseline;
-  text-align: left;
-  gap: 5px;
-  opacity: 0;
-  transform: translateY(6px) scale(0.96);
-  animation: sourceChipIn 0.32s ease forwards;
-}
-
-@keyframes sourceChipIn {
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Input row                                                                  */
@@ -2617,58 +1718,19 @@ span.alex-source-card-badge {
 /* -------------------------------------------------------------------------- */
 
 @media (max-width: 900px) {
-  .mi-main {
-    flex-direction: column;
-  }
-
-  .mi-sidebar {
+  .mi-root {
     width: 100%;
+    padding: 16px;
   }
 
-  .mi-goals-panel {
-    max-height: 220px;
+  .mi-chat-card {
+    height: calc(100vh - 130px);
   }
 }
 
 /* -------------------------------------------------------------------------- */
 /* Refactored shared Jordan sidebar: active + collaborative                   */
 /* -------------------------------------------------------------------------- */
-
-.mi-root-active .mi-main {
-  flex-direction: row-reverse;
-}
-
-.mi-root-active .mi-sidebar {
-  position: static;
-  right: auto;
-  bottom: auto;
-  z-index: auto;
-  width: 35%;
-  opacity: 1;
-  pointer-events: auto;
-  transform: none;
-  transition: none;
-}
-
-.mi-root-active .mi-sidebar.mi-sidebar-open {
-  opacity: 1;
-  pointer-events: auto;
-  transform: none;
-}
-
-.mi-sidebar-mode-note {
-  color: rgb(var(--primary-blue) / 85%);
-  font-size: 12.5px;
-  line-height: 1.4;
-  padding: 10px 12px;
-  border: 1px solid rgb(var(--primary-blue) / 18%);
-  border-radius: 12px;
-  background: rgb(var(--primary-blue) / 4%);
-}
-
-.mi-sidebar-suggestions-section {
-  padding: 20px 15px;
-}
 
 .mi-goal-chip-main {
   display: flex;
@@ -2781,10 +1843,6 @@ span.alex-source-card-badge {
 /* Passive condition: same sidebar, automatic support                         */
 /* -------------------------------------------------------------------------- */
 
-.mi-root-passive .mi-sidebar {
-  width: 35%;
-}
-
 .mi-root-passive .mi-sidebar-mode-note {
   background: rgb(var(--primary-blue) / 6%);
   border-color: rgb(var(--primary-blue) / 18%);
@@ -2833,29 +1891,417 @@ span.alex-source-card-badge {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Fix: passive now uses the same sidebar layout as active/collaborative       */
+/* Shared Alex + Jordan character stage                                       */
 /* -------------------------------------------------------------------------- */
 
-.mi-root-passive .mi-main {
-  flex-direction: row-reverse;
-  align-items: stretch;
-}
+.mi-shared-character-stage {
+  position: relative;
+  isolation: isolate;
 
-.mi-root-passive .mi-chat-card {
-  width: auto;
-  flex: 1;
-  min-width: 0;
-}
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
 
-.mi-root-passive .mi-sidebar {
-  width: 35%;
-  flex-shrink: 0;
-}
-
-.mi-root-passive .mi-goals-panel {
+  width: 100%;
   height: 100%;
+  min-height: 430px;
+
+  /* Allow crossing the center, but clip at the outside of the full stage */
+  overflow: hidden;
 }
 
-.mi-root-passive .mi-sidebar-suggestions-section {
-  border-bottom: 1px solid rgb(var(--primary-blue) / 25%);
+/* -------------------------------------------------------------------------- */
+/* Background camera movement                                                 */
+/* -------------------------------------------------------------------------- */
+
+.mi-shared-stage-background {
+  position: absolute;
+  inset: -6%;
+  z-index: -2;
+
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: #d9e1e7;
+
+  filter: blur(7px);
+
+  transform: translateX(0) scale(1.25);
+  transition: transform 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.mi-shared-character-stage.alex-speaking .mi-shared-stage-background {
+  transform: translateX(15.5%) scale(1.25);
+}
+
+.mi-shared-character-stage.jordan-speaking .mi-shared-stage-background {
+  transform: translateX(-15.5%) scale(1.25);
+}
+
+.mi-shared-character-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.46),
+    rgba(255, 255, 255, 0.32)
+  );
+
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Character zones                                                            */
+/* -------------------------------------------------------------------------- */
+
+.mi-character-zone {
+  position: relative;
+  z-index: 1;
+
+  min-width: 0;
+  height: 100%;
+
+  /* Allows animations to cross the center of the shared stage */
+  overflow: visible;
+}
+
+.mi-character-zone-alex {
+  grid-column: 1;
+}
+
+.mi-character-zone-jordan {
+  grid-column: 3;
+}
+
+.mi-character-zone-listening {
+  z-index: 2;
+}
+
+.mi-character-zone-speaking {
+  z-index: 5;
+}
+
+/* Everything inside this wrapper pans together except the fixed label */
+.mi-character-content {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  transform: translateX(0) translateY(0) scale(1);
+  transform-origin: center bottom;
+
+  transition:
+    transform 1.5s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 500ms ease-in-out;
+
+  will-change: transform;
+}
+
+/* Alex speaking */
+.mi-character-zone-alex.mi-character-zone-speaking .mi-character-content {
+  transform: translateX(15%) scale(1.1);
+}
+
+/* Jordan listening */
+.mi-character-zone-jordan.mi-character-zone-listening .mi-character-content {
+  transform: translateX(35%) translateY(5%);
+  filter: saturate(0.9);
+}
+
+/* Jordan speaking */
+.mi-character-zone-jordan.mi-character-zone-speaking .mi-character-content {
+  transform: translateX(-35%) scale(1.1);
+}
+
+/* Alex listening */
+.mi-character-zone-alex.mi-character-zone-listening .mi-character-content {
+  transform: translateX(-35%) translateY(5%);
+  filter: saturate(0.9);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Character canvases                                                         */
+/* -------------------------------------------------------------------------- */
+
+.mi-character-zone .virtual-doctor,
+.mi-character-zone .virtual-companion {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  opacity: 0;
+  visibility: hidden;
+
+  transition:
+    opacity 300ms ease,
+    visibility 0s linear 300ms;
+}
+
+.mi-shared-character-stage.characters-ready .virtual-doctor,
+.mi-shared-character-stage.characters-ready .virtual-companion {
+  opacity: 1;
+  visibility: visible;
+
+  transition:
+    opacity 300ms ease,
+    visibility 0s linear 0s;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Fixed character labels                                                     */
+/* -------------------------------------------------------------------------- */
+
+.mi-character-label {
+  position: absolute;
+  top: 15px;
+  z-index: 50;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+
+  background: rgba(28, 34, 44, 0.56);
+  backdrop-filter: blur(8px);
+
+  color: white;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1);
+
+  transition:
+    opacity 250ms ease,
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 250ms;
+
+  pointer-events: none;
+}
+
+.mi-character-label-alex {
+  left: 14px;
+  transform-origin: top left;
+}
+
+.mi-character-label-jordan {
+  right: 14px;
+  transform-origin: top right;
+}
+
+.mi-shared-character-stage.characters-ready .mi-character-label {
+  opacity: 1;
+  visibility: visible;
+
+  transition:
+    opacity 250ms ease,
+    transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+}
+
+.mi-character-zone-speaking .mi-character-label {
+  transform: scale(1.08);
+}
+
+.mi-character-label strong {
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.mi-character-label span {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* Active-label pulses */
+
+.mi-character-zone-speaking .mi-character-label-alex {
+  animation: pulse-animation-alex 2s infinite;
+}
+
+.mi-character-zone-speaking .mi-character-label-jordan {
+  animation: pulse-animation-jordan 2s infinite;
+}
+
+@keyframes pulse-animation-alex {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--primary-yellow) / 50%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 20px rgb(var(--primary-yellow) / 0%);
+  }
+}
+
+@keyframes pulse-animation-jordan {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--primary-blue) / 50%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 20px rgb(var(--primary-blue) / 0%);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Subtitles                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.character-subtitle {
+  position: absolute;
+  bottom: 22px;
+  z-index: 25;
+
+  max-width: min(420px, 74%);
+  padding: 11px 15px;
+  border-radius: 15px;
+
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.character-subtitle-alex,
+.character-subtitle-jordan {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.character-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(rgba(248, 247, 244, 0.94), rgba(248, 247, 244, 0.94)),
+    url('../assets/bg.jpg') center / cover no-repeat;
+
+  opacity: 1;
+  visibility: visible;
+
+  transition:
+    opacity 400ms ease,
+    visibility 0s linear 0s;
+}
+
+.character-loading-overlay.is-exiting {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity 400ms ease,
+    visibility 0s linear 400ms;
+}
+
+.character-loading-card {
+  width: min(360px, 90vw);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 32px 28px;
+  border: 1px solid rgba(32, 68, 105, 0.12);
+  border-radius: 22px;
+
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(14px);
+
+  box-shadow: 0 24px 70px rgba(30, 40, 55, 0.15);
+  text-align: center;
+}
+
+.character-loading-logo {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 20px;
+}
+
+.character-loading-card h2 {
+  margin: 18px 0 6px;
+  color: #253246;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.character-loading-card p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.character-loading-animation {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.character-loading-animation span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgb(var(--primary-purple));
+  animation: characterLoadingDot 1.1s ease-in-out infinite;
+}
+
+.character-loading-animation span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.character-loading-animation span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes characterLoadingDot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+
+  30% {
+    transform: translateY(-7px);
+    opacity: 1;
+  }
+}
+
+@keyframes characterLoadingOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
