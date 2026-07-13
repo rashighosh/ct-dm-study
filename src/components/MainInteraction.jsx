@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import logo from '../assets/logo-transparent.png'
+import alex from '../assets/alex.png'
+import jordan from '../assets/jordan.png'
 import '../css/MainInteraction.css'
 import stageBackground from '../assets/bg.jpg'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,6 +15,7 @@ import {
   faClipboardList,
   faBan,
   faMagnifyingGlass,
+  faRoute,
   faObjectGroup,
   faListCheck,
   faArrowRight,
@@ -20,6 +23,14 @@ import {
   faFileLines,
   faCode,
   faCommentNodes,
+  faVolume,
+  faExpand,
+  faCubesStacked,
+  faCircleQuestion,
+  faDiagramProject,
+  faFilter,
+  faShapes,
+  faHandHoldingHeart,
 } from '@fortawesome/free-solid-svg-icons'
 import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -35,15 +46,6 @@ import { logMainInteraction } from '../api/logging.js'
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
 /* -------------------------------------------------------------------------- */
-
-const TUTORIAL_IMAGES = {
-  passive: ['/tutorials/passive1.png'],
-  collaborative: [
-    '/tutorials/collaborative1.png',
-    '/tutorials/collaborative2.png',
-  ],
-  active: ['/tutorials/active1.png'],
-}
 
 const ALEX_INTROS = [
   "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation.",
@@ -73,6 +75,49 @@ const INTRO_VISUAL_TIMELINE = {
     ],
     3: [{ delay: 500, duration: 5000, cue: { type: 'topic-checklist' } }],
     4: [{ delay: 1800, duration: 5000, cue: { type: 'no-specific-trials' } }],
+  },
+  jordan: {
+    1: [
+      {
+        delay: 1800,
+        duration: 3500,
+        cue: { type: 'jordan-guidance' },
+      },
+    ],
+
+    2: [
+      {
+        delay: 1800,
+        duration: 4200,
+        cue: { type: 'jordan-build-question' },
+      },
+    ],
+
+    3: [
+      {
+        delay: 500,
+        duration: 1400,
+        cue: { type: 'jordan-specific' },
+      },
+      {
+        delay: 3100,
+        duration: 1400,
+        cue: { type: 'jordan-perspectives' },
+      },
+      {
+        delay: 5000,
+        duration: 1800,
+        cue: { type: 'jordan-related' },
+      },
+    ],
+
+    4: [
+      {
+        delay: 1600,
+        duration: 4000,
+        cue: { type: 'jordan-user-control' },
+      },
+    ],
   },
 }
 
@@ -194,6 +239,7 @@ export default function MainInteraction() {
   const restoredInteractionRef = useRef(
     !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
   )
+  const [isIntroPlaying, setIsIntroPlaying] = useState(false)
   const [hideCharacterLoader, setHideCharacterLoader] = useState(false)
   const [charactersReady, setCharactersReady] = useState(false)
   const [charactersSettled, setCharactersSettled] = useState(false)
@@ -204,8 +250,7 @@ export default function MainInteraction() {
     useState(false)
   const [collabQuestionPromptText, setCollabQuestionPromptText] = useState(null)
   const [activeSourcePopout, setActiveSourcePopout] = useState(null)
-  const [tutorialIndex, setTutorialIndex] = useState(0)
-  const [alexIntroCue, setAlexIntroCue] = useState(null)
+  const [introCue, setIntroCue] = useState(null)
   const [audioReady, setAudioReady] = useState(
     savedSession?.audioReady ?? false,
   )
@@ -229,6 +274,25 @@ export default function MainInteraction() {
   const [transcript, setTranscript] = useState(savedSession?.transcript ?? [])
   const [isForaging, setIsForaging] = useState(false)
   const [isForagingFading, setIsForagingFading] = useState(false)
+  const [startChecks, setStartChecks] = useState({
+    volume: false,
+    browser: false,
+  })
+  const [jordanGuidance, setJordanGuidance] = useState(
+    savedSession?.jordanGuidance ?? null,
+  )
+
+  const [isJordanGuidanceLoading, setIsJordanGuidanceLoading] = useState(false)
+
+  const previousJordanGuidanceTypes = useRef(
+    savedSession?.previousJordanGuidanceTypes ?? [],
+  )
+
+  const previousJordanGuidanceMessages = useRef(
+    savedSession?.previousJordanGuidanceMessages ?? [],
+  )
+
+  const canStart = Object.values(startChecks).every(Boolean)
 
   useEffect(() => {
     const session = {
@@ -239,6 +303,9 @@ export default function MainInteraction() {
       coveredGoals: Array.from(coveredGoals),
       messages,
       transcript,
+      jordanGuidance,
+      previousJordanGuidanceTypes: previousJordanGuidanceTypes.current,
+      previousJordanGuidanceMessages: previousJordanGuidanceMessages.current,
     }
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
@@ -251,6 +318,7 @@ export default function MainInteraction() {
     coveredGoals,
     messages,
     transcript,
+    jordanGuidance,
   ])
 
   const hasSentFirstMessage = messages.some((m) => m.from === 'user')
@@ -266,10 +334,6 @@ export default function MainInteraction() {
   ).length
 
   const showFinishButton = completedAlexResponses >= 5
-
-  const tutorialImages = TUTORIAL_IMAGES[proactivity] || []
-  const currentTutorialImage = tutorialImages[tutorialIndex]
-  const isLastTutorial = tutorialIndex === tutorialImages.length - 1
 
   /* ------------------------------------------------------------------------ */
   /* Character setup + scroll behavior                                        */
@@ -351,6 +415,7 @@ export default function MainInteraction() {
 
         setIsAlexActive(true)
         setIsJordanActive(false)
+        setIsIntroPlaying(true)
 
         /* ---------------------------------------------------------------------- */
         /* Alex introduction                                                      */
@@ -389,7 +454,7 @@ export default function MainInteraction() {
             setAlexSubtitle,
           )
 
-          clearAlexIntroCues()
+          clearIntroCues()
         }
 
         /* ---------------------------------------------------------------------- */
@@ -399,11 +464,13 @@ export default function MainInteraction() {
         setAlexSubtitle('')
         setIsAlexActive(false)
         setIsJordanActive(true)
+        setIsIntroPlaying(false)
 
         /* ---------------------------------------------------------------------- */
         /* Jordan introduction                                                    */
         /* ---------------------------------------------------------------------- */
         playGesture('lookrightalex')
+
         for (const [index, text] of JORDAN_INTROS.entries()) {
           const introNumber = index + 1
 
@@ -426,6 +493,8 @@ export default function MainInteraction() {
             intro_character: 'jordan',
           })
 
+          scheduleIntroVisuals('jordan', introNumber)
+
           await speakWithLipsyncStatic(
             `/intro-voices/companion-audio-JORDAN_INTRO_${introNumber}.mp3`,
             `/intro-voices/companion-timestamps-JORDAN_INTRO_${introNumber}.json`,
@@ -433,6 +502,8 @@ export default function MainInteraction() {
             true,
             setJordanSubtitle,
           )
+
+          clearIntroCues()
         }
 
         /* ---------------------------------------------------------------------- */
@@ -542,30 +613,33 @@ export default function MainInteraction() {
   /* Jordan panel helpers                                                     */
   /* ------------------------------------------------------------------------ */
 
-  function clearAlexIntroCues() {
+  function clearIntroCues() {
     introCueTimers.current.forEach(clearTimeout)
     introCueTimers.current = []
-    setAlexIntroCue(null)
+    setIntroCue(null)
   }
 
   function scheduleIntroVisuals(character, introNumber) {
-    clearAlexIntroCues()
+    clearIntroCues()
 
     const visualCues = INTRO_VISUAL_TIMELINE[character]?.[introNumber] || []
 
     visualCues.forEach(({ delay, duration, cue }) => {
       const showTimer = setTimeout(() => {
-        setAlexIntroCue(cue)
+        setIntroCue({
+          ...cue,
+          character,
+        })
 
         if (duration) {
           const fadeTimer = setTimeout(() => {
-            setAlexIntroCue((currentCue) =>
+            setIntroCue((currentCue) =>
               currentCue ? { ...currentCue, isExiting: true } : null,
             )
           }, duration)
 
           const removeTimer = setTimeout(() => {
-            setAlexIntroCue(null)
+            setIntroCue(null)
           }, duration + 450)
 
           introCueTimers.current.push(fadeTimer, removeTimer)
@@ -578,6 +652,36 @@ export default function MainInteraction() {
 
   function clearJordanUI() {
     setCollabSuggestion(null)
+    setJordanGuidance(null)
+    setIsJordanGuidanceLoading(false)
+  }
+
+  async function generateJordanExplorationGuidance({
+    userQuestion,
+    alexAnswer,
+    history,
+  }) {
+    const response = await fetch(`${BASE_URL}/jordan-exploration-guidance`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_question: userQuestion,
+        alex_answer: alexAnswer,
+        history,
+        previous_guidance_types: previousJordanGuidanceTypes.current,
+        previous_guidance_messages: previousJordanGuidanceMessages.current,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+
+      throw new Error(`Jordan guidance failed: ${response.status} ${errorText}`)
+    }
+
+    return response.json()
   }
 
   async function generateJordanOpeningSuggestion() {
@@ -664,6 +768,36 @@ export default function MainInteraction() {
 
   function handleInputChange(value) {
     setInput(value)
+  }
+
+  function handleJordanLensSelect(lens) {
+    if (!jordanGuidance) return
+
+    const starter = jordanGuidance.sentence_starter?.trim() || ''
+
+    const nextInput = starter ? `${starter} ${lens}` : lens
+
+    setInput(nextInput)
+    textareaRef.current?.focus()
+
+    updateTranscript('jordan_guidance_action', 'selected lens', {
+      action: 'lens_selected',
+      guidance_id: jordanGuidance.id,
+      guidance_type: jordanGuidance.guidance_type,
+      selected_lens: lens,
+    })
+  }
+
+  function dismissJordanGuidance() {
+    if (jordanGuidance) {
+      updateTranscript('jordan_guidance_action', 'dismissed guidance', {
+        action: 'dismissed',
+        guidance_id: jordanGuidance.id,
+        guidance_type: jordanGuidance.guidance_type,
+      })
+    }
+
+    setJordanGuidance(null)
   }
 
   function acceptCollabSuggestion() {
@@ -1040,7 +1174,7 @@ export default function MainInteraction() {
 
     updateTranscript('user', trimmed)
 
-    clearAlexIntroCues()
+    clearIntroCues()
     setIsAlexActive(true)
     playGesture('startSwiping')
     playGesture('lookleft')
@@ -1085,29 +1219,27 @@ export default function MainInteraction() {
       const data = await response.json()
       console.log('DATA SOURCES ARE', data.sources)
 
-      const evalResponse = await fetch(`${BASE_URL}/evaluate-goal-progress`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_message: trimmed,
-          alex_answer: data.answer,
-          goals: goalObjects.map((goal) => ({
-            id: goal.id,
-            title: goal.title,
-            description: goal.description,
-            addressed: coveredGoals.has(goal.id),
-            notes: goalNotes[goal.id] || [],
-          })),
-          condition: proactivity,
-          previous_suggestions: Array.from(previousJordanSuggestions.current),
-        }),
-      })
+      if (!data.answer) {
+        throw new Error('Alex response did not include an answer.')
+      }
 
-      const evalData = await evalResponse.json()
+      setIsJordanGuidanceLoading(true)
 
-      console.log('***EVAL DATA IS', evalData)
+      let guidanceData = null
 
-      setAlexSources(data.sources || [])
+      try {
+        guidanceData = await generateJordanExplorationGuidance({
+          userQuestion: trimmed,
+          alexAnswer: data.answer,
+          history,
+        })
+
+        console.log('***JORDAN GUIDANCE IS', guidanceData)
+      } catch (guidanceError) {
+        console.error('Jordan exploration guidance failed:', guidanceError)
+      } finally {
+        setIsJordanGuidanceLoading(false)
+      }
 
       console.log('Sources', data.sources)
 
@@ -1144,10 +1276,70 @@ export default function MainInteraction() {
         setAlexSubtitle,
       )
 
-      playGesture('stopCompanionGesture')
+      setAlexSubtitle('')
+      playGesture('stopSwiping')
+      playGesture('stopAlexGesture')
+      setAlexSources(data.sources || [])
       setIsAlexActive(false)
 
-      handleGoalEvalResult(evalData, alexMsgId, data.sources || [])
+      if (guidanceData) {
+        const guidanceWithId = {
+          id: uid(),
+          ...guidanceData,
+        }
+
+        previousJordanGuidanceTypes.current = [
+          ...previousJordanGuidanceTypes.current,
+          guidanceData.guidance_type,
+        ]
+
+        previousJordanGuidanceMessages.current = [
+          ...previousJordanGuidanceMessages.current,
+          guidanceData.jordan_message,
+        ]
+
+        setJordanGuidance(guidanceWithId)
+
+        updateTranscript(
+          'jordan_exploration_guidance',
+          guidanceData.jordan_message,
+          {
+            guidance_id: guidanceWithId.id,
+            guidance_type: guidanceData.guidance_type,
+            guidance_prompt: guidanceData.guidance_prompt,
+            lenses: guidanceData.lenses || [],
+            sentence_starter: guidanceData.sentence_starter || null,
+            action_label: guidanceData.action_label,
+            for_message_id: alexMsgId,
+          },
+        )
+
+        setIsJordanActive(true)
+        playGesture('lookrightalex')
+
+        await speakWithLipsync(
+          guidanceData.jordan_message,
+          'companion',
+          null,
+          () => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: guidanceWithId.id,
+                from: 'jordan',
+                text: guidanceData.jordan_message,
+                guidance: guidanceWithId,
+              },
+            ])
+          },
+          setJordanSubtitle,
+        )
+
+        setJordanSubtitle('')
+        playGesture('stopCompanionGesture')
+        playGesture('stopAlexGesture')
+        setIsJordanActive(false)
+      }
     } catch (err) {
       console.error(err)
 
@@ -1194,69 +1386,91 @@ export default function MainInteraction() {
   if (!audioReady) {
     return (
       <div className="start-overlay">
-        <div className="start-overlay-content tutorial-start-content">
+        <div className="mi-start-overlay-content">
           <img src={logo} className="logo" alt="Study logo" />
-          <h2>Before you begin</h2>
-          <p>
-            Please carefully review the instructions for interacting with the
-            virtual characters below.
-          </p>
 
-          {currentTutorialImage && (
-            <div className="tutorial-image-frame">
-              <img
-                src={currentTutorialImage}
-                alt={`${proactivity} tutorial step ${tutorialIndex + 1}`}
-                className="tutorial-image"
-              />
+          <h2>Clinical Trials Education</h2>
+          <h1>Chat with Virtual Characters</h1>
+
+          <div className="mi-start-information">
+            In this activity, you'll learn about clinical trials with the help
+            of <strong>two virtual characters: Alex and Jordan</strong>.
+            <div className="character-images-row">
+              <div>
+                <img
+                  src={alex}
+                  className="character-preview"
+                  alt="Alex character"
+                />
+                <p>Alex</p>
+              </div>
+              <div>
+                <img
+                  src={jordan}
+                  className="character-preview"
+                  alt="Jordan character"
+                />
+                <p>Jordan</p>
+              </div>
             </div>
-          )}
-
-          <div className="tutorial-progress">
-            {tutorialImages.map((_, index) => (
-              <span
-                key={index}
-                className={`tutorial-dot ${
-                  index === tutorialIndex ? 'tutorial-dot-active' : ''
-                }`}
-              />
-            ))}
+            They will provide <strong>general information</strong> and help you
+            explore questions about clinical trial participation.
           </div>
 
-          <div className="tutorial-actions">
-            <button
-              type="button"
-              className="tutorial-secondary-btn"
-              disabled={tutorialIndex === 0}
-              onClick={() => setTutorialIndex((prev) => Math.max(0, prev - 1))}
-            >
-              Back
-            </button>
+          <div className="mi-start-instructions">
+            Please complete this short checklist to make sure you have the best
+            experience. Then, click begin.
+          </div>
 
-            {isLastTutorial ? (
-              <button
-                className="cssbuttons-io-button"
-                onClick={() => setAudioReady(true)}
-              >
-                Start chatting
-                <span className="icon">
-                  <FontAwesomeIcon icon={faArrowRight} size="xs" />
-                </span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="tutorial-button"
-                onClick={() =>
-                  setTutorialIndex((prev) =>
-                    Math.min(tutorialImages.length - 1, prev + 1),
-                  )
+          <div className="mi-start-checks">
+            <label className="mi-start-check">
+              <div className="mi-start-check-label">
+                <FontAwesomeIcon icon={faVolume} />
+                <span>My volume is turned up.</span>
+              </div>
+
+              <input
+                type="checkbox"
+                checked={startChecks.volume}
+                onChange={(event) =>
+                  setStartChecks((previous) => ({
+                    ...previous,
+                    volume: event.target.checked,
+                  }))
                 }
-              >
-                Next
-              </button>
-            )}
+              />
+            </label>
+
+            <label className="mi-start-check">
+              <div className="mi-start-check-label">
+                <FontAwesomeIcon icon={faExpand} />
+                <span>My browser window is maximized.</span>
+              </div>
+
+              <input
+                type="checkbox"
+                checked={startChecks.browser}
+                onChange={(event) =>
+                  setStartChecks((previous) => ({
+                    ...previous,
+                    browser: event.target.checked,
+                  }))
+                }
+              />
+            </label>
           </div>
+
+          <button
+            type="button"
+            className="cssbuttons-io-button"
+            disabled={!canStart}
+            onClick={() => setAudioReady(true)}
+          >
+            Begin
+            <span className="icon">
+              <FontAwesomeIcon icon={faArrowRight} size="xs" />
+            </span>
+          </button>
         </div>
       </div>
     )
@@ -1290,13 +1504,18 @@ export default function MainInteraction() {
             isJordanActive={isJordanActive}
             sources={alexSources}
             showCards={showCards}
-            introCue={alexIntroCue}
+            introCue={introCue}
             proactivity={proactivity}
             onOpenSource={setActiveSourcePopout}
             isForaging={isForaging}
             isForagingFading={isForagingFading}
             alexSubtitle={alexSubtitle}
             jordanSubtitle={jordanSubtitle}
+            alexIntroDone={alexIntroDone}
+            isIntroPlaying={isIntroPlaying}
+            jordanGuidance={jordanGuidance}
+            handleJordanLensSelect={handleJordanLensSelect}
+            dismissJordanGuidance={dismissJordanGuidance}
           />
 
           <ChatInput
@@ -1304,7 +1523,7 @@ export default function MainInteraction() {
             textareaRef={textareaRef}
             onChange={handleInputChange}
             onSubmit={handleSend}
-            disabled={isAlexActive || isJordanActive}
+            disabled={isAlexActive || isJordanActive || isJordanGuidanceLoading}
             onHandleKeyDown={handleKeyDown}
           />
         </section>
@@ -2096,6 +2315,64 @@ function CollaborativeSuggestionCard({
   )
 }
 
+function JordanExplorationCard({ guidance, onSelectLens, onDismiss }) {
+  const lenses = guidance.lenses || []
+
+  return (
+    <div
+      className={`jordan-exploration-card jordan-exploration-card-${guidance.guidance_type}`}
+    >
+      <div className="jordan-exploration-card-header">
+        <div>
+          <span className="jordan-exploration-card-kicker">
+            Jordan’s exploration guidance
+          </span>
+
+          <h3>{guidance.action_label}</h3>
+        </div>
+
+        <button
+          type="button"
+          className="jordan-exploration-close"
+          onClick={onDismiss}
+          aria-label="Dismiss Jordan's guidance"
+        >
+          <FontAwesomeIcon icon={faXmark} />
+        </button>
+      </div>
+
+      <div className="jordan-exploration-prompt">
+        <FontAwesomeIcon icon={faLightbulb} />
+
+        <span>{guidance.guidance_prompt}</span>
+      </div>
+
+      {lenses.length > 0 && (
+        <div className="jordan-exploration-lenses">
+          {lenses.map((lens) => (
+            <button
+              type="button"
+              className="jordan-exploration-lens"
+              key={lens}
+              onClick={() => onSelectLens(lens)}
+            >
+              {lens}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {guidance.sentence_starter && (
+        <div className="jordan-exploration-starter">
+          <span>Try starting with</span>
+
+          <strong>{guidance.sentence_starter}</strong>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AlexHeader({
   charactersReady,
   doctorRef,
@@ -2111,6 +2388,11 @@ function AlexHeader({
   isForagingFading,
   alexSubtitle,
   jordanSubtitle,
+  alexIntroDone,
+  isIntroPlaying,
+  jordanGuidance,
+  handleJordanLensSelect,
+  dismissJordanGuidance,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -2133,7 +2415,13 @@ function AlexHeader({
       <div
         className={`mi-character-zone mi-character-zone-alex ${
           isAlexActive ? 'mi-character-zone-speaking' : ''
-        } ${isJordanActive ? 'mi-character-zone-listening' : ''}`}
+        } ${isJordanActive ? 'mi-character-zone-listening' : ''} ${
+          isAlexActive &&
+          (isIntroPlaying ||
+            (sources.length > 0 && !isForaging && !isForagingFading))
+            ? 'mi-character-label-pulsing'
+            : ''
+        }`}
       >
         <div className="mi-character-content">
           {showCards && <SwipingCards />}
@@ -2169,7 +2457,7 @@ function AlexHeader({
             </div>
           )}
 
-          {introCue?.type === 'ai' && (
+          {introCue?.character === 'alex' && introCue?.type === 'ai' && (
             <div
               className={introVisualClass(
                 'alex-intro-icon-group alex-intro-ai',
@@ -2186,7 +2474,7 @@ function AlexHeader({
             </div>
           )}
 
-          {introCue?.type === 'explore' && (
+          {introCue?.character === 'alex' && introCue?.type === 'explore' && (
             <div
               className={introVisualClass(
                 'alex-intro-icon-group alex-intro-explore',
@@ -2199,73 +2487,79 @@ function AlexHeader({
             </div>
           )}
 
-          {introCue?.type === 'search-documents' && (
-            <div className={introVisualClass('alex-intro-search-documents')}>
-              <FontAwesomeIcon
-                className="alex-intro-search-main"
-                icon={faMagnifyingGlass}
-              />
-              <div className="alex-intro-document-row">
+          {introCue?.character === 'alex' &&
+            introCue?.type === 'search-documents' && (
+              <div className={introVisualClass('alex-intro-search-documents')}>
                 <FontAwesomeIcon
-                  className="alex-intro-document alex-intro-document-1"
-                  icon={faFileLines}
-                />
-                <FontAwesomeIcon
-                  className="alex-intro-document alex-intro-document-2"
-                  icon={faFileLines}
-                />
-                <FontAwesomeIcon
-                  className="alex-intro-document alex-intro-document-3"
-                  icon={faFileLines}
-                />
-              </div>
-            </div>
-          )}
-
-          {introCue?.type === 'verified-document' && (
-            <div className={introVisualClass('alex-intro-verified-document')}>
-              <div className="alex-intro-verified-file">
-                <FontAwesomeIcon icon={faFileLines} />
-                <span className="alex-intro-verified-badge">
-                  <FontAwesomeIcon icon={faCheck} />
-                </span>
-              </div>
-            </div>
-          )}
-
-          {introCue?.type === 'topic-checklist' && (
-            <div className={introVisualClass('alex-intro-topic-checklist')}>
-              {[0, 1, 2, 3].map((item) => (
-                <div
-                  className={`alex-intro-check-row alex-intro-check-row-${item + 1}`}
-                  key={item}
-                >
-                  <span className="alex-intro-check-box">
-                    <FontAwesomeIcon icon={faCheck} />
-                  </span>
-                  <span className="alex-intro-check-line" />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {introCue?.type === 'no-specific-trials' && (
-            <div className={introVisualClass('alex-intro-no-specific-trials')}>
-              <div className="alex-intro-restricted-icons">
-                <FontAwesomeIcon
-                  className="alex-intro-restricted-clipboard"
-                  icon={faClipboardList}
-                />
-                <FontAwesomeIcon
-                  className="alex-intro-restricted-search"
+                  className="alex-intro-search-main"
                   icon={faMagnifyingGlass}
                 />
-                <span className="alex-intro-restricted-ban">
-                  <FontAwesomeIcon icon={faBan} />
-                </span>
+                <div className="alex-intro-document-row">
+                  <FontAwesomeIcon
+                    className="alex-intro-document alex-intro-document-1"
+                    icon={faFileLines}
+                  />
+                  <FontAwesomeIcon
+                    className="alex-intro-document alex-intro-document-2"
+                    icon={faFileLines}
+                  />
+                  <FontAwesomeIcon
+                    className="alex-intro-document alex-intro-document-3"
+                    icon={faFileLines}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+          {introCue?.character === 'alex' &&
+            introCue?.type === 'verified-document' && (
+              <div className={introVisualClass('alex-intro-verified-document')}>
+                <div className="alex-intro-verified-file">
+                  <FontAwesomeIcon icon={faFileLines} />
+                  <span className="alex-intro-verified-badge">
+                    <FontAwesomeIcon icon={faCheck} />
+                  </span>
+                </div>
+              </div>
+            )}
+
+          {introCue?.character === 'alex' &&
+            introCue?.type === 'topic-checklist' && (
+              <div className={introVisualClass('alex-intro-topic-checklist')}>
+                {[0, 1, 2, 3].map((item) => (
+                  <div
+                    className={`alex-intro-check-row alex-intro-check-row-${item + 1}`}
+                    key={item}
+                  >
+                    <span className="alex-intro-check-box">
+                      <FontAwesomeIcon icon={faCheck} />
+                    </span>
+                    <span className="alex-intro-check-line" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+          {introCue?.character === 'alex' &&
+            introCue?.type === 'no-specific-trials' && (
+              <div
+                className={introVisualClass('alex-intro-no-specific-trials')}
+              >
+                <div className="alex-intro-restricted-icons">
+                  <FontAwesomeIcon
+                    className="alex-intro-restricted-clipboard"
+                    icon={faClipboardList}
+                  />
+                  <FontAwesomeIcon
+                    className="alex-intro-restricted-search"
+                    icon={faMagnifyingGlass}
+                  />
+                  <span className="alex-intro-restricted-ban">
+                    <FontAwesomeIcon icon={faBan} />
+                  </span>
+                </div>
+              </div>
+            )}
 
           {uniqueSources.length > 0 && (
             <div className="alex-source-panel">
@@ -2296,12 +2590,12 @@ function AlexHeader({
                       </span>
                     </div>
 
-                    <div className="alex-source-card-excerpt">
+                    {/* <div className="alex-source-card-excerpt">
                       {(source.excerpt || source.content || '').slice(0, 145)}
                       {(source.excerpt || source.content || '').length > 145
                         ? '…'
                         : ''}
-                    </div>
+                    </div> */}
 
                     <div className="alex-source-card-action">Explore →</div>
                   </button>
@@ -2332,6 +2626,128 @@ function AlexHeader({
             <div className="character-subtitle character-subtitle-jordan">
               {jordanSubtitle}
             </div>
+          )}
+
+          {introCue?.character === 'jordan' &&
+            introCue?.type === 'jordan-guidance' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-guidance',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-icon-main jordan-intro-item"
+                  icon={faRoute}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-icon-secondary jordan-intro-item"
+                  icon={faMagnifyingGlass}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'jordan' &&
+            introCue?.type === 'jordan-build-question' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-build-question',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faCircleQuestion}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faCubesStacked}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faArrowRight}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faLightbulb}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'jordan' &&
+            introCue?.type === 'jordan-specific' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faFilter}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'jordan' &&
+            introCue?.type === 'jordan-perspectives' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faShapes}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'jordan' &&
+            introCue?.type === 'jordan-related' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faDiagramProject}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'jordan' &&
+            introCue?.type === 'jordan-user-control' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-user-control',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-control-main jordan-intro-item"
+                  icon={faHandHoldingHeart}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {jordanGuidance && (
+            <JordanExplorationCard
+              guidance={jordanGuidance}
+              onSelectLens={handleJordanLensSelect}
+              onDismiss={dismissJordanGuidance}
+            />
           )}
         </div>
 
@@ -2410,31 +2826,50 @@ function SourcePopout({
       >
         <div className="source-popout-header">
           <div>
-            <div className="source-popout-eyebrow">
-              {source.source || 'Source'}
+            <div className="source-popout-actions">
+              <button
+                type="button"
+                className={`mi-nudge-btn ${isSaved ? '' : 'mi-nudge-btn-primary'}`}
+                onClick={() => onSaveResource?.(source)}
+                disabled={isSaved}
+              >
+                {isSaved ? 'Saved ✓' : 'Save resource'}
+              </button>
             </div>
-            <h3>{source.title || source.file || 'Source preview'}</h3>
+            <div className="source-popout-section">
+              <h3>Source Organization</h3>
+              <div className="source-popout-eyebrow">
+                {source.source || 'Source'}
+              </div>
+            </div>
 
-            {source.page_number && (
-              <p className="source-page-note">
-                Alex found this around page {source.page_number}.
-              </p>
-            )}
+            <div className="source-popout-section">
+              <h3>Source Title</h3>
+              <p>{source.title || source.file || 'Source preview'}</p>
+            </div>
+
+            <div className="source-popout-section">
+              <h3>Source Excerpt</h3>
+              <div className="alex-source-card-excerpt">
+                "...
+                {(source.excerpt || source.content || '').slice(0, 145)}
+                ..."
+              </div>
+            </div>
+
+            <div className="source-popout-section">
+              <h3>Source Preview</h3>
+              {source.page_number && (
+                <p className="source-page-note">
+                  Alex found this around page {source.page_number} in the
+                  document below.
+                </p>
+              )}
+            </div>
           </div>
 
           <button type="button" onClick={onClose}>
             <FontAwesomeIcon icon={faXmark} />
-          </button>
-        </div>
-
-        <div className="source-popout-actions">
-          <button
-            type="button"
-            className={`mi-nudge-btn ${isSaved ? '' : 'mi-nudge-btn-primary'}`}
-            onClick={() => onSaveResource?.(source)}
-            disabled={isSaved}
-          >
-            {isSaved ? 'Saved ✓' : 'Save resource'}
           </button>
         </div>
 

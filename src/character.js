@@ -181,6 +181,7 @@ export async function thumbsupQuick() {
 }
 
 export async function wave() {
+  head1.stopGesture(3000)
   head1?.playGesture('handup')
 }
 
@@ -615,6 +616,79 @@ const STATIC_GESTURE_MAPS = {
       reset: false,
     },
   ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_1.mp3': [
+    {
+      engine: 'native',
+      word: 'mentioned',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'provide',
+      gesture: 'talkopen',
+      dur: 2,
+      reset: false,
+    },
+  ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_2.mp3': [
+    {
+      engine: 'native',
+      word: 'explore',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'discover',
+      gesture: 'talkopen',
+      dur: 2,
+      reset: false,
+    },
+  ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_3.mp3': [
+    {
+      engine: 'native',
+      word: 'mean',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'different',
+      gesture: 'shrug',
+      dur: 2,
+      reset: false,
+    },
+  ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_4.mp3': [
+    {
+      engine: 'native',
+      word: 'Ultimately',
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'goes',
+      gesture: 'chest',
+      dur: 2,
+      reset: false,
+    },
+  ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_5.mp3': [
+    {
+      engine: 'native',
+      word: 'ready',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
 }
 
 function normalizeWord(word) {
@@ -680,6 +754,13 @@ function buildGestureMarkers({
         if (engine === 'motion') {
           playMotion(character, gesture, dur).catch(console.error)
         } else {
+          if (gesture === 'introduceJordan') {
+            wave()
+
+            setTimeout(() => {
+              lookleft()
+            }, 1800)
+          }
           activeHead.playGesture(gesture, dur, mirror, transition)
         }
       })
