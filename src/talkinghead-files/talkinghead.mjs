@@ -1055,9 +1055,9 @@ class TalkingHead {
       },
       think: {
         // Left side
-        'LeftShoulder.rotation': { x: 1.2, y: 0.084, z: -1.7 },
+        'LeftShoulder.rotation': { x: 1.25, y: 0.084, z: -1.7 },
         'LeftArm.rotation': { x: 1.364, y: 0.4, z: 0.3 },
-        'LeftForeArm.rotation': { x: 0.7, y: 1.1, z: 1 },
+        'LeftForeArm.rotation': { x: 0.75, y: 1.1, z: 1 },
         'LeftHand.rotation': { x: 0.104, y: 0.5, z: -0.174 },
 
         // Right side

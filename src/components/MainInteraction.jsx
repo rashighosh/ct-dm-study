@@ -31,8 +31,12 @@ import {
   faFilter,
   faShapes,
   faHandHoldingHeart,
+  faBookmark as faBookmarkSolid,
 } from '@fortawesome/free-solid-svg-icons'
-import { faLightbulb } from '@fortawesome/free-regular-svg-icons'
+import {
+  faLightbulb,
+  faBookmark as faBookmarkRegular,
+} from '@fortawesome/free-regular-svg-icons'
 import {
   initCompanionCharacter,
   initDoctorCharacter,
@@ -236,8 +240,19 @@ export default function MainInteraction() {
 
   const savedSession = getSavedSession()
 
+  const [jordanConversationModel, setJordanConversationModel] = useState(
+    savedSession?.jordanConversationModel ?? {
+      turnNotes: [],
+      runningSummary: '',
+      latestConnection: null,
+    },
+  )
+  const [isJordanWorkspaceOpen, setIsJordanWorkspaceOpen] = useState(false)
   const restoredInteractionRef = useRef(
     !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
+  )
+  const [savedResources, setSavedResources] = useState(
+    savedSession?.savedResources ?? [],
   )
   const [isIntroPlaying, setIsIntroPlaying] = useState(false)
   const [hideCharacterLoader, setHideCharacterLoader] = useState(false)
@@ -262,6 +277,7 @@ export default function MainInteraction() {
   const [collabSuggestion, setCollabSuggestion] = useState(null)
   const [goalNotes, setGoalNotes] = useState(savedSession?.goalNotes ?? {})
   const [alexSources, setAlexSources] = useState([])
+  const [alexTalkingPoints, setAlexTalkingPoints] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
   const [isJordanActive, setIsJordanActive] = useState(false)
   const [proactivity] = useState(goals?.proactivity || 'passive')
@@ -304,8 +320,10 @@ export default function MainInteraction() {
       messages,
       transcript,
       jordanGuidance,
+      savedResources,
       previousJordanGuidanceTypes: previousJordanGuidanceTypes.current,
       previousJordanGuidanceMessages: previousJordanGuidanceMessages.current,
+      jordanConversationModel,
     }
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
@@ -319,6 +337,8 @@ export default function MainInteraction() {
     messages,
     transcript,
     jordanGuidance,
+    savedResources,
+    jordanConversationModel,
   ])
 
   const hasSentFirstMessage = messages.some((m) => m.from === 'user')
@@ -373,8 +393,8 @@ export default function MainInteraction() {
         })
 
         /* Turn the characters toward each other */
-        playGesture('lookleft')
-        playGesture('lookrightalex')
+        playGesture('jordanLookAtAlex')
+        playGesture('alexLookAtJordan')
 
         /* Give the turning gestures time to settle */
         await new Promise((resolve) => setTimeout(resolve, 1200))
@@ -421,7 +441,7 @@ export default function MainInteraction() {
         /* Alex introduction                                                      */
         /* ---------------------------------------------------------------------- */
 
-        playGesture('lookleft')
+        playGesture('jordanLookAtAlex')
         for (const [index, text] of ALEX_INTROS.entries()) {
           const introNumber = index + 1
 
@@ -469,7 +489,7 @@ export default function MainInteraction() {
         /* ---------------------------------------------------------------------- */
         /* Jordan introduction                                                    */
         /* ---------------------------------------------------------------------- */
-        playGesture('lookrightalex')
+        playGesture('alexLookAtJordan')
 
         for (const [index, text] of JORDAN_INTROS.entries()) {
           const introNumber = index + 1
@@ -585,6 +605,7 @@ export default function MainInteraction() {
         goalNotes,
         coveredGoals: Array.from(coveredGoals),
         proactivity,
+        savedResources,
       },
     })
   }
@@ -654,6 +675,37 @@ export default function MainInteraction() {
     setCollabSuggestion(null)
     setJordanGuidance(null)
     setIsJordanGuidanceLoading(false)
+    setIsJordanWorkspaceOpen(false)
+  }
+
+  async function updateJordanConversationModel({
+    userQuestion,
+    alexAnswer,
+    history,
+    currentModel,
+  }) {
+    const response = await fetch(`${BASE_URL}/jordan-conversation-update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_question: userQuestion,
+        alex_answer: alexAnswer,
+        current_model: currentModel,
+        history,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+
+      throw new Error(
+        `Jordan conversation update failed: ${response.status} ${errorText}`,
+      )
+    }
+
+    return response.json()
   }
 
   async function generateJordanExplorationGuidance({
@@ -770,6 +822,49 @@ export default function MainInteraction() {
     setInput(value)
   }
 
+  function handleSaveResource(source) {
+    const sourceKey = getSourceKey(source)
+
+    setSavedResources((previous) => {
+      const alreadySaved = previous.some(
+        (savedSource) => getSourceKey(savedSource) === sourceKey,
+      )
+
+      if (alreadySaved) return previous
+
+      return [
+        ...previous,
+        {
+          ...source,
+          savedAt: new Date().toISOString(),
+        },
+      ]
+    })
+
+    updateTranscript('resource_saved', 'Resource saved', {
+      source_key: sourceKey,
+      source_title: source.title || source.file || null,
+      source_organization: source.source || null,
+      source_url: source.url || null,
+    })
+  }
+
+  function handleJordanClick() {
+    if (!jordanGuidance) return
+    if (isAlexActive || isJordanActive || isForaging) return
+
+    updateTranscript('jordan_workspace_action', 'opened Jordan workspace', {
+      action: 'opened',
+      guidance_id: jordanGuidance.id,
+      guidance_type: jordanGuidance.guidance_type,
+    })
+
+    playGesture('stopCompanionGesture')
+
+    setIsJordanWorkspaceOpen(true)
+    setIsJordanActive(true)
+  }
+
   function handleJordanLensSelect(lens) {
     if (!jordanGuidance) return
 
@@ -790,14 +885,17 @@ export default function MainInteraction() {
 
   function dismissJordanGuidance() {
     if (jordanGuidance) {
-      updateTranscript('jordan_guidance_action', 'dismissed guidance', {
-        action: 'dismissed',
+      updateTranscript('jordan_workspace_action', 'closed Jordan workspace', {
+        action: 'closed',
         guidance_id: jordanGuidance.id,
         guidance_type: jordanGuidance.guidance_type,
       })
     }
 
-    setJordanGuidance(null)
+    setIsJordanWorkspaceOpen(false)
+    setIsJordanActive(false)
+
+    playGesture('thinking')
   }
 
   function acceptCollabSuggestion() {
@@ -1177,9 +1275,10 @@ export default function MainInteraction() {
     clearIntroCues()
     setIsAlexActive(true)
     playGesture('startSwiping')
-    playGesture('lookleft')
+    playGesture('jordanLookAtAlex')
     setShowCards(true)
     setAlexSources([])
+    setAlexTalkingPoints([])
     clearJordanUI()
     setShowCollabQuestionPrompt(false)
     setCollabQuestionPromptText(null)
@@ -1225,21 +1324,22 @@ export default function MainInteraction() {
 
       setIsJordanGuidanceLoading(true)
 
-      let guidanceData = null
-
-      try {
-        guidanceData = await generateJordanExplorationGuidance({
-          userQuestion: trimmed,
-          alexAnswer: data.answer,
-          history,
+      const guidancePromise = generateJordanExplorationGuidance({
+        userQuestion: trimmed,
+        alexAnswer: data.answer,
+        history,
+      })
+        .then((guidance) => {
+          console.log('***JORDAN GUIDANCE IS', guidance)
+          return guidance
         })
-
-        console.log('***JORDAN GUIDANCE IS', guidanceData)
-      } catch (guidanceError) {
-        console.error('Jordan exploration guidance failed:', guidanceError)
-      } finally {
-        setIsJordanGuidanceLoading(false)
-      }
+        .catch((guidanceError) => {
+          console.error('Jordan exploration guidance failed:', guidanceError)
+          return null
+        })
+        .finally(() => {
+          setIsJordanGuidanceLoading(false)
+        })
 
       console.log('Sources', data.sources)
 
@@ -1247,26 +1347,49 @@ export default function MainInteraction() {
         sources: data.sources || [],
       })
 
-      setIsForagingFading(true)
+      const conversationModelSnapshot = jordanConversationModel
 
-      setTimeout(() => {
-        setIsForaging(false)
-        setIsForagingFading(false)
-      }, 450)
+      const conversationModelPromise = updateJordanConversationModel({
+        userQuestion: trimmed,
+        alexAnswer: data.answer,
+        history,
+        currentModel: conversationModelSnapshot,
+      })
+        .then((conversationUpdate) => {
+          console.log('***JORDAN CONVERSATION UPDATE IS', conversationUpdate)
+
+          return conversationUpdate
+        })
+        .catch((conversationError) => {
+          console.error('Jordan conversation update failed:', conversationError)
+
+          return null
+        })
 
       await speakWithLipsync(
         data.answer,
         'doctor',
         null,
         () => {
+          // This runs when the audio is ready and Alex is about to speak.
           setShowCards(false)
           playGesture('stopSwiping')
+          setAlexTalkingPoints(data.talking_points || [])
+
+          setIsForagingFading(true)
+
+          setTimeout(() => {
+            setIsForaging(false)
+            setIsForagingFading(false)
+          }, 450)
+
           setMessages((prev) => [
             ...prev,
             {
               id: alexMsgId,
               from: 'alex',
               text: data.answer,
+              talkingPoints: data.talking_points || [],
               sources: data.sources || [],
               explanation: data.relevance_explanation,
               confidence: data.confidence,
@@ -1277,10 +1400,34 @@ export default function MainInteraction() {
       )
 
       setAlexSubtitle('')
-      playGesture('stopSwiping')
       playGesture('stopAlexGesture')
       setAlexSources(data.sources || [])
       setIsAlexActive(false)
+
+      const [guidanceData, conversationUpdate] = await Promise.all([
+        guidancePromise,
+        conversationModelPromise,
+      ])
+
+      if (conversationUpdate) {
+        setJordanConversationModel((previous) => ({
+          turnNotes: [...previous.turnNotes, conversationUpdate.turn_note],
+          runningSummary:
+            conversationUpdate.running_summary || previous.runningSummary,
+          latestConnection: conversationUpdate.latest_connection ?? null,
+        }))
+
+        updateTranscript(
+          'jordan_conversation_model_updated',
+          conversationUpdate.running_summary,
+          {
+            turn_note: conversationUpdate.turn_note,
+            running_summary: conversationUpdate.running_summary,
+            latest_connection: conversationUpdate.latest_connection,
+            for_message_id: alexMsgId,
+          },
+        )
+      }
 
       if (guidanceData) {
         const guidanceWithId = {
@@ -1299,46 +1446,19 @@ export default function MainInteraction() {
         ]
 
         setJordanGuidance(guidanceWithId)
+        setIsJordanWorkspaceOpen(false)
 
-        updateTranscript(
-          'jordan_exploration_guidance',
-          guidanceData.jordan_message,
-          {
-            guidance_id: guidanceWithId.id,
-            guidance_type: guidanceData.guidance_type,
-            guidance_prompt: guidanceData.guidance_prompt,
-            lenses: guidanceData.lenses || [],
-            sentence_starter: guidanceData.sentence_starter || null,
-            action_label: guidanceData.action_label,
-            for_message_id: alexMsgId,
-          },
-        )
+        updateTranscript('jordan_guidance_ready', guidanceData.jordan_message, {
+          guidance_id: guidanceWithId.id,
+          guidance_type: guidanceData.guidance_type,
+          guidance_prompt: guidanceData.guidance_prompt,
+          lenses: guidanceData.lenses || [],
+          sentence_starter: guidanceData.sentence_starter || null,
+          action_label: guidanceData.action_label,
+          for_message_id: alexMsgId,
+        })
 
-        setIsJordanActive(true)
-        playGesture('lookrightalex')
-
-        await speakWithLipsync(
-          guidanceData.jordan_message,
-          'companion',
-          null,
-          () => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: guidanceWithId.id,
-                from: 'jordan',
-                text: guidanceData.jordan_message,
-                guidance: guidanceWithId,
-              },
-            ])
-          },
-          setJordanSubtitle,
-        )
-
-        setJordanSubtitle('')
-        playGesture('stopCompanionGesture')
-        playGesture('stopAlexGesture')
-        setIsJordanActive(false)
+        playGesture('thinking')
       }
     } catch (err) {
       console.error(err)
@@ -1516,6 +1636,10 @@ export default function MainInteraction() {
             jordanGuidance={jordanGuidance}
             handleJordanLensSelect={handleJordanLensSelect}
             dismissJordanGuidance={dismissJordanGuidance}
+            isJordanWorkspaceOpen={isJordanWorkspaceOpen}
+            onJordanClick={handleJordanClick}
+            talkingPoints={alexTalkingPoints}
+            jordanConversationModel={jordanConversationModel}
           />
 
           <ChatInput
@@ -1533,6 +1657,11 @@ export default function MainInteraction() {
         <SourcePopout
           source={activeSourcePopout}
           onClose={() => setActiveSourcePopout(null)}
+          onSaveResource={handleSaveResource}
+          isSaved={savedResources.some(
+            (savedSource) =>
+              getSourceKey(savedSource) === getSourceKey(activeSourcePopout),
+          )}
         />
       )}
 
@@ -2315,58 +2444,81 @@ function CollaborativeSuggestionCard({
   )
 }
 
-function JordanExplorationCard({ guidance, onSelectLens, onDismiss }) {
+function JordanExplorationCard({
+  guidance,
+  conversationModel,
+  onSelectLens,
+  onDismiss,
+}) {
   const lenses = guidance.lenses || []
+
+  const runningSummary =
+    conversationModel?.runningSummary || guidance.guidance_prompt
+
+  const latestConnection = conversationModel?.latestConnection
 
   return (
     <div
-      className={`jordan-exploration-card jordan-exploration-card-${guidance.guidance_type}`}
+      className="jordan-exploration-card"
+      onClick={(event) => event.stopPropagation()}
     >
       <div className="jordan-exploration-card-header">
         <div>
           <span className="jordan-exploration-card-kicker">
-            Jordan’s exploration guidance
+            What Jordan noticed
           </span>
 
-          <h3>{guidance.action_label}</h3>
+          <h3>Building your understanding</h3>
         </div>
 
         <button
           type="button"
           className="jordan-exploration-close"
           onClick={onDismiss}
-          aria-label="Dismiss Jordan's guidance"
+          aria-label="Close Jordan's workspace"
         >
           <FontAwesomeIcon icon={faXmark} />
         </button>
       </div>
 
-      <div className="jordan-exploration-prompt">
-        <FontAwesomeIcon icon={faLightbulb} />
+      <div className="jordan-running-note">
+        <FontAwesomeIcon icon={faDiagramProject} />
 
-        <span>{guidance.guidance_prompt}</span>
+        <div>
+          <span className="jordan-running-note-label">Running note</span>
+
+          <p>{runningSummary}</p>
+        </div>
       </div>
 
-      {lenses.length > 0 && (
-        <div className="jordan-exploration-lenses">
-          {lenses.map((lens) => (
-            <button
-              type="button"
-              className="jordan-exploration-lens"
-              key={lens}
-              onClick={() => onSelectLens(lens)}
-            >
-              {lens}
-            </button>
-          ))}
+      {latestConnection && (
+        <div className="jordan-latest-connection">
+          <span className="jordan-latest-connection-label">New connection</span>
+
+          <strong>{latestConnection.label}</strong>
+
+          <p>{latestConnection.text}</p>
         </div>
       )}
 
-      {guidance.sentence_starter && (
-        <div className="jordan-exploration-starter">
-          <span>Try starting with</span>
+      {lenses.length > 0 && (
+        <div className="jordan-next-directions">
+          <span className="jordan-next-directions-label">Explore next</span>
 
-          <strong>{guidance.sentence_starter}</strong>
+          <div className="jordan-next-direction-list">
+            {lenses.slice(0, 3).map((lens) => (
+              <button
+                type="button"
+                className="jordan-next-direction"
+                key={lens}
+                onClick={() => onSelectLens(lens)}
+              >
+                <span>{lens}</span>
+
+                <FontAwesomeIcon icon={faArrowRight} />
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -2393,6 +2545,10 @@ function AlexHeader({
   jordanGuidance,
   handleJordanLensSelect,
   dismissJordanGuidance,
+  isJordanWorkspaceOpen,
+  onJordanClick,
+  talkingPoints,
+  jordanConversationModel,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -2561,10 +2717,22 @@ function AlexHeader({
               </div>
             )}
 
+          {talkingPoints?.length > 0 && (
+            <div className="alex-talking-points">
+              {talkingPoints.slice(0, 3).map((point, index) => (
+                <div key={`${point}-${index}`} className="alex-talking-point">
+                  <span className="alex-talking-point-number">{index + 1}</span>
+
+                  <span>{point}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {uniqueSources.length > 0 && (
             <div className="alex-source-panel">
               <div className="alex-source-panel-header">
-                <span className="alex-source-label">Resources I found</span>
+                <span className="alex-source-label">Sources</span>
               </div>
 
               <div className="alex-source-card-row">
@@ -2611,9 +2779,11 @@ function AlexHeader({
       </div>
 
       <div
-        className={`mi-character-zone mi-character-zone-jordan ${
-          isJordanActive ? 'mi-character-zone-speaking' : ''
-        } ${isAlexActive ? 'mi-character-zone-listening' : ''}`}
+        className={`mi-character-zone mi-character-zone-jordan
+    ${isJordanActive ? 'mi-character-zone-speaking' : ''}
+    ${isAlexActive ? 'mi-character-zone-listening' : ''}
+    ${isJordanWorkspaceOpen ? 'mi-character-zone-workspace-open' : ''}
+  `}
       >
         <div className="mi-character-content">
           <div
@@ -2626,6 +2796,20 @@ function AlexHeader({
             <div className="character-subtitle character-subtitle-jordan">
               {jordanSubtitle}
             </div>
+          )}
+
+          {jordanGuidance && !isJordanWorkspaceOpen && (
+            <button
+              type="button"
+              className="jordan-workspace-trigger"
+              onClick={(event) => {
+                event.stopPropagation()
+                onJordanClick?.()
+              }}
+            >
+              <FontAwesomeIcon icon={faLightbulb} />
+              <span>Let's think about Alex's response</span>
+            </button>
           )}
 
           {introCue?.character === 'jordan' &&
@@ -2742,9 +2926,10 @@ function AlexHeader({
               </div>
             )}
 
-          {jordanGuidance && (
+          {jordanGuidance && isJordanWorkspaceOpen && (
             <JordanExplorationCard
               guidance={jordanGuidance}
+              conversationModel={jordanConversationModel}
               onSelectLens={handleJordanLensSelect}
               onDismiss={dismissJordanGuidance}
             />
@@ -2829,11 +3014,18 @@ function SourcePopout({
             <div className="source-popout-actions">
               <button
                 type="button"
-                className={`mi-nudge-btn ${isSaved ? '' : 'mi-nudge-btn-primary'}`}
+                className={`source-bookmark-btn ${isSaved ? 'is-saved' : ''}`}
                 onClick={() => onSaveResource?.(source)}
                 disabled={isSaved}
+                aria-label={isSaved ? 'Resource saved' : 'Save resource'}
               >
-                {isSaved ? 'Saved ✓' : 'Save resource'}
+                <span className="source-bookmark-icon">
+                  <FontAwesomeIcon
+                    icon={isSaved ? faBookmarkSolid : faBookmarkRegular}
+                  />
+                </span>
+
+                <span>{isSaved ? 'Saved' : 'Save resource'}</span>
               </button>
             </div>
             <div className="source-popout-section">
@@ -2868,7 +3060,12 @@ function SourcePopout({
             </div>
           </div>
 
-          <button type="button" onClick={onClose}>
+          <button
+            type="button"
+            className="source-popout-close"
+            onClick={onClose}
+            aria-label="Close source preview"
+          >
             <FontAwesomeIcon icon={faXmark} />
           </button>
         </div>

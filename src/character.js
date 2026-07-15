@@ -1,6 +1,4 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs'
-import { MotionEngine } from 'motion-engine'
-import motions from 'motion-engine/motions'
 
 // ============================================================
 // Config
@@ -17,40 +15,11 @@ const BASE_URL =
 
 let head = null // Dr. Alex (doctor) TalkingHead instance
 let head1 = null // Jordan (companion) TalkingHead instance
-let doctorMotionEngine = null
-let companionMotionEngine = null
 
 let onSubtitleCallback = null
 let subtitleRunId = 0
 
 let isSwiping = false // kill switch for the swipe gesture loop
-
-// ============================================================
-// Motion engine setup
-// ============================================================
-
-function createMotionEngine(talkingHead) {
-  const engine = new MotionEngine(talkingHead, {
-    gestureFadeIn: 400,
-    gestureFadeOut: 900,
-    stopFade: 1200,
-    stopSettleTime: 1200,
-    poseFadeIn: 700,
-    poseSettleTime: 900,
-    nativeDuration: 2,
-  })
-
-  engine.registerMotions(motions)
-
-  const previousUpdate = talkingHead.opt.update
-
-  talkingHead.opt.update = (dt) => {
-    previousUpdate?.(dt)
-    engine.update(dt)
-  }
-
-  return engine
-}
 
 // Resume suspended audio contexts on first user interaction (autoplay policy)
 document.addEventListener(
@@ -77,10 +46,10 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
     cameraRotateEnable: false,
     cameraPanEnable: false,
     cameraZoomEnable: false,
-    avatarSpeakingEyeContact: 1,
     avatarIdleEyeContact: 1,
-
     avatarIdleHeadMove: 1,
+    avatarSpeakingEyeContact: 1,
+    avatarSpeakingHeadMove: 1,
   })
 
   await head.showAvatar({
@@ -92,8 +61,6 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
     lipsyncLang: 'en',
   })
 
-  doctorMotionEngine = createMotionEngine(head)
-
   return head
 }
 
@@ -101,6 +68,9 @@ export async function initCompanionCharacter(containerNode) {
   head1 = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: 'mid', // full, mid, upper, head,
+    avatarIdleEyeContact: 1,
+    avatarIdleHeadMove: 1,
+    avatarSpeakingEyeContact: 1,
     avatarSpeakingHeadMove: 1,
     cameraRotateEnable: false,
     cameraPanEnable: false,
@@ -116,37 +86,11 @@ export async function initCompanionCharacter(containerNode) {
     lipsyncLang: 'en',
   })
 
-  companionMotionEngine = createMotionEngine(head1)
-
   return head1
 }
 
 export function stopCharacter() {
   head?.stop()
-}
-
-// ============================================================
-// Motion engine playback (procedural motions, separate from
-// the TalkingHead built-in gesture system below)
-// ============================================================
-
-export async function playMotion(character, motionName, duration) {
-  const engine =
-    character === 'doctor' ? doctorMotionEngine : companionMotionEngine
-
-  if (!engine) {
-    console.warn(`MotionEngine is not initialized for ${character}`)
-    return
-  }
-
-  try {
-    await engine.play(motionName, duration)
-  } catch (error) {
-    console.error(
-      `Could not play motion "${motionName}" for ${character}:`,
-      error,
-    )
-  }
 }
 
 // ============================================================
@@ -162,6 +106,7 @@ export async function shrug() {
 }
 
 export async function thinking() {
+  console.log('STARTING THINKING GESTURE')
   head1?.stopGesture(1500)
   head1?.playGesture('think', Infinity, false, 1500)
 }
@@ -205,12 +150,12 @@ export async function lookright() {
   head1?.playGesture('lookright', Infinity, true, 1500)
 }
 
-export async function lookrightalex() {
+export async function alexLookAtJordan() {
   head?.stopGesture(1500)
   head?.playGesture('lookright', Infinity, true, 1500)
 }
 
-export async function lookleft() {
+export async function jordanLookAtAlex() {
   head1?.stopGesture(1500)
   head1?.playGesture('lookright', Infinity, false, 1500)
 }
@@ -238,6 +183,7 @@ export async function stopAlexGesture() {
 }
 
 export async function stopCompanionGesture() {
+  console.log('STOPPING COMPANION GESTURE')
   head1?.stopGesture(3000)
 }
 
@@ -291,8 +237,8 @@ export const gestures = {
   lookup,
   lookdown,
   lookright,
-  lookrightalex,
-  lookleft,
+  alexLookAtJordan,
+  jordanLookAtAlex,
   indexFingerRaise,
   headNod,
   startSwiping,
@@ -301,12 +247,17 @@ export const gestures = {
   rightGesture,
   stopCompanionGesture,
   stopAlexGesture,
-  // add more here
 }
 
 export function playGesture(name) {
-  console.log('GESTURE TRIGGERED', name)
-  gestures[name]?.()
+  const gesture = gestures[name]
+
+  if (!gesture) {
+    console.warn(`Unknown gesture: "${name}"`)
+    return
+  }
+
+  gesture()
 }
 
 // ============================================================
@@ -527,7 +478,7 @@ const STATIC_GESTURE_MAPS = {
   '/intro-voices/doctor-audio-ALEX_INTRO_2.mp3': [
     {
       engine: 'native',
-      word: 'briefly',
+      word: 'my',
       gesture: 'chest',
       dur: 1.5,
       reset: false,
@@ -751,34 +702,21 @@ function buildGestureMarkers({
       const startTime = wtimes[index]
 
       markers.push(() => {
-        if (engine === 'motion') {
-          playMotion(character, gesture, dur).catch(console.error)
-        } else {
-          if (gesture === 'introduceJordan') {
-            wave()
+        if (gesture === 'introduceJordan') {
+          wave()
 
-            setTimeout(() => {
-              lookleft()
-            }, 1800)
-          }
-          activeHead.playGesture(gesture, dur, mirror, transition)
+          setTimeout(() => {
+            jordanLookAtAlex()
+          }, 1800)
         }
+        activeHead.playGesture(gesture, dur, mirror, transition)
       })
 
       mtimes.push(startTime)
 
       if (reset) {
         markers.push(() => {
-          if (engine === 'motion') {
-            const motionEngine =
-              character === 'doctor'
-                ? doctorMotionEngine
-                : companionMotionEngine
-
-            motionEngine?.stop?.()
-          } else {
-            activeHead.playGesture(null, 0, false, resetTransition)
-          }
+          activeHead.playGesture(null, 0, false, resetTransition)
         })
 
         mtimes.push(startTime + dur * 1000)
