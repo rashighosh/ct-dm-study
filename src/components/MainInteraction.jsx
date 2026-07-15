@@ -240,13 +240,25 @@ export default function MainInteraction() {
 
   const savedSession = getSavedSession()
 
-  const [jordanConversationModel, setJordanConversationModel] = useState(
-    savedSession?.jordanConversationModel ?? {
-      turnNotes: [],
-      runningSummary: '',
+  const [jordanConversationModel, setJordanConversationModel] = useState(() => {
+    const savedModel = savedSession?.jordanConversationModel
+
+    /*
+     * Restore only the new theme-based shape.
+     * Old sessions may still contain turnNotes/runningSummary.
+     */
+    if (Array.isArray(savedModel?.themes)) {
+      return {
+        themes: savedModel.themes,
+        latestConnection: savedModel.latestConnection ?? null,
+      }
+    }
+
+    return {
+      themes: [],
       latestConnection: null,
-    },
-  )
+    }
+  })
   const [isJordanWorkspaceOpen, setIsJordanWorkspaceOpen] = useState(false)
   const restoredInteractionRef = useRef(
     !!savedSession?.alexIntroDone || (savedSession?.messages?.length ?? 0) > 0,
@@ -678,13 +690,13 @@ export default function MainInteraction() {
     setIsJordanWorkspaceOpen(false)
   }
 
-  async function updateJordanConversationModel({
+  async function updateJordanTurn({
     userQuestion,
     alexAnswer,
     history,
     currentModel,
   }) {
-    const response = await fetch(`${BASE_URL}/jordan-conversation-update`, {
+    const response = await fetch(`${BASE_URL}/jordan-turn-update`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -692,36 +704,8 @@ export default function MainInteraction() {
       body: JSON.stringify({
         user_question: userQuestion,
         alex_answer: alexAnswer,
+        history,
         current_model: currentModel,
-        history,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-
-      throw new Error(
-        `Jordan conversation update failed: ${response.status} ${errorText}`,
-      )
-    }
-
-    return response.json()
-  }
-
-  async function generateJordanExplorationGuidance({
-    userQuestion,
-    alexAnswer,
-    history,
-  }) {
-    const response = await fetch(`${BASE_URL}/jordan-exploration-guidance`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_question: userQuestion,
-        alex_answer: alexAnswer,
-        history,
         previous_guidance_types: previousJordanGuidanceTypes.current,
         previous_guidance_messages: previousJordanGuidanceMessages.current,
       }),
@@ -730,7 +714,9 @@ export default function MainInteraction() {
     if (!response.ok) {
       const errorText = await response.text()
 
-      throw new Error(`Jordan guidance failed: ${response.status} ${errorText}`)
+      throw new Error(
+        `Jordan turn update failed: ${response.status} ${errorText}`,
+      )
     }
 
     return response.json()
@@ -849,38 +835,95 @@ export default function MainInteraction() {
     })
   }
 
-  function handleJordanClick() {
+  async function handleJordanClick() {
     if (!jordanGuidance) return
     if (isAlexActive || isJordanActive || isForaging) return
+
+    const shouldSpeak = !jordanGuidance.hasSpoken
 
     updateTranscript('jordan_workspace_action', 'opened Jordan workspace', {
       action: 'opened',
       guidance_id: jordanGuidance.id,
       guidance_type: jordanGuidance.guidance_type,
+      spoke_guidance: shouldSpeak,
+      theme_id: jordanGuidance.theme_id,
+      theme_label: jordanGuidance.theme_label,
+      detail_id: jordanGuidance.detail_id,
+      earlier_detail_id: jordanGuidance.earlier_detail_id,
+      earlier_question_reference: jordanGuidance.earlier_question_reference,
+      connection_label: jordanGuidance.connection_label,
     })
 
     playGesture('stopCompanionGesture')
 
     setIsJordanWorkspaceOpen(true)
     setIsJordanActive(true)
-  }
 
-  function handleJordanLensSelect(lens) {
-    if (!jordanGuidance) return
+    /*
+     * Only speak the first time this particular guidance is opened.
+     * Mark it before starting the audio to prevent accidental double playback.
+     */
+    if (!shouldSpeak) return
 
-    const starter = jordanGuidance.sentence_starter?.trim() || ''
+    setJordanGuidance((previous) =>
+      previous
+        ? {
+            ...previous,
+            hasSpoken: true,
+          }
+        : previous,
+    )
 
-    const nextInput = starter ? `${starter} ${lens}` : lens
+    try {
+      playGesture('alexLookAtJordan')
 
-    setInput(nextInput)
-    textareaRef.current?.focus()
+      await speakWithLipsync(
+        jordanGuidance.jordan_message,
+        'companion',
+        null,
+        () => {
+          setMessages((previous) => [
+            ...previous,
+            {
+              id: uid(),
+              guidanceId: jordanGuidance.id,
+              from: 'jordan',
+              text: jordanGuidance.jordan_message,
+              guidanceType: jordanGuidance.guidance_type,
+              themeId: jordanGuidance.theme_id,
+              themeLabel: jordanGuidance.theme_label,
+              detailId: jordanGuidance.detail_id,
+              earlierDetailId: jordanGuidance.earlier_detail_id,
+              earlierQuestionReference:
+                jordanGuidance.earlier_question_reference,
+            },
+          ])
 
-    updateTranscript('jordan_guidance_action', 'selected lens', {
-      action: 'lens_selected',
-      guidance_id: jordanGuidance.id,
-      guidance_type: jordanGuidance.guidance_type,
-      selected_lens: lens,
-    })
+          updateTranscript(
+            'jordan_guidance_spoken',
+            jordanGuidance.jordan_message,
+            {
+              guidance_id: jordanGuidance.id,
+              guidance_type: jordanGuidance.guidance_type,
+              theme_id: jordanGuidance.theme_id,
+              theme_label: jordanGuidance.theme_label,
+              detail_id: jordanGuidance.detail_id,
+              earlier_detail_id: jordanGuidance.earlier_detail_id,
+              earlier_question_reference:
+                jordanGuidance.earlier_question_reference,
+              connection_label: jordanGuidance.connection_label,
+              connection_text: jordanGuidance.connection_text,
+            },
+          )
+        },
+        setJordanSubtitle,
+      )
+    } catch (error) {
+      console.error('Jordan guidance speech failed:', error)
+    } finally {
+      setJordanSubtitle('')
+      playGesture('stopCompanionGesture')
+    }
   }
 
   function dismissJordanGuidance() {
@@ -895,7 +938,7 @@ export default function MainInteraction() {
     setIsJordanWorkspaceOpen(false)
     setIsJordanActive(false)
 
-    playGesture('thinking')
+    playGesture('stopAlexGesture')
   }
 
   function acceptCollabSuggestion() {
@@ -1324,21 +1367,21 @@ export default function MainInteraction() {
 
       setIsJordanGuidanceLoading(true)
 
-      const guidancePromise = generateJordanExplorationGuidance({
+      const jordanModelSnapshot = jordanConversationModel
+
+      const jordanTurnPromise = updateJordanTurn({
         userQuestion: trimmed,
         alexAnswer: data.answer,
         history,
+        currentModel: jordanModelSnapshot,
       })
-        .then((guidance) => {
-          console.log('***JORDAN GUIDANCE IS', guidance)
-          return guidance
+        .then((turnUpdate) => {
+          console.log('*** JORDAN TURN UPDATE IS', turnUpdate)
+          return turnUpdate
         })
-        .catch((guidanceError) => {
-          console.error('Jordan exploration guidance failed:', guidanceError)
+        .catch((error) => {
+          console.error('Jordan turn update failed:', error)
           return null
-        })
-        .finally(() => {
-          setIsJordanGuidanceLoading(false)
         })
 
       console.log('Sources', data.sources)
@@ -1346,25 +1389,6 @@ export default function MainInteraction() {
       updateTranscript('alex', data.answer, {
         sources: data.sources || [],
       })
-
-      const conversationModelSnapshot = jordanConversationModel
-
-      const conversationModelPromise = updateJordanConversationModel({
-        userQuestion: trimmed,
-        alexAnswer: data.answer,
-        history,
-        currentModel: conversationModelSnapshot,
-      })
-        .then((conversationUpdate) => {
-          console.log('***JORDAN CONVERSATION UPDATE IS', conversationUpdate)
-
-          return conversationUpdate
-        })
-        .catch((conversationError) => {
-          console.error('Jordan conversation update failed:', conversationError)
-
-          return null
-        })
 
       await speakWithLipsync(
         data.answer,
@@ -1404,62 +1428,102 @@ export default function MainInteraction() {
       setAlexSources(data.sources || [])
       setIsAlexActive(false)
 
-      const [guidanceData, conversationUpdate] = await Promise.all([
-        guidancePromise,
-        conversationModelPromise,
-      ])
+      const jordanTurnData = await jordanTurnPromise
 
-      if (conversationUpdate) {
-        setJordanConversationModel((previous) => ({
-          turnNotes: [...previous.turnNotes, conversationUpdate.turn_note],
-          runningSummary:
-            conversationUpdate.running_summary || previous.runningSummary,
-          latestConnection: conversationUpdate.latest_connection ?? null,
-        }))
+      if (jordanTurnData) {
+        const updatedThemes = Array.isArray(jordanTurnData.themes)
+          ? jordanTurnData.themes
+          : []
 
-        updateTranscript(
-          'jordan_conversation_model_updated',
-          conversationUpdate.running_summary,
-          {
-            turn_note: conversationUpdate.turn_note,
-            running_summary: conversationUpdate.running_summary,
-            latest_connection: conversationUpdate.latest_connection,
-            for_message_id: alexMsgId,
-          },
-        )
-      }
+        const latestConnection = jordanTurnData.latest_connection ?? null
 
-      if (guidanceData) {
+        /*
+         * The backend returns the complete updated theme collection,
+         * so replace the old model instead of appending to it.
+         */
+        setJordanConversationModel({
+          themes: updatedThemes,
+          latestConnection,
+        })
+
+        /*
+         * Find the newest detail generated for this turn.
+         * The backend fills its source_question with the current question.
+         */
+        const newestDetail = updatedThemes
+          .flatMap((theme) =>
+            (theme.details || []).map((detail) => ({
+              ...detail,
+              themeId: theme.id,
+              themeLabel: theme.label,
+            })),
+          )
+          .find((detail) => detail.source_question === trimmed)
+
+        /*
+         * Store the visible guidance separately. Jordan will speak it only
+         * when the workspace button is clicked for the first time.
+         */
         const guidanceWithId = {
           id: uid(),
-          ...guidanceData,
+          guidance_type: jordanTurnData.guidance_type,
+          jordan_message: jordanTurnData.jordan_message,
+
+          theme_id: latestConnection?.theme_id || newestDetail?.themeId || null,
+
+          theme_label:
+            updatedThemes.find(
+              (theme) =>
+                theme.id ===
+                (latestConnection?.theme_id || newestDetail?.themeId),
+            )?.label ||
+            newestDetail?.themeLabel ||
+            '',
+
+          detail_id: newestDetail?.id || null,
+
+          earlier_detail_id: latestConnection?.earlier_detail_id || null,
+
+          earlier_question_reference:
+            latestConnection?.earlier_question_reference || null,
+
+          connection_label: latestConnection?.label || null,
+
+          connection_text: latestConnection?.text || null,
+
+          hasSpoken: false,
         }
 
         previousJordanGuidanceTypes.current = [
           ...previousJordanGuidanceTypes.current,
-          guidanceData.guidance_type,
+          jordanTurnData.guidance_type,
         ]
 
         previousJordanGuidanceMessages.current = [
           ...previousJordanGuidanceMessages.current,
-          guidanceData.jordan_message,
+          jordanTurnData.jordan_message,
         ]
 
         setJordanGuidance(guidanceWithId)
         setIsJordanWorkspaceOpen(false)
 
-        updateTranscript('jordan_guidance_ready', guidanceData.jordan_message, {
+        updateTranscript('jordan_turn_updated', jordanTurnData.jordan_message, {
           guidance_id: guidanceWithId.id,
-          guidance_type: guidanceData.guidance_type,
-          guidance_prompt: guidanceData.guidance_prompt,
-          lenses: guidanceData.lenses || [],
-          sentence_starter: guidanceData.sentence_starter || null,
-          action_label: guidanceData.action_label,
+          guidance_type: jordanTurnData.guidance_type,
+          themes: updatedThemes,
+          latest_connection: latestConnection,
+          new_detail_id: newestDetail?.id || null,
+          theme_id: guidanceWithId.theme_id,
+          earlier_detail_id: latestConnection?.earlier_detail_id || null,
+          earlier_question_reference:
+            latestConnection?.earlier_question_reference || null,
           for_message_id: alexMsgId,
         })
 
         playGesture('thinking')
       }
+
+      setIsJordanGuidanceLoading(false)
     } catch (err) {
       console.error(err)
 
@@ -1471,10 +1535,6 @@ export default function MainInteraction() {
           text: 'Sorry, something went wrong.',
         },
       ])
-    } finally {
-      playGesture('stopSwiping')
-      setShowCards(false)
-      setIsAlexActive(false)
     }
   }
 
@@ -1634,7 +1694,6 @@ export default function MainInteraction() {
             alexIntroDone={alexIntroDone}
             isIntroPlaying={isIntroPlaying}
             jordanGuidance={jordanGuidance}
-            handleJordanLensSelect={handleJordanLensSelect}
             dismissJordanGuidance={dismissJordanGuidance}
             isJordanWorkspaceOpen={isJordanWorkspaceOpen}
             onJordanClick={handleJordanClick}
@@ -2444,18 +2503,9 @@ function CollaborativeSuggestionCard({
   )
 }
 
-function JordanExplorationCard({
-  guidance,
-  conversationModel,
-  onSelectLens,
-  onDismiss,
-}) {
-  const lenses = guidance.lenses || []
-
-  const runningSummary =
-    conversationModel?.runningSummary || guidance.guidance_prompt
-
-  const latestConnection = conversationModel?.latestConnection
+function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
+  const themes = conversationModel?.themes || []
+  const latestConnection = conversationModel?.latestConnection || null
 
   return (
     <div
@@ -2465,10 +2515,10 @@ function JordanExplorationCard({
       <div className="jordan-exploration-card-header">
         <div>
           <span className="jordan-exploration-card-kicker">
-            What Jordan noticed
+            Shared exploration space
           </span>
 
-          <h3>Building your understanding</h3>
+          <h3>Putting the pieces together</h3>
         </div>
 
         <button
@@ -2481,43 +2531,101 @@ function JordanExplorationCard({
         </button>
       </div>
 
-      <div className="jordan-running-note">
-        <FontAwesomeIcon icon={faDiagramProject} />
+      {guidance?.jordan_message && (
+        <div className="jordan-current-thought">
+          <FontAwesomeIcon icon={faLightbulb} />
 
-        <div>
-          <span className="jordan-running-note-label">Running note</span>
+          <div>
+            <span className="jordan-current-thought-label">
+              Jordan’s thought
+            </span>
 
-          <p>{runningSummary}</p>
-        </div>
-      </div>
-
-      {latestConnection && (
-        <div className="jordan-latest-connection">
-          <span className="jordan-latest-connection-label">New connection</span>
-
-          <strong>{latestConnection.label}</strong>
-
-          <p>{latestConnection.text}</p>
+            <p>{guidance.jordan_message}</p>
+          </div>
         </div>
       )}
 
-      {lenses.length > 0 && (
-        <div className="jordan-next-directions">
-          <span className="jordan-next-directions-label">Explore next</span>
+      {themes.length > 0 && (
+        <div className="jordan-theme-map">
+          <span className="jordan-theme-map-label">Ideas we’re building</span>
 
-          <div className="jordan-next-direction-list">
-            {lenses.slice(0, 3).map((lens) => (
-              <button
-                type="button"
-                className="jordan-next-direction"
-                key={lens}
-                onClick={() => onSelectLens(lens)}
-              >
-                <span>{lens}</span>
+          <div className="jordan-theme-list">
+            {themes.map((theme) => {
+              const orderedDetails = [...(theme.details || [])].sort((a, b) => {
+                if (a.id === latestConnection?.earlier_detail_id) return -1
+                if (b.id === latestConnection?.earlier_detail_id) return 1
 
-                <FontAwesomeIcon icon={faArrowRight} />
-              </button>
-            ))}
+                if (a.id === guidance?.detail_id) return 1
+                if (b.id === guidance?.detail_id) return -1
+
+                return 0
+              })
+
+              return (
+                <section className="jordan-theme" key={theme.id}>
+                  <div className="jordan-theme-header">
+                    <strong>{theme.label}</strong>
+
+                    {theme.summary && <p>{theme.summary}</p>}
+                  </div>
+
+                  {orderedDetails.length > 0 && (
+                    <div className="jordan-theme-details">
+                      {orderedDetails.map((detail) => {
+                        const isEarlierConnectedDetail =
+                          latestConnection?.earlier_detail_id === detail.id
+
+                        const isNewestDetail = guidance?.detail_id === detail.id
+
+                        const showConnectionBridge =
+                          latestConnection &&
+                          theme.id === latestConnection.theme_id &&
+                          isNewestDetail &&
+                          orderedDetails.some(
+                            (item) =>
+                              item.id === latestConnection.earlier_detail_id,
+                          )
+
+                        return (
+                          <div key={detail.id}>
+                            {showConnectionBridge && (
+                              <div className="jordan-theme-connection-bridge">
+                                <FontAwesomeIcon icon={faArrowRight} />
+                                <span>
+                                  {latestConnection.label || 'Builds on'}
+                                </span>
+                              </div>
+                            )}
+
+                            <div
+                              className={[
+                                'jordan-theme-detail',
+                                isEarlierConnectedDetail
+                                  ? 'is-connection-source'
+                                  : '',
+                                isNewestDetail ? 'is-newest-detail' : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ')}
+                            >
+                              <span>{detail.text}</span>
+
+                              <div className="jordan-theme-detail-tags">
+                                {isEarlierConnectedDetail && (
+                                  <small>Earlier idea</small>
+                                )}
+
+                                {isNewestDetail && <small>Just added</small>}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </section>
+              )
+            })}
           </div>
         </div>
       )}
@@ -2543,7 +2651,6 @@ function AlexHeader({
   alexIntroDone,
   isIntroPlaying,
   jordanGuidance,
-  handleJordanLensSelect,
   dismissJordanGuidance,
   isJordanWorkspaceOpen,
   onJordanClick,
@@ -2930,7 +3037,6 @@ function AlexHeader({
             <JordanExplorationCard
               guidance={jordanGuidance}
               conversationModel={jordanConversationModel}
-              onSelectLens={handleJordanLensSelect}
               onDismiss={dismissJordanGuidance}
             />
           )}

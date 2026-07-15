@@ -2637,7 +2637,9 @@ span.alex-source-card-badge {
   z-index: 120;
 
   width: min(360px, calc(100% - 40px));
+  height: 550px;
   box-sizing: border-box;
+  overflow-y: scroll;
 
   display: flex;
   flex-direction: column;
@@ -2975,16 +2977,12 @@ span.alex-source-card-badge {
 
 .alex-talking-points {
   position: absolute;
-
-  top: 34%;
-  right: 20px;
-
+  top: 39%;
+  right: 1rem;
   display: flex;
   flex-direction: column;
   gap: 14px;
-
   width: 270px;
-
   z-index: 20;
 }
 
@@ -3007,19 +3005,13 @@ span.alex-source-card-badge {
   display: flex;
   align-items: center;
   gap: 12px;
-
   padding: 12px 14px;
-
   border-radius: 16px;
-
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgb(var(--primary-orange) / 25%);
-
   box-shadow: 0 8px 22px rgba(60, 70, 90, 0.12);
-
   opacity: 0;
   transform: translateY(8px);
-
   animation: alexTalkingPointIn 0.3s ease forwards;
 }
 
@@ -3038,6 +3030,11 @@ span.alex-source-card-badge {
 
   font-size: 11px;
   font-weight: 700;
+}
+
+.alex-talking-point span {
+  font-size: 15px;
+  line-height: normal;
 }
 
 .alex-talking-point:nth-child(1) {
@@ -3091,4 +3088,234 @@ span.alex-source-card-badge {
   color: #667085;
   font-size: 12.5px;
   line-height: 1.4;
+}
+
+.jordan-current-thought {
+  font-size: 11px;
+  line-height: normal;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Connection cue                                                             */
+/* -------------------------------------------------------------------------- */
+
+.jordan-connection-cue {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin: 18px 0 28px;
+  padding: 14px 18px;
+
+  border-left: 4px solid rgb(var(--primary-blue));
+  border-radius: 12px;
+
+  background: rgb(var(--primary-blue) / 5%);
+}
+
+.jordan-connection-cue svg {
+  flex-shrink: 0;
+  color: rgb(var(--primary-blue));
+  font-size: 1.15rem;
+}
+
+.jordan-connection-cue span {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #6a7486;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.jordan-connection-cue strong {
+  color: #24324d;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Theme map                                                                  */
+/* -------------------------------------------------------------------------- */
+
+.jordan-theme-map {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.jordan-theme-map-label {
+  color: #36404d;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.jordan-theme-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.jordan-theme {
+  padding: 16px 18px;
+
+  border: 1px solid #dbe3ee;
+  border-radius: 16px;
+
+  background: white;
+}
+
+.jordan-theme-header strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: rgb(var(--primary-blue));
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.jordan-theme-header p {
+  margin: 0;
+  color: #556173;
+  font-size: 13px;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.jordan-theme-details {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.jordan-theme-detail {
+  position: relative;
+  padding-left: 18px;
+}
+
+.jordan-theme-detail::before {
+  content: '';
+
+  position: absolute;
+  left: 0;
+  top: 8px;
+
+  width: 6px;
+  height: 6px;
+
+  border-radius: 999px;
+
+  background: rgb(var(--primary-blue) / 45%);
+}
+
+.jordan-theme-detail span {
+  display: block;
+
+  color: #394659;
+  line-height: 1.45;
+}
+
+.jordan-theme-detail small {
+  display: inline-block;
+
+  margin-top: 6px;
+  padding: 2px 8px;
+
+  border-radius: 999px;
+
+  background: rgb(var(--primary-blue) / 8%);
+
+  color: rgb(var(--primary-blue));
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jordan-theme-detail.is-newest-detail::before {
+  content: none;
+}
+
+.jordan-theme-detail.is-connection-source::before {
+  content: none;
+}
+
+.jordan-theme-detail.is-connection-source {
+  opacity: 0.7;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Theme connection bridge                                                    */
+/* -------------------------------------------------------------------------- */
+
+.jordan-theme-connection-bridge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin: 2px 0 8px 10px;
+
+  color: rgb(var(--primary-blue));
+}
+
+.jordan-theme-connection-bridge svg {
+  font-size: 0.8rem;
+}
+
+.jordan-theme-connection-bridge span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Theme detail tags                                                          */
+/* -------------------------------------------------------------------------- */
+
+.jordan-theme-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.jordan-theme-detail-tags small {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 11px;
+
+  border-radius: 999px;
+
+  background: rgb(var(--primary-blue) / 8%);
+
+  color: rgb(var(--primary-blue));
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.jordan-theme-detail.is-connection-source {
+  padding: 12px 14px;
+
+  border: 1px dashed rgb(var(--primary-blue) / 30%);
+  border-radius: 12px;
+
+  background: rgb(var(--primary-blue) / 3%);
+}
+
+.jordan-theme-detail.is-newest-detail {
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  background: rgb(var(--primary-blue) / 7%);
 }
