@@ -49,6 +49,10 @@ import {
   incrementInteractionCount,
   logMainInteraction,
   logSession,
+  logFinishButtonAppeared,
+  incrementConversationTurns,
+  logIntroFinished,
+  logIntroPart,
 } from '../api/logging.js'
 
 /* -------------------------------------------------------------------------- */
@@ -206,6 +210,7 @@ export default function MainInteraction() {
   const introCueTimers = useRef([])
   const historyBodyRef = useRef(null)
   const sessionLoggedRef = useRef(false)
+  const finishButtonLoggedRef = useRef(false)
 
   useEffect(() => {
     if (sessionLoggedRef.current) return
@@ -285,6 +290,9 @@ export default function MainInteraction() {
   const [input, setInput] = useState(savedSession?.input ?? '')
   const [messages, setMessages] = useState(savedSession?.messages ?? [])
   const [transcript, setTranscript] = useState(savedSession?.transcript ?? [])
+  const [introTranscript, setIntroTranscript] = useState(
+    savedSession?.introTranscript ?? [],
+  )
   const [isForaging, setIsForaging] = useState(false)
   const [isForagingFading, setIsForagingFading] = useState(false)
   const [startChecks, setStartChecks] = useState({
@@ -314,6 +322,7 @@ export default function MainInteraction() {
       input,
       messages,
       transcript,
+      introTranscript,
       jordanGuidance,
       savedResources,
       previousJordanGuidanceTypes: previousJordanGuidanceTypes.current,
@@ -329,6 +338,7 @@ export default function MainInteraction() {
     input,
     messages,
     transcript,
+    introTranscript,
     jordanGuidance,
     savedResources,
     jordanConversationModel,
@@ -338,7 +348,32 @@ export default function MainInteraction() {
     (message) => message.from === 'alex' && !message.isIntro,
   ).length
 
-  const showFinishButton = completedAlexResponses >= 5
+  const showFinishButton = completedAlexResponses >= 1
+
+  useEffect(() => {
+    console.log('[Finish button check]', {
+      completedAlexResponses,
+      showFinishButton,
+      alreadyLogged: finishButtonLoggedRef.current,
+    })
+
+    if (!showFinishButton) return
+    if (finishButtonLoggedRef.current) return
+    if (!participantId) return
+
+    finishButtonLoggedRef.current = true
+
+    logFinishButtonAppeared(participantId)
+      .then((result) => {
+        console.log('[Finish button appearance logged]', result)
+      })
+      .catch((error) => {
+        console.error('Failed to log finish button appearance:', error)
+
+        // Allow another render to retry if the request failed.
+        finishButtonLoggedRef.current = false
+      })
+  }, [showFinishButton, completedAlexResponses, participantId])
 
   /* ------------------------------------------------------------------------ */
   /* Character setup + scroll behavior                                        */
@@ -443,9 +478,7 @@ export default function MainInteraction() {
             },
           ])
 
-          updateTranscript('alex', text, {
-            sources: [],
-            intro: true,
+          updateIntroTranscript('alex', text, {
             intro_part: introNumber,
             intro_character: 'alex',
           })
@@ -493,9 +526,7 @@ export default function MainInteraction() {
             },
           ])
 
-          updateTranscript('jordan', text, {
-            sources: [],
-            intro: true,
+          updateIntroTranscript('jordan', text, {
             intro_part: introNumber,
             intro_character: 'jordan',
           })
@@ -520,6 +551,10 @@ export default function MainInteraction() {
         setJordanSubtitle('')
         setIsJordanActive(false)
         setAlexIntroDone(true)
+
+        logIntroFinished(participantId).catch((error) => {
+          console.error('Failed to log intro completion:', error)
+        })
 
         playGesture('stopCompanionGesture')
         playGesture('stopAlexGesture')
@@ -575,6 +610,26 @@ export default function MainInteraction() {
     setTranscript((prev) => {
       const updated = [...prev, newEntry]
       logMainInteraction(participantId, updated).catch(console.error)
+      return updated
+    })
+  }
+
+  function updateIntroTranscript(role, content, meta = {}) {
+    const newEntry = {
+      role,
+      content,
+      timestamp: new Date().toISOString(),
+      condition,
+      ...meta,
+    }
+
+    setIntroTranscript((previous) => {
+      const updated = [...previous, newEntry]
+
+      logIntroPart(participantId, updated).catch((error) => {
+        console.error('Failed to log intro transcript:', error)
+      })
+
       return updated
     })
   }
@@ -821,7 +876,6 @@ export default function MainInteraction() {
       console.error('Jordan guidance speech failed:', error)
     } finally {
       setJordanSubtitle('')
-      setIsJordanActive(false)
       setIsJordanWorkspaceOpen(true)
       playGesture('stopCompanionGesture')
       playGesture('stopAlexGesture')
@@ -867,6 +921,10 @@ export default function MainInteraction() {
     if (!trimmed) return
 
     updateTranscript('user', trimmed)
+
+    incrementConversationTurns(participantId).catch((error) => {
+      console.error('Conversation turn count update failed:', error)
+    })
 
     clearIntroCues()
     setIsAlexActive(true)

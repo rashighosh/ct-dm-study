@@ -102,3 +102,102 @@ export async function incrementInteractionCount(participantId, field) {
 
   return response.json()
 }
+
+export async function logFinishButtonAppeared(participantId) {
+  if (!participantId) {
+    throw new Error(
+      'participantId is required to log the finish button appearance.',
+    )
+  }
+
+  const response = await fetch(`${BASE_URL}/log-finish-button-appeared`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      participant_id: participantId,
+      appeared_at: new Date().toISOString(),
+    }),
+  })
+
+  const responseText = await response.text()
+
+  if (!response.ok) {
+    throw new Error(
+      `Finish button logging failed: ${response.status} ${responseText}`,
+    )
+  }
+
+  return responseText ? JSON.parse(responseText) : null
+}
+
+export async function logIntroPart(participantId, introTranscript) {
+  if (!participantId) return
+
+  const response = await fetch(`${BASE_URL}/log-intro-part`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      participant_id: participantId,
+      intro_part: JSON.stringify(introTranscript),
+    }),
+  })
+
+  const result = await response.json().catch(() => null)
+
+  console.log('[log-intro-part] status:', response.status)
+  console.log('[log-intro-part] response:', result)
+
+  if (!response.ok) {
+    throw new Error(
+      result?.detail ||
+        result?.message ||
+        `Failed to save intro: ${response.status}`,
+    )
+  }
+
+  return result
+}
+
+export async function incrementConversationTurns(participantId) {
+  if (!participantId) return
+
+  const response = await fetch(`${BASE_URL}/increment-conversation-turns`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      participant_id: participantId,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to increment conversation turns.')
+  }
+
+  return response.json()
+}
+
+export async function logIntroFinished(participantId) {
+  if (!participantId) return
+
+  const response = await fetch(`${BASE_URL}/log-intro-finished`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      participant_id: participantId,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to log intro completion.')
+  }
+
+  return response.json()
+}
