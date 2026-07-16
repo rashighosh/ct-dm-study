@@ -268,6 +268,13 @@ export function setSubtitleCallback(fn) {
   onSubtitleCallback = fn
 }
 
+function isMonotonic(timestamps) {
+  for (let i = 1; i < timestamps.length; i++) {
+    if (timestamps[i].start < timestamps[i - 1].start) return false
+  }
+  return true
+}
+
 function createSubtitleTimers({
   timestamps,
   runId,
@@ -364,7 +371,15 @@ export async function speakWithLipsync(
     body: JSON.stringify({ text, character }),
   })
 
-  const { audio, timestamps = [] } = await ttsRes.json()
+  const { audio, timestamps: rawTimestamps = [] } = await ttsRes.json()
+
+  const timestamps = isMonotonic(rawTimestamps) ? rawTimestamps : []
+
+  if (!isMonotonic(rawTimestamps)) {
+    console.warn(
+      'Non-monotonic timestamps from /tts; falling back to plain caption.',
+    )
+  }
 
   const audioBytes = Uint8Array.from(atob(audio), (c) => c.charCodeAt(0))
   const audioBuffer = await activeHead.audioCtx.decodeAudioData(
@@ -372,8 +387,6 @@ export async function speakWithLipsync(
   )
 
   const words = timestamps.map((t) => t.word.trim().replace(/[.,!?;:]/g, ''))
-
-  // Small lead-in helps lips start closer to the audio.
   const wtimes = timestamps.map((t) => t.start * 1000)
   const wdurations = timestamps.map((t) => (t.end - t.start) * 1000)
 
@@ -767,20 +780,34 @@ export async function speakWithLipsyncStatic(
   const audioBuffer =
     await activeHead.audioCtx.decodeAudioData(audioArrayBuffer)
 
-  const words = timestamps.map((item) => normalizeWord(item.word))
-  const wtimes = timestamps.map((item) => item.start * 1000)
-  const wdurations = timestamps.map((item) => (item.end - item.start) * 1000)
+  const safeTimestamps = isMonotonic(timestamps) ? timestamps : []
+
+  if (!isMonotonic(timestamps)) {
+    console.warn(
+      `Non-monotonic timestamps detected for ${audioPath}; falling back to plain caption / no gesture sync.`,
+    )
+  }
+
+  const words = safeTimestamps.map((item) => normalizeWord(item.word))
+  const wtimes = safeTimestamps.map((item) => item.start * 1000)
+  const wdurations = safeTimestamps.map(
+    (item) => (item.end - item.start) * 1000,
+  )
 
   const runId = ++subtitleRunId
   const subtitleTimers = createSubtitleTimers({
-    timestamps,
+    timestamps: safeTimestamps,
     runId,
     onSubtitle,
   })
 
+  if (safeTimestamps.length === 0) {
+    onSubtitle?.('')
+  }
+
   const { markers, mtimes } = buildGestureMarkers({
     audioPath,
-    timestamps,
+    timestamps: safeTimestamps,
     wtimes,
     activeHead,
     character,

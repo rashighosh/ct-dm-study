@@ -456,12 +456,11 @@
   left: 1rem;
   bottom: 1rem;
   z-index: 12;
-  width: auto;
-  padding: 15px 25px;
+  width: 65px;
+  padding: 1rem;
   border-radius: 15px;
-  background: rgba(255, 255, 255, 0.76);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 18px 45px rgba(60, 70, 90, 0.16);
+  background: white;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
 }
 
 .alex-source-panel-header {
@@ -488,13 +487,13 @@
 .alex-source-card {
   display: flex;
   flex-direction: column;
-  width: fit-content;
+  position: relative;
+  width: 55px;
+  align-items: center;
   gap: 8px;
-  padding: 12px;
-  border: 1px solid rgb(var(--primary-orange) / 35%);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 22px rgba(60, 70, 90, 0.1);
+  border: none;
+  background: none;
+  box-shadow: none;
   text-align: left;
   cursor: pointer;
   transition:
@@ -518,8 +517,6 @@
 
 .alex-source-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(60, 70, 90, 0.16);
-  border-color: rgb(var(--primary-orange) / 75%);
 }
 
 .alex-source-card-top {
@@ -534,11 +531,12 @@
   align-items: flex-start;
   gap: 5px;
   position: relative;
+  margin-bottom: -5px;
 }
 
 span.alex-source-card-badge {
   border-radius: 15px;
-  background-color: rgb(var(--primary-orange) / 15%);
+  background-color: white;
   border: 1px solid rgb(var(--primary-orange) / 75%);
   font-size: 11px;
   font-weight: 800;
@@ -560,12 +558,11 @@ span.alex-source-card-badge {
 .alex-source-card-title {
   position: absolute;
   top: 50%;
-  left: 0;
+  left: 100%;
 
-  transform: translateY(-50%) translateX(-6px);
-
-  min-width: 220px;
-  max-width: 280px;
+  width: max-content;
+  min-width: 95px;
+  max-width: 305px;
 
   padding: 8px 10px;
 
@@ -592,7 +589,6 @@ span.alex-source-card-badge {
 .alex-source-card:hover .alex-source-card-title {
   opacity: 1;
   visibility: visible;
-  transform: translateY(-50%) translateX(8px);
 }
 
 .alex-source-card-snippet-area {
@@ -2632,12 +2628,12 @@ span.alex-source-card-badge {
 
 .jordan-exploration-card {
   position: absolute;
-  left: 85%;
-  bottom: 28px;
+  left: 95%;
+  top: 150px;
   z-index: 120;
 
   width: min(360px, calc(100% - 40px));
-  height: 550px;
+  height: 450px;
   box-sizing: border-box;
   overflow-y: scroll;
 
@@ -2895,7 +2891,7 @@ span.alex-source-card-badge {
   position: absolute;
 
   top: 25%;
-  right: 1rem;
+  right: 1.5rem;
   z-index: 120;
 
   display: inline-flex;
@@ -3155,7 +3151,7 @@ span.alex-source-card-badge {
 
 .jordan-theme-list {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   gap: 16px;
 }
 
@@ -3170,11 +3166,9 @@ span.alex-source-card-badge {
 
 .jordan-theme-header strong {
   display: block;
-
-  margin-bottom: 3px;
-
   color: rgb(var(--primary-blue));
-  font-size: 15px;
+  font-size: 13.5px;
+  line-height: normal;
   font-weight: 700;
 }
 
@@ -3182,7 +3176,7 @@ span.alex-source-card-badge {
   margin: 0;
   color: #556173;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: normal;
   font-style: italic;
 }
 
@@ -3215,9 +3209,8 @@ span.alex-source-card-badge {
 
 .jordan-theme-detail span {
   display: block;
-
   color: #394659;
-  line-height: 1.45;
+  line-height: normal;
 }
 
 .jordan-theme-detail small {
@@ -3248,6 +3241,7 @@ span.alex-source-card-badge {
 
 .jordan-theme-detail.is-connection-source {
   opacity: 0.7;
+  margin: 5px 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -3257,7 +3251,7 @@ span.alex-source-card-badge {
 .jordan-theme-connection-bridge {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
 
   margin: 2px 0 8px 10px;
 
@@ -3269,7 +3263,7 @@ span.alex-source-card-badge {
 }
 
 .jordan-theme-connection-bridge span {
-  font-size: 0.72rem;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -3318,4 +3312,47 @@ span.alex-source-card-badge {
   border-radius: 12px;
 
   background: rgb(var(--primary-blue) / 7%);
+}
+
+.jordan-theme-header {
+  width: 100%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.jordan-theme-header:hover {
+  transform: none !important;
+}
+
+.jordan-theme-header-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.jordan-theme-toggle {
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+  transition: transform 0.2s ease;
+}
+
+.jordan-theme-toggle.is-expanded {
+  transform: rotate(180deg);
+}
+
+.jordan-theme.is-collapsed {
+  padding-block: 10px;
+}
+
+.jordan-theme.is-current-theme {
+  border-color: rgb(var(--primary-blue) / 35%);
 }

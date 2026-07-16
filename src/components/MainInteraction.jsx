@@ -808,6 +808,23 @@ export default function MainInteraction() {
     setInput(value)
   }
 
+  function handleOpenSource(source, location = 'alex_sources') {
+    const sourceKey = getSourceKey(source)
+
+    updateTranscript('resource_opened', 'Resource opened', {
+      source_key: sourceKey,
+      source_title: source.title || source.file || null,
+      source_organization: source.source || null,
+      source_url: source.url || null,
+      source_file: source.file || null,
+      source_page_number: source.page_number ?? null,
+      source_chunk_id: source.chunk_id ?? null,
+      opened_from: location,
+    })
+
+    setActiveSourcePopout(source)
+  }
+
   function handleSaveResource(source) {
     const sourceKey = getSourceKey(source)
 
@@ -818,6 +835,16 @@ export default function MainInteraction() {
 
       if (alreadySaved) return previous
 
+      updateTranscript('resource_saved', 'Resource saved', {
+        source_key: sourceKey,
+        source_title: source.title || source.file || null,
+        source_organization: source.source || null,
+        source_url: source.url || null,
+        source_file: source.file || null,
+        source_page_number: source.page_number ?? null,
+        source_chunk_id: source.chunk_id ?? null,
+      })
+
       return [
         ...previous,
         {
@@ -826,13 +853,6 @@ export default function MainInteraction() {
         },
       ]
     })
-
-    updateTranscript('resource_saved', 'Resource saved', {
-      source_key: sourceKey,
-      source_title: source.title || source.file || null,
-      source_organization: source.source || null,
-      source_url: source.url || null,
-    })
   }
 
   async function handleJordanClick() {
@@ -840,6 +860,7 @@ export default function MainInteraction() {
     if (isAlexActive || isJordanActive || isForaging) return
 
     const shouldSpeak = !jordanGuidance.hasSpoken
+    setIsJordanWorkspaceOpen(false)
 
     updateTranscript('jordan_workspace_action', 'opened Jordan workspace', {
       action: 'opened',
@@ -855,15 +876,16 @@ export default function MainInteraction() {
     })
 
     playGesture('stopCompanionGesture')
-
-    setIsJordanWorkspaceOpen(true)
     setIsJordanActive(true)
 
     /*
      * Only speak the first time this particular guidance is opened.
      * Mark it before starting the audio to prevent accidental double playback.
      */
-    if (!shouldSpeak) return
+    if (!shouldSpeak) {
+      setIsJordanWorkspaceOpen(true)
+      return
+    }
 
     setJordanGuidance((previous) =>
       previous
@@ -922,6 +944,7 @@ export default function MainInteraction() {
       console.error('Jordan guidance speech failed:', error)
     } finally {
       setJordanSubtitle('')
+      setIsJordanWorkspaceOpen(true)
       playGesture('stopCompanionGesture')
     }
   }
@@ -1386,15 +1409,17 @@ export default function MainInteraction() {
 
       console.log('Sources', data.sources)
 
-      updateTranscript('alex', data.answer, {
-        sources: data.sources || [],
-      })
-
       await speakWithLipsync(
         data.answer,
         'doctor',
         null,
         () => {
+          updateTranscript('alex_spoken', data.answer, {
+            message_id: alexMsgId,
+            sources: data.sources || [],
+            talking_points: data.talking_points || [],
+            confidence: data.confidence ?? null,
+          })
           // This runs when the audio is ready and Alex is about to speak.
           setShowCards(false)
           playGesture('stopSwiping')
@@ -1510,14 +1535,26 @@ export default function MainInteraction() {
         updateTranscript('jordan_turn_updated', jordanTurnData.jordan_message, {
           guidance_id: guidanceWithId.id,
           guidance_type: jordanTurnData.guidance_type,
+
+          user_question: trimmed,
+          alex_answer: data.answer,
+          for_message_id: alexMsgId,
+
           themes: updatedThemes,
           latest_connection: latestConnection,
+
           new_detail_id: newestDetail?.id || null,
+          new_detail_text: newestDetail?.text || null,
+
           theme_id: guidanceWithId.theme_id,
+          theme_label: guidanceWithId.theme_label,
+
           earlier_detail_id: latestConnection?.earlier_detail_id || null,
           earlier_question_reference:
             latestConnection?.earlier_question_reference || null,
-          for_message_id: alexMsgId,
+
+          connection_label: latestConnection?.label || null,
+          connection_text: latestConnection?.text || null,
         })
 
         playGesture('thinking')
@@ -1686,7 +1723,7 @@ export default function MainInteraction() {
             showCards={showCards}
             introCue={introCue}
             proactivity={proactivity}
-            onOpenSource={setActiveSourcePopout}
+            onOpenSource={(source) => handleOpenSource(source, 'alex_sources')}
             isForaging={isForaging}
             isForagingFading={isForagingFading}
             alexSubtitle={alexSubtitle}
@@ -2507,6 +2544,36 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
   const themes = conversationModel?.themes || []
   const latestConnection = conversationModel?.latestConnection || null
 
+  const [expandedThemeIds, setExpandedThemeIds] = useState(() => new Set())
+
+  const currentThemeId =
+    guidance?.theme_id ||
+    latestConnection?.theme_id ||
+    themes[themes.length - 1]?.id ||
+    null
+
+  useEffect(() => {
+    if (!currentThemeId) return
+
+    // Whenever a new turn arrives, collapse older themes and
+    // automatically open only the theme relevant to this turn.
+    setExpandedThemeIds(new Set([currentThemeId]))
+  }, [currentThemeId, guidance?.detail_id])
+
+  function toggleTheme(themeId) {
+    setExpandedThemeIds((previous) => {
+      const next = new Set(previous)
+
+      if (next.has(themeId)) {
+        next.delete(themeId)
+      } else {
+        next.add(themeId)
+      }
+
+      return next
+    })
+  }
+
   return (
     <div
       className="jordan-exploration-card"
@@ -2531,7 +2598,7 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
         </button>
       </div>
 
-      {guidance?.jordan_message && (
+      {/* {guidance?.jordan_message && (
         <div className="jordan-current-thought">
           <FontAwesomeIcon icon={faLightbulb} />
 
@@ -2543,14 +2610,16 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
             <p>{guidance.jordan_message}</p>
           </div>
         </div>
-      )}
+      )} */}
 
       {themes.length > 0 && (
         <div className="jordan-theme-map">
-          <span className="jordan-theme-map-label">Ideas we’re building</span>
+          {/* <span className="jordan-theme-map-label">Ideas we’re building</span> */}
 
           <div className="jordan-theme-list">
             {themes.map((theme) => {
+              const isExpanded = expandedThemeIds.has(theme.id)
+              const isCurrentTheme = theme.id === currentThemeId
               const orderedDetails = [...(theme.details || [])].sort((a, b) => {
                 if (a.id === latestConnection?.earlier_detail_id) return -1
                 if (b.id === latestConnection?.earlier_detail_id) return 1
@@ -2562,14 +2631,39 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
               })
 
               return (
-                <section className="jordan-theme" key={theme.id}>
-                  <div className="jordan-theme-header">
-                    <strong>{theme.label}</strong>
+                <section
+                  className={[
+                    'jordan-theme',
+                    isExpanded ? 'is-expanded' : 'is-collapsed',
+                    isCurrentTheme ? 'is-current-theme' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  key={theme.id}
+                >
+                  <button
+                    type="button"
+                    className="jordan-theme-header"
+                    onClick={() => toggleTheme(theme.id)}
+                    aria-expanded={isExpanded}
+                  >
+                    <div className="jordan-theme-header-text">
+                      <strong>{theme.label}</strong>
 
-                    {theme.summary && <p>{theme.summary}</p>}
-                  </div>
+                      {theme.summary && <p>{theme.summary}</p>}
+                    </div>
 
-                  {orderedDetails.length > 0 && (
+                    <span
+                      className={`jordan-theme-toggle ${
+                        isExpanded ? 'is-expanded' : ''
+                      }`}
+                      aria-hidden="true"
+                    >
+                      ▾
+                    </span>
+                  </button>
+
+                  {isExpanded && orderedDetails.length > 0 && (
                     <div className="jordan-theme-details">
                       {orderedDetails.map((detail) => {
                         const isEarlierConnectedDetail =
@@ -2853,7 +2947,9 @@ function AlexHeader({
                     <div className="alex-source-card-top">
                       <div className="alex-source-card-title-area">
                         <span className="alex-source-card-badge">
-                          {source.source || 'Source'}
+                          {source.source === 'ClinicalTrials.gov'
+                            ? 'CT.gov'
+                            : source.source || 'Source'}
                         </span>
                         <div className="alex-source-card-title">
                           {source.title || source.file || 'Trusted resource'}
@@ -2871,8 +2967,6 @@ function AlexHeader({
                         ? '…'
                         : ''}
                     </div> */}
-
-                    <div className="alex-source-card-action">Explore →</div>
                   </button>
                 ))}
               </div>
@@ -2905,7 +2999,7 @@ function AlexHeader({
             </div>
           )}
 
-          {jordanGuidance && !isJordanWorkspaceOpen && (
+          {jordanGuidance && !isJordanWorkspaceOpen && !isJordanActive && (
             <button
               type="button"
               className="jordan-workspace-trigger"
