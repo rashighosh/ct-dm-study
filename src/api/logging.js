@@ -1,6 +1,5 @@
-// const BASE_URL = 'http://127.0.0.1:8000/pilot'
-const BASE_URL =
-  'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws/pilot'
+const BASE_URL = 'http://127.0.0.1:8000/pilot'
+// const BASE_URL = 'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws/pilot'
 
 export async function logMainInteraction(participantId, transcript) {
   if (!participantId) return
@@ -29,8 +28,9 @@ export async function logGoalSetting(participantId, payload) {
   })
 }
 
-export async function logSession(participantId, condition, proactivity) {
+export async function logSession(participantId, condition) {
   if (!participantId) return
+  console.log('CONDITION IS', condition)
 
   await fetch(`${BASE_URL}/log-session`, {
     method: 'POST',
@@ -38,7 +38,6 @@ export async function logSession(participantId, condition, proactivity) {
     body: JSON.stringify({
       participant_id: participantId,
       condition,
-      proactivity,
       start_time: new Date().toISOString(),
     }),
   })
@@ -64,4 +63,27 @@ export async function logNotesReview(
       all_alex_resources: allAlexResources,
     }),
   })
+}
+
+export async function incrementInteractionCount(participantId, field) {
+  const response = await fetch(`${BASE_URL}/increment-interaction-count`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      participant_id: participantId,
+      field,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+
+    throw new Error(
+      `Failed to increment ${field}: ${response.status} ${errorText}`,
+    )
+  }
+
+  return response.json()
 }
