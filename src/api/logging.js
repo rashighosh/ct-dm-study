@@ -32,16 +32,30 @@ export async function logGoalSetting(participantId, payload) {
 export async function logSession(participantId, condition) {
   if (!participantId) return
   console.log('CONDITION IS', condition)
+  console.log('ID IS', participantId)
 
-  await fetch(`${BASE_URL}/log-session`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      participant_id: participantId,
-      condition,
-      start_time: new Date().toISOString(),
-    }),
-  })
+  try {
+    const response = await fetch(`${BASE_URL}/log-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        participant_id: participantId,
+        condition,
+        start_time: new Date().toISOString(),
+      }),
+    })
+
+    const data = await response.json().catch(() => null)
+
+    console.log('log-session status:', response.status)
+    console.log('log-session response:', data)
+
+    if (!response.ok) {
+      console.error('Failed to log session:', response.status, data)
+    }
+  } catch (err) {
+    console.error('Network error calling log-session:', err)
+  }
 }
 
 export async function logNotesReview(
