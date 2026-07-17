@@ -169,6 +169,15 @@ export async function rightGesture() {
   head1?.playGesture('rightGesture')
 }
 
+export async function sourcesGesture() {
+  head?.playGesture('sourcesGesture')
+}
+
+export async function leftGesture() {
+  console.log('IN LEFT GESTURE')
+  head1?.playGesture('leftGesture', Infinity, true, 1500)
+}
+
 export async function introduceJordan() {
   head?.playGesture('introduceJordan')
 }
@@ -247,6 +256,7 @@ export const gestures = {
   rightGesture,
   stopCompanionGesture,
   stopAlexGesture,
+  sourcesGesture,
 }
 
 export function playGesture(name) {
@@ -461,21 +471,14 @@ const STATIC_GESTURE_MAPS = {
     { engine: 'native', word: 'hi', gesture: 'handup', dur: 1.5, reset: false },
     {
       engine: 'native',
-      word: 'Jordan',
+      word: 'this',
       gesture: 'introduceJordan',
       dur: 1,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'are',
-      gesture: 'chest',
-      dur: 1.2,
-      resetTransition: 500,
-    },
-    {
-      engine: 'native',
-      word: 'are',
+      word: 'we',
       gesture: 'chest',
       dur: 1.2,
       resetTransition: 500,
@@ -491,7 +494,7 @@ const STATIC_GESTURE_MAPS = {
   '/intro-voices/doctor-audio-ALEX_INTRO_2.mp3': [
     {
       engine: 'native',
-      word: 'my',
+      word: 'explain',
       gesture: 'chest',
       dur: 1.5,
       reset: false,
@@ -513,37 +516,44 @@ const STATIC_GESTURE_MAPS = {
     {
       engine: 'native',
       word: 'pull',
-      gesture: 'chest',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-    {
-      engine: 'native',
-      word: 'National',
       gesture: 'talkopen',
-      dur: 2,
+      dur: 1.5,
       resetTransition: 200,
     },
   ],
   '/intro-voices/doctor-audio-ALEX_INTRO_3.mp3': [
     {
       engine: 'native',
-      word: 'cover',
+      word: 'these',
       gesture: 'rightGesture',
       dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'different',
+      word: 'purpose',
       gesture: 'talkopen',
-      dur: 1,
+      dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'protected',
+      word: 'topics',
       gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'share',
+      gesture: 'chest',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'save',
+      gesture: 'talkopen',
       dur: 1.5,
       resetTransition: 200,
     },
@@ -566,7 +576,7 @@ const STATIC_GESTURE_MAPS = {
     {
       engine: 'native',
       word: 'so',
-      gesture: 'chest',
+      gesture: 'rightGesture',
       dur: 1.5,
       resetTransition: 200,
     },
@@ -578,6 +588,17 @@ const STATIC_GESTURE_MAPS = {
       gesture: 'introduceJordan',
       dur: 1.5,
       reset: false,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INSTRUCTION.mp3': [
+    {
+      engine: 'native',
+      word: 'shared',
+      gesture: 'rightGesture',
+      dur: 2.1,
+      transition: 1800,
+      resetTransition: 1600,
+      reset: true,
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_1.mp3': [
@@ -600,14 +621,21 @@ const STATIC_GESTURE_MAPS = {
     {
       engine: 'native',
       word: 'explore',
-      gesture: 'rightGesture',
+      gesture: 'chest',
       dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'discover',
+      word: 'information',
       gesture: 'talkopen',
+      dur: 2,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'suggest',
+      gesture: 'rightGesture',
       dur: 2,
       reset: false,
     },
@@ -615,40 +643,33 @@ const STATIC_GESTURE_MAPS = {
   '/intro-voices/companion-audio-JORDAN_INTRO_3.mp3': [
     {
       engine: 'native',
-      word: 'mean',
-      gesture: 'rightGesture',
+      word: 'between',
+      gesture: 'talkopen',
       dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'different',
-      gesture: 'shrug',
-      dur: 2,
+      word: 'click',
+      gesture: 'chest',
+      dur: 1.5,
       reset: false,
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_4.mp3': [
     {
       engine: 'native',
-      word: 'Ultimately',
+      word: 'whenever',
       gesture: 'talkopen',
       dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'goes',
-      gesture: 'chest',
-      dur: 2,
-      reset: false,
+      resetTransition: 200,
     },
   ],
-  '/intro-voices/companion-audio-JORDAN_INTRO_5.mp3': [
+  '/intro-voices/companion-audio-JORDAN_INSTRUCTION.mp3': [
     {
       engine: 'native',
-      word: 'ready',
-      gesture: 'talkopen',
+      word: 'track',
+      gesture: 'leftGesture',
       dur: 1.5,
       resetTransition: 200,
     },

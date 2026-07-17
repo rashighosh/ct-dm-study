@@ -80,7 +80,11 @@ export async function logNotesReview(
   })
 }
 
-export async function incrementInteractionCount(participantId, field) {
+export async function incrementInteractionCount(
+  participantId,
+  field,
+  amount = 1,
+) {
   const response = await fetch(`${BASE_URL}/increment-interaction-count`, {
     method: 'POST',
     headers: {
@@ -89,6 +93,7 @@ export async function incrementInteractionCount(participantId, field) {
     body: JSON.stringify({
       participant_id: participantId,
       field,
+      amount,
     }),
   })
 
@@ -96,7 +101,7 @@ export async function incrementInteractionCount(participantId, field) {
     const errorText = await response.text()
 
     throw new Error(
-      `Failed to increment ${field}: ${response.status} ${errorText}`,
+      `Failed to update ${field}: ${response.status} ${errorText}`,
     )
   }
 

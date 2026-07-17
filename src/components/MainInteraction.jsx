@@ -32,6 +32,7 @@ import {
   faShapes,
   faHandHoldingHeart,
   faBookmark as faBookmarkSolid,
+  faHandPointer,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   faLightbulb,
@@ -61,19 +62,24 @@ import {
 
 const ALEX_INTROS = [
   "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation.",
-  "I'll quickly explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from sources recommended for understanding how clinical trials work, like the National Cancer Institute and ClinicalTrials.gov.",
-  'These sources cover topics like how trials work, the different types and phases, how participants are protected, and how insurance and study costs are handled.',
-  "One important thing to know is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
-  "Now, I'll hand it over to Jordan to quickly explain his role.",
+  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute.",
+  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.',
+  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
+  "Now, I'll hand it over to Jordan.",
 ]
 
 const JORDAN_INTROS = [
-  "Thanks, Alex! So as Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process.",
-  "As you explore, I'll help you build on your questions and discover new ways to learn about clinical trial participation.",
-  'Sometimes that might mean making a question more specific, looking at something from a different perspective, or exploring a related idea.',
-  "Ultimately, you decide where the conversation goes. I'm just here to support your exploration.",
+  "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process.",
+  "As you explore, I'll keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding.",
+  "In between Alex answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far.",
   "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!",
 ]
+
+const ALEX_INSTRUCTION =
+  "I've shared the sources I used over here if you'd like to take a look. I'll keep sharing my sources throughout our conversation."
+
+const JORDAN_INSTRUCTION =
+  "As you chat with Alex, I'll keep track of important ideas and how they fit together. You can click on me at any time to take a look!"
 
 const INTRO_VISUAL_TIMELINE = {
   alex: {
@@ -85,7 +91,10 @@ const INTRO_VISUAL_TIMELINE = {
       { delay: 3500, duration: 5500, cue: { type: 'search-documents' } },
       { delay: 9500, duration: 3000, cue: { type: 'verified-document' } },
     ],
-    3: [{ delay: 500, duration: 5000, cue: { type: 'topic-checklist' } }],
+    3: [
+      { delay: 500, duration: 5000, cue: { type: 'topic-checklist' } },
+      { delay: 8000, duration: 4000, cue: { type: 'save-sources' } },
+    ],
     4: [{ delay: 1800, duration: 5000, cue: { type: 'no-specific-trials' } }],
   },
   jordan: {
@@ -100,26 +109,16 @@ const INTRO_VISUAL_TIMELINE = {
     2: [
       {
         delay: 1800,
-        duration: 4200,
+        duration: 6200,
         cue: { type: 'jordan-build-question' },
       },
     ],
 
     3: [
       {
-        delay: 500,
-        duration: 1400,
-        cue: { type: 'jordan-specific' },
-      },
-      {
-        delay: 3100,
-        duration: 1400,
-        cue: { type: 'jordan-perspectives' },
-      },
-      {
-        delay: 5000,
-        duration: 1800,
-        cue: { type: 'jordan-related' },
+        delay: 1800,
+        duration: 3000,
+        cue: { type: 'jordan-help' },
       },
     ],
 
@@ -180,9 +179,9 @@ function waitForCharacterRender(container, timeout = 10000) {
 /* -------------------------------------------------------------------------- */
 
 export default function MainInteraction() {
-  // const BASE_URL = 'http://127.0.0.1:8000'
-  const BASE_URL =
-    'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+  const BASE_URL = 'http://127.0.0.1:8000'
+  // const BASE_URL =
+  //   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
   useEffect(() => {
     const image = new Image()
@@ -273,7 +272,6 @@ export default function MainInteraction() {
   const [alexSubtitle, setAlexSubtitle] = useState('')
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const introStartedRef = useRef(false)
-  const [activeSourcePopout, setActiveSourcePopout] = useState(null)
   const [introCue, setIntroCue] = useState(null)
   const [audioReady, setAudioReady] = useState(
     savedSession?.audioReady ?? false,
@@ -313,12 +311,22 @@ export default function MainInteraction() {
     savedSession?.previousJordanGuidanceMessages ?? [],
   )
 
+  const [alexInstructionSpoken, setAlexInstructionSpoken] = useState(
+    savedSession?.alexInstructionSpoken ?? false,
+  )
+
+  const [jordanInstructionSpoken, setJordanInstructionSpoken] = useState(
+    savedSession?.jordanInstructionSpoken ?? false,
+  )
+
   const canStart = Object.values(startChecks).every(Boolean)
 
   useEffect(() => {
     const session = {
       audioReady,
       alexIntroDone,
+      alexInstructionSpoken,
+      jordanInstructionSpoken,
       input,
       messages,
       transcript,
@@ -329,12 +337,13 @@ export default function MainInteraction() {
       previousJordanGuidanceMessages: previousJordanGuidanceMessages.current,
       jordanConversationModel,
     }
-
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
   }, [
     SESSION_KEY,
     audioReady,
     alexIntroDone,
+    alexInstructionSpoken,
+    jordanInstructionSpoken,
     input,
     messages,
     transcript,
@@ -444,6 +453,7 @@ export default function MainInteraction() {
         if (restoredInteractionRef.current) {
           setIsAlexActive(false)
           setIsJordanActive(false)
+          playGesture('thinking')
           return
         }
 
@@ -679,6 +689,7 @@ export default function MainInteraction() {
     setJordanGuidance(null)
     setIsJordanGuidanceLoading(false)
     setIsJordanWorkspaceOpen(false)
+    playGesture('stopCompanionGesture')
   }
 
   async function updateJordanTurn({
@@ -721,30 +732,7 @@ export default function MainInteraction() {
     setInput(value)
   }
 
-  function handleOpenSource(source, location = 'alex_sources') {
-    const sourceKey = getSourceKey(source)
-
-    updateTranscript('resource_opened', 'Resource opened', {
-      source_key: sourceKey,
-      source_title: source.title || source.file || null,
-      source_organization: source.source || null,
-      source_url: source.url || null,
-      source_file: source.file || null,
-      source_page_number: source.page_number ?? null,
-      source_chunk_id: source.chunk_id ?? null,
-      opened_from: location,
-    })
-
-    incrementInteractionCount(participantId, 'source_open_count').catch(
-      (error) => {
-        console.error('Source open count update failed:', error)
-      },
-    )
-
-    setActiveSourcePopout(source)
-  }
-
-  function handleSaveResource(source) {
+  function handleToggleSavedResource(source) {
     const sourceKey = getSourceKey(source)
 
     setSavedResources((previous) => {
@@ -752,7 +740,27 @@ export default function MainInteraction() {
         (savedSource) => getSourceKey(savedSource) === sourceKey,
       )
 
-      if (alreadySaved) return previous
+      if (alreadySaved) {
+        updateTranscript('resource_unsaved', 'Resource unsaved', {
+          source_key: sourceKey,
+          source_title: source.title || source.file || null,
+          source_organization: source.source || null,
+          source_url: source.url || null,
+          source_file: source.file || null,
+          source_page_number: source.page_number ?? null,
+          source_chunk_id: source.chunk_id ?? null,
+        })
+
+        incrementInteractionCount(participantId, 'source_save_count', -1).catch(
+          (error) => {
+            console.error('Source save count decrement failed:', error)
+          },
+        )
+
+        return previous.filter(
+          (savedSource) => getSourceKey(savedSource) !== sourceKey,
+        )
+      }
 
       updateTranscript('resource_saved', 'Resource saved', {
         source_key: sourceKey,
@@ -764,9 +772,9 @@ export default function MainInteraction() {
         source_chunk_id: source.chunk_id ?? null,
       })
 
-      incrementInteractionCount(participantId, 'source_save_count').catch(
+      incrementInteractionCount(participantId, 'source_save_count', 1).catch(
         (error) => {
-          console.error('Source save count update failed:', error)
+          console.error('Source save count increment failed:', error)
         },
       )
 
@@ -787,6 +795,7 @@ export default function MainInteraction() {
     const shouldSpeak = !jordanGuidance.hasSpoken
 
     setIsJordanWorkspaceOpen(false)
+    playGesture('stopCompanionGesture')
 
     updateTranscript('jordan_workspace_action', 'opened Jordan workspace', {
       action: 'opened',
@@ -810,11 +819,14 @@ export default function MainInteraction() {
     // Jordan has already spoken, so just open the workspace.
     // Do not mark him active.
     if (!shouldSpeak) {
+      setIsJordanActive(true)
       setIsJordanWorkspaceOpen(true)
+      playGesture('lookright')
       return
     }
 
     playGesture('stopCompanionGesture')
+    playGesture('alexLookAtJordan')
 
     // Jordan is active only while his audio is playing.
     setIsJordanActive(true)
@@ -829,8 +841,6 @@ export default function MainInteraction() {
     )
 
     try {
-      playGesture('alexLookAtJordan')
-
       await speakWithLipsync(
         jordanGuidance.jordan_message,
         'companion',
@@ -872,13 +882,48 @@ export default function MainInteraction() {
         },
         setJordanSubtitle,
       )
+
+      // First time jordan is clicked explains
+      if (!jordanInstructionSpoken) {
+        setJordanInstructionSpoken(true)
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: uid(),
+            from: 'jordan',
+            text: JORDAN_INSTRUCTION,
+            isInstruction: true,
+          },
+        ])
+
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        updateTranscript('jordan_instruction_spoken', JORDAN_INSTRUCTION)
+        setIsJordanWorkspaceOpen(true)
+        playGesture('lookright')
+
+        try {
+          await speakWithLipsyncStatic(
+            '/intro-voices/companion-audio-JORDAN_INSTRUCTION.mp3',
+            '/intro-voices/companion-timestamps-JORDAN_INSTRUCTION.json',
+            'companion',
+            true,
+            setJordanSubtitle,
+          )
+        } catch (error) {
+          console.error('Jordan instruction speech failed:', error)
+        }
+
+        setJordanSubtitle('')
+      }
     } catch (error) {
       console.error('Jordan guidance speech failed:', error)
     } finally {
       setJordanSubtitle('')
-      setIsJordanWorkspaceOpen(true)
       playGesture('stopCompanionGesture')
       playGesture('stopAlexGesture')
+      setIsJordanWorkspaceOpen(true)
+      playGesture('lookright')
     }
   }
 
@@ -893,6 +938,7 @@ export default function MainInteraction() {
 
     setIsJordanWorkspaceOpen(false)
     setIsJordanActive(false)
+    playGesture('stopCompanionGesture')
 
     playGesture('stopAlexGesture')
   }
@@ -1040,6 +1086,39 @@ export default function MainInteraction() {
       setAlexSources(data.sources || [])
       setIsAlexActive(false)
 
+      // After alex's first answer explain the sources stuff
+      if (!alexInstructionSpoken) {
+        setAlexInstructionSpoken(true)
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: uid(),
+            from: 'alex',
+            text: ALEX_INSTRUCTION,
+            sources: [],
+            isInstruction: true,
+          },
+        ])
+
+        updateTranscript('alex_instruction_spoken', ALEX_INSTRUCTION)
+
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 500))
+          await speakWithLipsyncStatic(
+            '/intro-voices/doctor-audio-ALEX_INSTRUCTION.mp3',
+            '/intro-voices/doctor-timestamps-ALEX_INSTRUCTION.json',
+            'doctor',
+            true,
+            setAlexSubtitle,
+          )
+        } catch (error) {
+          console.error('Alex instruction speech failed:', error)
+        }
+
+        setAlexSubtitle('')
+      }
+
       const jordanTurnData = await jordanTurnPromise
 
       if (jordanTurnData) {
@@ -1118,6 +1197,7 @@ export default function MainInteraction() {
 
         setJordanGuidance(guidanceWithId)
         setIsJordanWorkspaceOpen(false)
+        playGesture('stopCompanionGesture')
 
         updateTranscript('jordan_turn_updated', jordanTurnData.jordan_message, {
           guidance_id: guidanceWithId.id,
@@ -1295,7 +1375,6 @@ export default function MainInteraction() {
             sources={alexSources}
             showCards={showCards}
             introCue={introCue}
-            onOpenSource={(source) => handleOpenSource(source, 'alex_sources')}
             isForaging={isForaging}
             isForagingFading={isForagingFading}
             alexSubtitle={alexSubtitle}
@@ -1307,6 +1386,8 @@ export default function MainInteraction() {
             onJordanClick={handleJordanClick}
             talkingPoints={alexTalkingPoints}
             jordanConversationModel={jordanConversationModel}
+            savedResources={savedResources}
+            onToggleSavedResource={handleToggleSavedResource}
           />
 
           <ChatInput
@@ -1319,18 +1400,6 @@ export default function MainInteraction() {
           />
         </section>
       </main>
-
-      {activeSourcePopout && (
-        <SourcePopout
-          source={activeSourcePopout}
-          onClose={() => setActiveSourcePopout(null)}
-          onSaveResource={handleSaveResource}
-          isSaved={savedResources.some(
-            (savedSource) =>
-              getSourceKey(savedSource) === getSourceKey(activeSourcePopout),
-          )}
-        />
-      )}
 
       {showHistory && (
         <HistoryModal
@@ -1572,7 +1641,6 @@ function AlexHeader({
   sources,
   showCards,
   introCue,
-  onOpenSource,
   isForaging,
   isForagingFading,
   alexSubtitle,
@@ -1584,6 +1652,8 @@ function AlexHeader({
   onJordanClick,
   talkingPoints,
   jordanConversationModel,
+  savedResources,
+  onToggleSavedResource,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -1607,9 +1677,7 @@ function AlexHeader({
         className={`mi-character-zone mi-character-zone-alex ${
           isAlexActive ? 'mi-character-zone-speaking' : ''
         } ${isJordanActive ? 'mi-character-zone-listening' : ''} ${
-          isAlexActive &&
-          (isIntroPlaying ||
-            (sources.length > 0 && !isForaging && !isForagingFading))
+          isAlexActive && !isForaging && !isForagingFading
             ? 'mi-character-label-pulsing'
             : ''
         }`}
@@ -1732,6 +1800,24 @@ function AlexHeader({
             )}
 
           {introCue?.character === 'alex' &&
+            introCue?.type === 'save-sources' && (
+              <div
+                className={introVisualClass(
+                  'alex-intro-icon-group alex-intro-ai',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="alex-intro-icon alex-intro-icon-1"
+                  icon={faBookmarkSolid}
+                />
+                <FontAwesomeIcon
+                  className="alex-intro-icon alex-intro-icon-2"
+                  icon={faCheck}
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'alex' &&
             introCue?.type === 'no-specific-trials' && (
               <div
                 className={introVisualClass('alex-intro-no-specific-trials')}
@@ -1771,38 +1857,49 @@ function AlexHeader({
               </div>
 
               <div className="alex-source-card-row">
-                {uniqueSources.slice(0, 3).map((source, index) => (
-                  <button
-                    key={getSourceKey(source)}
-                    type="button"
-                    className="alex-source-card"
-                    onClick={() => onOpenSource(source)}
-                  >
-                    <div className="alex-source-card-top">
-                      <div className="alex-source-card-title-area">
+                {uniqueSources.slice(0, 3).map((source) => {
+                  const isSaved = savedResources.some(
+                    (savedSource) =>
+                      getSourceKey(savedSource) === getSourceKey(source),
+                  )
+
+                  return (
+                    <div
+                      key={getSourceKey(source)}
+                      className={`alex-source-card ${isSaved ? 'is-saved' : ''}`}
+                    >
+                      <div className="alex-source-card-content">
                         <span className="alex-source-card-badge">
                           {source.source === 'ClinicalTrials.gov'
-                            ? 'CT.gov'
+                            ? 'ClinicalTrials.gov'
                             : source.source || 'Source'}
                         </span>
-                        <div className="alex-source-card-title">
+
+                        <span className="alex-source-card-title">
                           {source.title || source.file || 'Trusted resource'}
-                        </div>
+                        </span>
                       </div>
 
-                      <span className="alex-source-card-page">
-                        <FontAwesomeIcon icon={faFileLines} size="2x" />
-                      </span>
-                    </div>
+                      <button
+                        type="button"
+                        className={`alex-source-save-btn ${
+                          isSaved ? 'is-saved' : ''
+                        }`}
+                        onClick={() => onToggleSavedResource?.(source)}
+                        aria-pressed={isSaved}
+                        aria-label={
+                          isSaved ? 'Remove saved resource' : 'Save resource'
+                        }
+                      >
+                        <FontAwesomeIcon
+                          icon={isSaved ? faBookmarkSolid : faBookmarkRegular}
+                        />
 
-                    {/* <div className="alex-source-card-excerpt">
-                      {(source.excerpt || source.content || '').slice(0, 145)}
-                      {(source.excerpt || source.content || '').length > 145
-                        ? '…'
-                        : ''}
-                    </div> */}
-                  </button>
-                ))}
+                        <span>{isSaved ? 'Saved' : 'Read Later'}</span>
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -1843,7 +1940,7 @@ function AlexHeader({
               }}
             >
               <FontAwesomeIcon icon={faLightbulb} />
-              <span>Let's think about Alex's response</span>
+              <span>How this information fits</span>
             </button>
           )}
 
@@ -1902,7 +1999,7 @@ function AlexHeader({
             )}
 
           {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-specific' && (
+            introCue?.type === 'jordan-help' && (
               <div
                 className={introVisualClass(
                   'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
@@ -1910,52 +2007,12 @@ function AlexHeader({
               >
                 <FontAwesomeIcon
                   className="jordan-intro-icon jordan-intro-item"
-                  icon={faFilter}
+                  icon={faHandPointer}
                   size="2x"
                 />
-              </div>
-            )}
-
-          {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-perspectives' && (
-              <div
-                className={introVisualClass(
-                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
-                )}
-              >
                 <FontAwesomeIcon
                   className="jordan-intro-icon jordan-intro-item"
-                  icon={faShapes}
-                  size="2x"
-                />
-              </div>
-            )}
-
-          {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-related' && (
-              <div
-                className={introVisualClass(
-                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
-                )}
-              >
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faDiagramProject}
-                  size="2x"
-                />
-              </div>
-            )}
-
-          {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-user-control' && (
-              <div
-                className={introVisualClass(
-                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-user-control',
-                )}
-              >
-                <FontAwesomeIcon
-                  className="jordan-intro-control-main jordan-intro-item"
-                  icon={faHandHoldingHeart}
+                  icon={faClipboardList}
                   size="2x"
                 />
               </div>
@@ -2050,8 +2107,8 @@ function SourcePopout({
                 type="button"
                 className={`source-bookmark-btn ${isSaved ? 'is-saved' : ''}`}
                 onClick={() => onSaveResource?.(source)}
-                disabled={isSaved}
-                aria-label={isSaved ? 'Resource saved' : 'Save resource'}
+                aria-pressed={isSaved}
+                aria-label={isSaved ? 'Remove saved resource' : 'Save resource'}
               >
                 <span className="source-bookmark-icon">
                   <FontAwesomeIcon

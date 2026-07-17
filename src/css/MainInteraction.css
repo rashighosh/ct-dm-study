@@ -449,58 +449,70 @@
 
 .alex-source-panel {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
   left: 1rem;
   bottom: 1rem;
   z-index: 12;
-  width: 65px;
-  padding: 1rem;
+
+  width: 150px;
+  padding: 12px;
+
+  border: 1px solid rgb(var(--primary-orange) / 23%);
   border-radius: 15px;
-  background: white;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 22px rgba(40, 55, 75, 0.15);
 }
 
 .alex-source-panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 9px;
 }
 
 .alex-source-label {
-  font-size: 15px;
-  line-height: normal;
-  font-weight: 800;
   color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .alex-source-card-row {
   display: flex;
-  gap: 15px;
-  padding-bottom: 5px;
   flex-direction: column;
+  gap: 8px;
 }
 
 .alex-source-card {
   display: flex;
   flex-direction: column;
-  position: relative;
-  width: 55px;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: none;
-  box-shadow: none;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 15px;
+
+  border: 1px solid #e7e2d9;
+  border-radius: 11px;
+
+  background: #fff;
   text-align: left;
-  cursor: pointer;
-  transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease,
-    border-color 0.16s ease;
+
   animation: sourceChipIn 0.32s ease forwards;
+}
+
+.alex-source-card.is-saved {
+  border-color: rgb(var(--primary-orange) / 40%);
+  background: rgb(var(--primary-orange) / 5%);
+}
+
+.alex-source-card-content {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .alex-source-card:nth-child(1) {
@@ -513,10 +525,6 @@
 
 .alex-source-card:nth-child(3) {
   animation-delay: 0.25s;
-}
-
-.alex-source-card:hover {
-  transform: translateY(-3px);
 }
 
 .alex-source-card-top {
@@ -536,8 +544,7 @@
 
 span.alex-source-card-badge {
   border-radius: 15px;
-  background-color: white;
-  border: 1px solid rgb(var(--primary-orange) / 75%);
+  color: rgb(var(--primary-orange));
   font-size: 11px;
   font-weight: 800;
   line-height: 11px;
@@ -545,7 +552,6 @@ span.alex-source-card-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 7px 3px 7px;
 }
 
 .alex-source-card-top svg {
@@ -556,34 +562,48 @@ span.alex-source-card-badge {
 }
 
 .alex-source-card-title {
-  position: absolute;
-  top: 50%;
-  left: 100%;
+  padding: 0;
+  background: none;
+  box-shadow: none;
 
-  width: max-content;
-  min-width: 95px;
-  max-width: 305px;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
 
-  padding: 8px 10px;
+  opacity: 1;
+  visibility: visible;
 
-  border-radius: 10px;
-  background: rgba(40, 48, 62, 0.96);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.alex-source-save-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: none;
+  border: 1px solid rgb(var(--primary-orange) / 23%);
+  color: rgb(var(--primary-orange));
+  font: inherit;
+  box-shadow: none;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.alex-source-save-btn.is-saved {
+  background: rgb(var(--primary-orange));
   color: white;
+}
 
-  font-size: 0.78rem;
-  font-weight: 500;
-  line-height: 1.35;
-
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease,
-    visibility 0.18s;
+.alex-source-save-btn:hover {
+  transform: translateY(-1px);
 }
 
 .alex-source-card:hover .alex-source-card-title {
@@ -692,7 +712,7 @@ span.alex-source-card-badge {
 }
 
 .alex-intro-icon {
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-orange));
   opacity: 0;
   transform: translateY(14px) scale(0.7);
   animation: alexIntroIconPop 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
@@ -730,7 +750,7 @@ span.alex-source-card-badge {
 }
 
 .alex-intro-search-main {
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-orange));
   font-size: 48px;
   opacity: 0;
   transform: scale(0.65);
@@ -744,7 +764,7 @@ span.alex-source-card-badge {
 }
 
 .alex-intro-document {
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-orange));
   font-size: 33px;
   opacity: 0;
   transform: translateY(16px) scale(0.8);
@@ -772,7 +792,7 @@ span.alex-source-card-badge {
 
 .alex-intro-verified-file {
   position: relative;
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-orange));
   font-size: 72px;
   opacity: 0;
   transform: translateY(14px) scale(0.78);
@@ -848,7 +868,7 @@ span.alex-source-card-badge {
   place-items: center;
 
   border-radius: 7px;
-  background: rgb(var(--primary-blue));
+  background: rgb(var(--primary-orange));
   color: white;
   font-size: 13px;
 }
@@ -860,7 +880,7 @@ span.alex-source-card-badge {
   flex: 1 1 auto;
 
   border-radius: 999px;
-  background-color: rgb(var(--primary-blue) / 20%);
+  background-color: rgb(var(--primary-orange) / 20%);
 }
 
 .alex-intro-no-specific-trials {
@@ -893,7 +913,7 @@ span.alex-source-card-badge {
   left: 8px;
   bottom: 5px;
 
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-orange));
   font-size: 68px;
 
   transform: translateY(15px) scale(0.78);
@@ -904,7 +924,7 @@ span.alex-source-card-badge {
   right: 3px;
   top: 2px;
 
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-orange));
   font-size: 47px;
 
   transform: translateY(15px) scale(0.78);
@@ -1061,7 +1081,7 @@ span.alex-source-card-badge {
   box-shadow: 0 10px 30px rgba(16, 24, 40, 0.12);
   font-size: 0.85rem;
   font-weight: 700;
-  color: #344054;
+  color: rgba(var(--primary-orange));
 
   animation-name: alexCardEnter, alexForagingFloat;
   animation-duration: 1s, 2.8s;
@@ -1098,14 +1118,14 @@ span.alex-source-card-badge {
 
 .alex-foraging-card-1 {
   top: 27%;
-  right: 55%;
+  left: 3%;
   animation-delay: 0s, 0.15s;
   z-index: 99999999;
 }
 
 .alex-foraging-card-2 {
-  top: 27%;
-  right: -9%;
+  top: 45%;
+  right: -5%;
   animation-delay:
     0.75s,
     -0.9s;
@@ -1186,7 +1206,7 @@ span.alex-source-card-badge {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 400px;
+  width: 250px;
   height: 210px;
   overflow: hidden;
   animation: fadeIn 0.4s ease forwards;
@@ -1197,7 +1217,7 @@ span.alex-source-card-badge {
   position: absolute;
   top: 0;
   left: 0;
-  width: 400px;
+  width: 250px;
   height: 200px;
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1215,10 +1235,13 @@ span.alex-source-card-badge {
   font-weight: 700;
   font-size: 15px;
   margin-bottom: 4px;
+  color: black;
 }
 .swipe-card__subtitle {
   color: rgba(0, 0, 0, 0.75);
-  font-size: 12px;
+  font-size: 13px;
+  text-align: center;
+  line-height: normal;
 }
 
 @keyframes fadeIn {
@@ -2632,8 +2655,10 @@ span.alex-source-card-badge {
   top: 150px;
   z-index: 120;
 
-  width: min(360px, calc(100% - 40px));
-  height: 450px;
+  width: min(315px, calc(100% - 45px));
+  height: auto;
+  min-height: 250px;
+  max-height: 450px;
   box-sizing: border-box;
   overflow-y: scroll;
 

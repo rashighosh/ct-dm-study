@@ -1,107 +1,112 @@
 [
   {
-    "word": " Sometimes",
+    "word": "In",
     "start": 0,
-    "end": 0.36
+    "end": 0.26945454545454545
   },
   {
-    "word": " that",
-    "start": 0.36,
-    "end": 0.66
+    "word": "between",
+    "start": 0.26945454545454545,
+    "end": 0.5389090909090909
   },
   {
-    "word": " might",
-    "start": 0.66,
-    "end": 0.84
+    "word": "Alex",
+    "start": 0.5389090909090909,
+    "end": 0.8083636363636364
   },
   {
-    "word": " mean",
-    "start": 0.84,
-    "end": 1.04
+    "word": "answering",
+    "start": 0.8083636363636364,
+    "end": 1.0778181818181818
   },
   {
-    "word": " making",
-    "start": 1.04,
-    "end": 1.3
+    "word": "your",
+    "start": 1.0778181818181818,
+    "end": 1.3472727272727272
   },
   {
-    "word": " a",
-    "start": 1.3,
-    "end": 1.44
+    "word": "questions,",
+    "start": 1.3472727272727272,
+    "end": 1.6167272727272728
   },
   {
-    "word": " question",
-    "start": 1.44,
-    "end": 1.74
+    "word": "you",
+    "start": 1.6167272727272728,
+    "end": 1.8861818181818182
   },
   {
-    "word": " more",
-    "start": 1.74,
-    "end": 2.02
+    "word": "can",
+    "start": 1.8861818181818182,
+    "end": 2.1556363636363636
   },
   {
-    "word": " specific,",
-    "start": 2.02,
-    "end": 2.5
+    "word": "click",
+    "start": 2.1556363636363636,
+    "end": 2.425090909090909
   },
   {
-    "word": " looking",
-    "start": 2.68,
-    "end": 3.04
+    "word": "on",
+    "start": 2.425090909090909,
+    "end": 2.6945454545454544
   },
   {
-    "word": " at",
-    "start": 3.04,
-    "end": 3.26
+    "word": "me",
+    "start": 2.6945454545454544,
+    "end": 2.964
   },
   {
-    "word": " something",
-    "start": 3.26,
-    "end": 3.48
+    "word": "to",
+    "start": 2.964,
+    "end": 3.2334545454545456
   },
   {
-    "word": " from",
-    "start": 3.48,
-    "end": 3.78
+    "word": "hear",
+    "start": 3.2334545454545456,
+    "end": 3.5029090909090908
   },
   {
-    "word": " a",
-    "start": 3.78,
-    "end": 3.86
+    "word": "my",
+    "start": 3.5029090909090908,
+    "end": 3.7723636363636364
   },
   {
-    "word": " different",
-    "start": 3.86,
-    "end": 4.08
+    "word": "thoughts",
+    "start": 3.7723636363636364,
+    "end": 4.041818181818182
   },
   {
-    "word": " perspective,",
-    "start": 4.08,
-    "end": 4.56
+    "word": "and",
+    "start": 4.041818181818182,
+    "end": 4.311272727272727
   },
   {
-    "word": " or",
-    "start": 4.76,
-    "end": 5.04
+    "word": "revisit",
+    "start": 4.311272727272727,
+    "end": 4.580727272727272
   },
   {
-    "word": " exploring",
-    "start": 5.04,
-    "end": 5.52
+    "word": "what",
+    "start": 4.580727272727272,
+    "end": 4.850181818181818
   },
   {
-    "word": " a",
-    "start": 5.52,
-    "end": 5.7
+    "word": "you've",
+    "start": 4.850181818181818,
+    "end": 5.1196363636363635
   },
   {
-    "word": " related",
-    "start": 5.7,
-    "end": 5.96
+    "word": "learned",
+    "start": 5.1196363636363635,
+    "end": 5.389090909090909
   },
   {
-    "word": " idea.",
-    "start": 5.96,
-    "end": 6.4
+    "word": "so",
+    "start": 5.389090909090909,
+    "end": 5.658545454545455
+  },
+  {
+    "word": "far.",
+    "start": 5.658545454545455,
+    "end": 5.928
   }
 ]

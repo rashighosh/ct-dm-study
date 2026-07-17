@@ -1239,6 +1239,11 @@ class TalkingHead {
         'RightForeArm.rotation': { x: -1, y: 0, z: -1.5 },
         'RightHand.rotation': { x: -1, y: 0.8, z: 0.5 },
       },
+      leftGesture: {
+        'LeftArm.rotation': { x: 1.2, y: 0, z: 0.4 },
+        'LeftForeArm.rotation': { x: -1, y: 0, z: 1.5 },
+        'LeftHand.rotation': { x: -1, y: -0.8, z: -0.5 },
+      },
       introduceJordan: {
         'LeftArm.rotation': { x: 1.1, y: 0, z: 0.7 },
         'LeftForeArm.rotation': { x: -0.9, y: 0, z: 1.2 },

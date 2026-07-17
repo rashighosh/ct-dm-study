@@ -11,17 +11,17 @@ const CARDS = [
   {
     id: 2,
     title: 'Searching NIH',
-    subtitle: 'National Institutes of Health resources',
+    subtitle: 'National Institutes of Health',
   },
   {
     id: 3,
     title: 'Searching FDA',
-    subtitle: 'Federal Drug Administration resources',
+    subtitle: 'Federal Drug Administration',
   },
   {
     id: 4,
     title: 'Searching HHS',
-    subtitle: 'Department of Health & Human Services resources',
+    subtitle: 'Department of Health & Human Services',
   },
 ]
 

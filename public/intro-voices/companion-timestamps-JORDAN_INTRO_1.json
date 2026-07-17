@@ -1,102 +1,102 @@
 [
   {
-    "word": " Thanks,",
+    "word": "Thanks,",
     "start": 0,
-    "end": 0.24
+    "end": 0.33599999999999997
   },
   {
-    "word": " Alex!",
-    "start": 0.3,
-    "end": 0.5
+    "word": "Alex!",
+    "start": 0.33599999999999997,
+    "end": 0.6719999999999999
   },
   {
-    "word": " So",
-    "start": 0.72,
-    "end": 0.84
+    "word": "As",
+    "start": 0.6719999999999999,
+    "end": 1.008
   },
   {
-    "word": " as",
-    "start": 0.84,
-    "end": 0.98
+    "word": "Alex",
+    "start": 1.008,
+    "end": 1.3439999999999999
   },
   {
-    "word": " Alex",
-    "start": 0.98,
-    "end": 1.28
+    "word": "mentioned,",
+    "start": 1.3439999999999999,
+    "end": 1.6799999999999997
   },
   {
-    "word": " mentioned,",
-    "start": 1.28,
-    "end": 1.7
+    "word": "I'm",
+    "start": 1.6799999999999997,
+    "end": 2.016
   },
   {
-    "word": " I'm",
-    "start": 1.84,
-    "end": 2.06
+    "word": "Jordan.",
+    "start": 2.016,
+    "end": 2.352
   },
   {
-    "word": " Jordan.",
-    "start": 2.06,
-    "end": 2.38
+    "word": "I'm",
+    "start": 2.352,
+    "end": 2.6879999999999997
   },
   {
-    "word": " I'm",
-    "start": 2.54,
-    "end": 2.96
+    "word": "a",
+    "start": 2.6879999999999997,
+    "end": 3.0239999999999996
   },
   {
-    "word": " virtual",
-    "start": 2.96,
-    "end": 3.18
+    "word": "virtual",
+    "start": 3.0239999999999996,
+    "end": 3.3599999999999994
   },
   {
-    "word": " companion",
-    "start": 3.18,
-    "end": 3.54
+    "word": "companion",
+    "start": 3.3599999999999994,
+    "end": 3.6959999999999997
   },
   {
-    "word": " here",
-    "start": 3.54,
-    "end": 3.96
+    "word": "here",
+    "start": 3.6959999999999997,
+    "end": 4.032
   },
   {
-    "word": " to",
-    "start": 3.96,
-    "end": 4.12
+    "word": "to",
+    "start": 4.032,
+    "end": 4.367999999999999
   },
   {
-    "word": " provide",
-    "start": 4.12,
-    "end": 4.34
+    "word": "provide",
+    "start": 4.367999999999999,
+    "end": 4.704
   },
   {
-    "word": " useful",
-    "start": 4.34,
-    "end": 4.7
+    "word": "useful",
+    "start": 4.704,
+    "end": 5.039999999999999
   },
   {
-    "word": " guidance",
-    "start": 4.7,
-    "end": 5.14
+    "word": "guidance",
+    "start": 5.039999999999999,
+    "end": 5.3759999999999994
   },
   {
-    "word": " during",
-    "start": 5.14,
-    "end": 5.48
+    "word": "during",
+    "start": 5.3759999999999994,
+    "end": 5.712
   },
   {
-    "word": " your",
-    "start": 5.48,
-    "end": 5.62
+    "word": "your",
+    "start": 5.712,
+    "end": 6.047999999999999
   },
   {
-    "word": " search",
-    "start": 5.62,
-    "end": 5.82
+    "word": "search",
+    "start": 6.047999999999999,
+    "end": 6.3839999999999995
   },
   {
-    "word": " process.",
-    "start": 5.82,
-    "end": 6.2
+    "word": "process.",
+    "start": 6.3839999999999995,
+    "end": 6.719999999999999
   }
 ]
