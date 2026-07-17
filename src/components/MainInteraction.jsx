@@ -179,9 +179,9 @@ function waitForCharacterRender(container, timeout = 10000) {
 /* -------------------------------------------------------------------------- */
 
 export default function MainInteraction() {
-  const BASE_URL = 'http://127.0.0.1:8000'
-  // const BASE_URL =
-  //   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+  // const BASE_URL = 'http://127.0.0.1:8000'
+  const BASE_URL =
+    'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
   useEffect(() => {
     const image = new Image()
