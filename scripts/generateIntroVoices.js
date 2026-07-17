@@ -19,6 +19,8 @@ const jordanEnding = `And I have the sources Doctor Alex used earlier in your co
 
 const ALEX_INTRO_1 =
   "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation."
+const ALEX_INTRO_1_CONTROL =
+  "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation."
 const ALEX_INTRO_2 =
   "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute."
 const ALEX_INTRO_3 =
@@ -26,6 +28,8 @@ const ALEX_INTRO_3 =
 const ALEX_INTRO_4 =
   "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
 const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
+const ALEX_INTRO_5_CONTROL =
+  "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!"
 
 const JORDAN_INTRO_1 =
   "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process."
@@ -46,7 +50,7 @@ const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: ALEX_INSTRUCTION,
+    text: ALEX_INTRO_1_CONTROL,
     character: 'doctor',
   }),
 })
@@ -54,11 +58,11 @@ const res = await fetch(`${BASE_URL}/tts`, {
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/doctor-audio-ALEX_INSTRUCTION.mp3',
+  'public/intro-voices/doctor-audio-ALEX_INTRO_1_CONTROL.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/doctor-timestamps-ALEX_INSTRUCTION.json',
+  'public/intro-voices/doctor-timestamps-ALEX_INTRO_1_CONTROL.json',
   JSON.stringify(timestamps, null, 2),
 )
 

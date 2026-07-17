@@ -1132,6 +1132,10 @@ span.alex-source-card-badge {
   z-index: 99999999;
 }
 
+.alex-foraging-card-2.alex-solo-foraging-card {
+  right: 3%;
+}
+
 .alex-foraging-card-3 {
   top: 65%;
   right: 65%;
@@ -1501,7 +1505,9 @@ span.alex-source-card-badge {
 /* -------------------------------------------------------------------------- */
 
 .start-overlay {
-  background-color: #f8f7f4;
+  background:
+    linear-gradient(rgba(248, 247, 244, 0.94), rgba(248, 247, 244, 0.94)),
+    url('../assets/bg.jpg') center / cover no-repeat;
 }
 
 .tutorial-start-content {
@@ -2109,6 +2115,14 @@ span.alex-source-card-badge {
   overflow: hidden;
 }
 
+.mi-shared-character-stage-solo {
+  grid-template-columns: 20% 60% 20%;
+}
+
+.mi-shared-character-stage-solo .mi-character-zone-alex {
+  grid-column: 2;
+}
+
 .jordan-exploration-card,
 .full-input-area {
   flex-shrink: 0;
@@ -2128,11 +2142,18 @@ span.alex-source-card-badge {
   background-repeat: no-repeat;
   background-color: #d9e1e7;
 
-  filter: blur(7px);
+  filter: blur(5px);
 
-  transform: translateX(0) scale(1.25);
-  transition: transform 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateX(0) scale(1);
+  transition:
+    transform 1.5s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 250ms ease;
   will-change: transform;
+}
+
+.mi-chat-header.alex-speaking .mi-shared-stage-background,
+.mi-chat-header.jordan-speaking .mi-shared-stage-background {
+  filter: blur(7px) brightness(0.85);
 }
 
 .mi-shared-character-stage.alex-speaking .mi-shared-stage-background {
@@ -2212,6 +2233,12 @@ span.alex-source-card-badge {
   transform: translateX(15%) scale(1.1);
 }
 
+.mi-shared-character-stage-solo
+  .mi-character-zone-alex.mi-character-zone-speaking
+  .mi-character-content {
+  transform: translateX(0) scale(1.1);
+}
+
 /* Jordan listening */
 .mi-character-zone-jordan.mi-character-zone-listening .mi-character-content {
   transform: translateX(25%);
@@ -2257,6 +2284,14 @@ span.alex-source-card-badge {
   transition:
     opacity 300ms ease,
     visibility 0s linear 0s;
+}
+
+.mi-shared-character-stage-solo .mi-shared-stage-background {
+  transform: translateX(0) scale(1);
+}
+
+.mi-shared-character-stage-solo.alex-speaking .mi-shared-stage-background {
+  transform: translateX(0) scale(1.25);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -2549,6 +2584,7 @@ span.alex-source-card-badge {
   border-radius: 25px;
   background: rgba(255, 255, 255, 0.75);
   line-height: 1.6;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
 }
 
 .character-images-row {
@@ -2593,6 +2629,8 @@ span.alex-source-card-badge {
 .mi-start-instructions {
   width: 90%;
   line-height: 1.5;
+  font-weight: 700;
+  font-style: italic;
 }
 
 .mi-start-checks {
@@ -2609,15 +2647,15 @@ span.alex-source-card-badge {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid #e2ddd0;
   border-radius: 14px;
   background: #fff;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: 0.2s ease-in-out;
+  box-shadow: 0 15px 25px rgba(15, 23, 42, 0.15);
 }
 
 .mi-start-check:hover {
-  border-color: rgb(var(--primary-blue) / 35%);
+  transform: scale(1.1);
 }
 
 .mi-start-check-label {

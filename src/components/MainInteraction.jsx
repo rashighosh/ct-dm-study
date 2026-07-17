@@ -68,6 +68,14 @@ const ALEX_INTROS = [
   "Now, I'll hand it over to Jordan.",
 ]
 
+const ALEX_INTROS_CONTROL = [
+  "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation.",
+  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute.",
+  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.',
+  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
+  "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!",
+]
+
 const JORDAN_INTROS = [
   "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process.",
   "As you explore, I'll keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding.",
@@ -202,6 +210,7 @@ export default function MainInteraction() {
     'test-participant'
 
   const condition = Number(searchParams.get('c') || 1)
+  const hasJordan = condition !== 0
 
   const doctorRef = useRef(null)
   const companionRef = useRef(null)
@@ -399,16 +408,16 @@ export default function MainInteraction() {
         setIsAlexActive(false)
         setIsJordanActive(false)
 
-        /* Initialize both characters together */
+        /* Initialize the characters needed for this condition */
         await Promise.all([
           initDoctorCharacter(doctorRef.current),
-          initCompanionCharacter(companionRef.current),
+          ...(hasJordan ? [initCompanionCharacter(companionRef.current)] : []),
         ])
 
-        /* Wait until both character canvases exist and have rendered */
+        /* Wait until the initialized character canvases have rendered */
         await Promise.all([
           waitForCharacterRender(doctorRef.current),
-          waitForCharacterRender(companionRef.current),
+          ...(hasJordan ? [waitForCharacterRender(companionRef.current)] : []),
         ])
 
         /* Reveal the character canvases behind the loading overlay */
@@ -421,14 +430,18 @@ export default function MainInteraction() {
           })
         })
 
-        /* Turn the characters toward each other */
-        playGesture('jordanLookAtAlex')
-        playGesture('alexLookAtJordan')
+        /* Turn the characters toward each other when Jordan is present */
+        if (hasJordan) {
+          playGesture('jordanLookAtAlex')
+          playGesture('alexLookAtJordan')
+        }
 
         /* Give the turning gestures time to settle */
         await new Promise((resolve) => setTimeout(resolve, 1200))
 
-        playGesture('stopCompanionGesture')
+        if (hasJordan) {
+          playGesture('stopCompanionGesture')
+        }
         playGesture('stopAlexGesture')
 
         /* Let the stopped pose settle before removing the overlay */
@@ -453,7 +466,9 @@ export default function MainInteraction() {
         if (restoredInteractionRef.current) {
           setIsAlexActive(false)
           setIsJordanActive(false)
-          playGesture('thinking')
+          if (hasJordan) {
+            playGesture('thinking')
+          }
           return
         }
 
@@ -471,9 +486,19 @@ export default function MainInteraction() {
         /* Alex introduction                                                      */
         /* ---------------------------------------------------------------------- */
 
-        playGesture('jordanLookAtAlex')
-        for (const [index, text] of ALEX_INTROS.entries()) {
+        if (hasJordan) {
+          playGesture('jordanLookAtAlex')
+        }
+
+        const alexIntros = hasJordan ? ALEX_INTROS : ALEX_INTROS_CONTROL
+
+        for (const [index, text] of alexIntros.entries()) {
           const introNumber = index + 1
+
+          const introFileName =
+            !hasJordan && (introNumber === 1 || introNumber === 5)
+              ? `ALEX_INTRO_${introNumber}_CONTROL`
+              : `ALEX_INTRO_${introNumber}`
 
           setMessages((prev) => [
             ...prev,
@@ -496,8 +521,8 @@ export default function MainInteraction() {
           scheduleIntroVisuals('alex', introNumber)
 
           await speakWithLipsyncStatic(
-            `/intro-voices/doctor-audio-ALEX_INTRO_${introNumber}.mp3`,
-            `/intro-voices/doctor-timestamps-ALEX_INTRO_${introNumber}.json`,
+            `/intro-voices/doctor-audio-${introFileName}.mp3`,
+            `/intro-voices/doctor-timestamps-${introFileName}.json`,
             'doctor',
             true,
             setAlexSubtitle,
@@ -507,66 +532,69 @@ export default function MainInteraction() {
         }
 
         /* ---------------------------------------------------------------------- */
-        /* Switch from Alex to Jordan                                              */
+        /* Complete Alex intro or continue to Jordan                              */
         /* ---------------------------------------------------------------------- */
 
         setAlexSubtitle('')
         setIsAlexActive(false)
-        setIsJordanActive(true)
-        setIsIntroPlaying(false)
 
-        /* ---------------------------------------------------------------------- */
-        /* Jordan introduction                                                    */
-        /* ---------------------------------------------------------------------- */
-        playGesture('alexLookAtJordan')
+        if (hasJordan) {
+          setIsJordanActive(true)
 
-        for (const [index, text] of JORDAN_INTROS.entries()) {
-          const introNumber = index + 1
+          playGesture('alexLookAtJordan')
 
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: uid(),
-              from: 'jordan',
-              text,
-              sources: [],
-              explanation: null,
-              confidence: null,
-              isIntro: true,
-            },
-          ])
+          /* -------------------------------------------------------------------- */
+          /* Jordan introduction                                                  */
+          /* -------------------------------------------------------------------- */
 
-          updateIntroTranscript('jordan', text, {
-            intro_part: introNumber,
-            intro_character: 'jordan',
-          })
+          for (const [index, text] of JORDAN_INTROS.entries()) {
+            const introNumber = index + 1
 
-          scheduleIntroVisuals('jordan', introNumber)
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: uid(),
+                from: 'jordan',
+                text,
+                sources: [],
+                explanation: null,
+                confidence: null,
+                isIntro: true,
+              },
+            ])
 
-          await speakWithLipsyncStatic(
-            `/intro-voices/companion-audio-JORDAN_INTRO_${introNumber}.mp3`,
-            `/intro-voices/companion-timestamps-JORDAN_INTRO_${introNumber}.json`,
-            'companion',
-            true,
-            setJordanSubtitle,
-          )
+            updateIntroTranscript('jordan', text, {
+              intro_part: introNumber,
+              intro_character: 'jordan',
+            })
 
-          clearIntroCues()
+            scheduleIntroVisuals('jordan', introNumber)
+
+            await speakWithLipsyncStatic(
+              `/intro-voices/companion-audio-JORDAN_INTRO_${introNumber}.mp3`,
+              `/intro-voices/companion-timestamps-JORDAN_INTRO_${introNumber}.json`,
+              'companion',
+              true,
+              setJordanSubtitle,
+            )
+
+            clearIntroCues()
+          }
+
+          setJordanSubtitle('')
+          setIsJordanActive(false)
+          playGesture('stopCompanionGesture')
+        } else {
+          setIsJordanActive(false)
         }
 
-        /* ---------------------------------------------------------------------- */
-        /* Introduction complete                                                  */
-        /* ---------------------------------------------------------------------- */
-
-        setJordanSubtitle('')
-        setIsJordanActive(false)
+        setIsIntroPlaying(false)
         setAlexIntroDone(true)
 
         logIntroFinished(participantId).catch((error) => {
           console.error('Failed to log intro completion:', error)
         })
 
-        playGesture('stopCompanionGesture')
         playGesture('stopAlexGesture')
       } catch (err) {
         console.log(err)
@@ -975,11 +1003,15 @@ export default function MainInteraction() {
     clearIntroCues()
     setIsAlexActive(true)
     playGesture('startSwiping')
-    playGesture('jordanLookAtAlex')
+    if (hasJordan) {
+      playGesture('jordanLookAtAlex')
+    }
     setShowCards(true)
     setAlexSources([])
     setAlexTalkingPoints([])
-    clearJordanUI()
+    if (hasJordan) {
+      clearJordanUI()
+    }
 
     setIsForaging(true)
 
@@ -1021,24 +1053,28 @@ export default function MainInteraction() {
         throw new Error('Alex response did not include an answer.')
       }
 
-      setIsJordanGuidanceLoading(true)
+      let jordanTurnPromise = Promise.resolve(null)
 
-      const jordanModelSnapshot = jordanConversationModel
+      if (hasJordan) {
+        setIsJordanGuidanceLoading(true)
 
-      const jordanTurnPromise = updateJordanTurn({
-        userQuestion: trimmed,
-        alexAnswer: data.answer,
-        history,
-        currentModel: jordanModelSnapshot,
-      })
-        .then((turnUpdate) => {
-          console.log('*** JORDAN TURN UPDATE IS', turnUpdate)
-          return turnUpdate
+        const jordanModelSnapshot = jordanConversationModel
+
+        jordanTurnPromise = updateJordanTurn({
+          userQuestion: trimmed,
+          alexAnswer: data.answer,
+          history,
+          currentModel: jordanModelSnapshot,
         })
-        .catch((error) => {
-          console.error('Jordan turn update failed:', error)
-          return null
-        })
+          .then((turnUpdate) => {
+            console.log('*** JORDAN TURN UPDATE IS', turnUpdate)
+            return turnUpdate
+          })
+          .catch((error) => {
+            console.error('Jordan turn update failed:', error)
+            return null
+          })
+      }
 
       console.log('Sources', data.sources)
 
@@ -1227,12 +1263,16 @@ export default function MainInteraction() {
         playGesture('thinking')
       }
 
-      setIsJordanGuidanceLoading(false)
+      if (hasJordan) {
+        setIsJordanGuidanceLoading(false)
+      }
     } catch (err) {
       console.error(err)
 
       setIsAlexActive(false)
-      setIsJordanGuidanceLoading(false)
+      if (hasJordan) {
+        setIsJordanGuidanceLoading(false)
+      }
       setIsForaging(false)
       setIsForagingFading(false)
       playGesture('stopSwiping')
@@ -1260,11 +1300,21 @@ export default function MainInteraction() {
           <img src={logo} className="logo" alt="Study logo" />
 
           <h2>Clinical Trials Education</h2>
-          <h1>Chat with Virtual Characters</h1>
+          <h1>
+            {hasJordan
+              ? 'Chat with Virtual Characters'
+              : 'Chat with a Virtual Character'}
+          </h1>
 
           <div className="mi-start-information">
             In this activity, you'll learn about clinical trials with the help
-            of <strong>two virtual characters: Alex and Jordan</strong>.
+            of{' '}
+            <strong>
+              {hasJordan
+                ? 'two virtual characters: Alex and Jordan'
+                : 'a virtual character: Alex'}
+            </strong>
+            .
             <div className="character-images-row">
               <div>
                 <img
@@ -1274,17 +1324,20 @@ export default function MainInteraction() {
                 />
                 <p>Alex</p>
               </div>
-              <div>
-                <img
-                  src={jordan}
-                  className="character-preview"
-                  alt="Jordan character"
-                />
-                <p>Jordan</p>
-              </div>
+              {hasJordan && (
+                <div>
+                  <img
+                    src={jordan}
+                    className="character-preview"
+                    alt="Jordan character"
+                  />
+                  <p>Jordan</p>
+                </div>
+              )}
             </div>
-            They will provide <strong>general information</strong> and help you
-            explore questions about clinical trial participation.
+            {hasJordan ? 'They' : 'Alex'} will provide{' '}
+            <strong>general information</strong> and help you explore questions
+            about clinical trial participation.
           </div>
 
           <div className="mi-start-instructions">
@@ -1367,6 +1420,7 @@ export default function MainInteraction() {
       <main className="mi-main">
         <section className="mi-chat-card">
           <AlexHeader
+            hasJordan={hasJordan}
             charactersReady={charactersReady}
             doctorRef={doctorRef}
             companionRef={companionRef}
@@ -1416,7 +1470,11 @@ export default function MainInteraction() {
           }`}
           role="status"
           aria-live="polite"
-          aria-label="Preparing the virtual characters"
+          aria-label={
+            hasJordan
+              ? 'Preparing the virtual characters'
+              : 'Preparing the virtual character'
+          }
         >
           <div className="character-loading-card">
             <img
@@ -1432,8 +1490,14 @@ export default function MainInteraction() {
               <span />
             </div>
 
-            <h2>Preparing Alex and Jordan</h2>
-            <p>Getting the virtual characters ready...</p>
+            <h2>
+              {hasJordan ? 'Preparing Alex and Jordan' : 'Preparing Alex'}
+            </h2>
+            <p>
+              {hasJordan
+                ? 'Getting the virtual characters ready...'
+                : 'Getting the virtual character ready...'}
+            </p>
           </div>
         </div>
       )}
@@ -1633,6 +1697,7 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
 }
 
 function AlexHeader({
+  hasJordan,
   charactersReady,
   doctorRef,
   companionRef,
@@ -1663,6 +1728,7 @@ function AlexHeader({
   return (
     <div
       className={`mi-chat-header mi-shared-character-stage
+    ${hasJordan ? '' : 'mi-shared-character-stage-solo'}
     ${charactersReady ? 'characters-ready' : 'characters-loading'}
     ${isAlexActive ? 'alex-speaking' : ''}
     ${isJordanActive ? 'jordan-speaking' : ''}
@@ -1674,13 +1740,16 @@ function AlexHeader({
       />
 
       <div
-        className={`mi-character-zone mi-character-zone-alex ${
-          isAlexActive ? 'mi-character-zone-speaking' : ''
-        } ${isJordanActive ? 'mi-character-zone-listening' : ''} ${
-          isAlexActive && !isForaging && !isForagingFading
-            ? 'mi-character-label-pulsing'
-            : ''
-        }`}
+        className={`mi-character-zone mi-character-zone-alex
+    ${!hasJordan ? 'mi-character-zone-alex-solo' : ''}
+    ${isAlexActive ? 'mi-character-zone-speaking' : ''}
+    ${isJordanActive ? 'mi-character-zone-listening' : ''}
+    ${
+      isAlexActive && !isForaging && !isForagingFading
+        ? 'mi-character-label-pulsing'
+        : ''
+    }
+  `}
       >
         <div className="mi-character-content">
           {showCards && <SwipingCards />}
@@ -1704,7 +1773,11 @@ function AlexHeader({
                 <span>Searching trusted sources</span>
               </div>
 
-              <div className="alex-foraging-card alex-foraging-card-2">
+              <div
+                className={`alex-foraging-card alex-foraging-card-2 ${
+                  hasJordan ? '' : 'alex-solo-foraging-card'
+                }`}
+              >
                 <FontAwesomeIcon icon={faObjectGroup} />
                 <span>Comparing information</span>
               </div>
@@ -1910,128 +1983,130 @@ function AlexHeader({
         </div>
       </div>
 
-      <div
-        className={`mi-character-zone mi-character-zone-jordan
-    ${isJordanActive ? 'mi-character-zone-speaking' : ''}
-    ${isAlexActive ? 'mi-character-zone-listening' : ''}
-    ${isJordanWorkspaceOpen ? 'mi-character-zone-workspace-open' : ''}
-  `}
-      >
-        <div className="mi-character-content">
-          <div
-            className="virtual-companion"
-            id="virtualcompanion"
-            ref={companionRef}
-          />
-
-          {jordanSubtitle && (
-            <div className="character-subtitle character-subtitle-jordan">
-              {jordanSubtitle}
-            </div>
-          )}
-
-          {jordanGuidance && !isJordanWorkspaceOpen && !isJordanActive && (
-            <button
-              type="button"
-              className="jordan-workspace-trigger"
-              onClick={(event) => {
-                event.stopPropagation()
-                onJordanClick?.()
-              }}
-            >
-              <FontAwesomeIcon icon={faLightbulb} />
-              <span>How this information fits</span>
-            </button>
-          )}
-
-          {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-guidance' && (
-              <div
-                className={introVisualClass(
-                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-guidance',
-                )}
-              >
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-icon-main jordan-intro-item"
-                  icon={faRoute}
-                  size="2x"
-                />
-
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-icon-secondary jordan-intro-item"
-                  icon={faMagnifyingGlass}
-                  size="2x"
-                />
-              </div>
-            )}
-
-          {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-build-question' && (
-              <div
-                className={introVisualClass(
-                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-build-question',
-                )}
-              >
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faCircleQuestion}
-                  size="2x"
-                />
-
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faCubesStacked}
-                  size="2x"
-                />
-
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faArrowRight}
-                  size="2x"
-                />
-
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faLightbulb}
-                  size="2x"
-                />
-              </div>
-            )}
-
-          {introCue?.character === 'jordan' &&
-            introCue?.type === 'jordan-help' && (
-              <div
-                className={introVisualClass(
-                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
-                )}
-              >
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faHandPointer}
-                  size="2x"
-                />
-                <FontAwesomeIcon
-                  className="jordan-intro-icon jordan-intro-item"
-                  icon={faClipboardList}
-                  size="2x"
-                />
-              </div>
-            )}
-
-          {jordanGuidance && isJordanWorkspaceOpen && (
-            <JordanExplorationCard
-              guidance={jordanGuidance}
-              conversationModel={jordanConversationModel}
-              onDismiss={dismissJordanGuidance}
+      {hasJordan && (
+        <div
+          className={`mi-character-zone mi-character-zone-jordan
+          ${isJordanActive ? 'mi-character-zone-speaking' : ''}
+          ${isAlexActive ? 'mi-character-zone-listening' : ''}
+          ${isJordanWorkspaceOpen ? 'mi-character-zone-workspace-open' : ''}
+        `}
+        >
+          <div className="mi-character-content">
+            <div
+              className="virtual-companion"
+              id="virtualcompanion"
+              ref={companionRef}
             />
-          )}
-        </div>
 
-        <div className="mi-character-label mi-character-label-jordan">
-          <span>Exploration Guide</span>
-          <strong>Jordan</strong>
+            {jordanSubtitle && (
+              <div className="character-subtitle character-subtitle-jordan">
+                {jordanSubtitle}
+              </div>
+            )}
+
+            {jordanGuidance && !isJordanWorkspaceOpen && !isJordanActive && (
+              <button
+                type="button"
+                className="jordan-workspace-trigger"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onJordanClick?.()
+                }}
+              >
+                <FontAwesomeIcon icon={faLightbulb} />
+                <span>How this information fits</span>
+              </button>
+            )}
+
+            {introCue?.character === 'jordan' &&
+              introCue?.type === 'jordan-guidance' && (
+                <div
+                  className={introVisualClass(
+                    'jordan-intro-icon-group jordan-intro-visual jordan-intro-guidance',
+                  )}
+                >
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-icon-main jordan-intro-item"
+                    icon={faRoute}
+                    size="2x"
+                  />
+
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-icon-secondary jordan-intro-item"
+                    icon={faMagnifyingGlass}
+                    size="2x"
+                  />
+                </div>
+              )}
+
+            {introCue?.character === 'jordan' &&
+              introCue?.type === 'jordan-build-question' && (
+                <div
+                  className={introVisualClass(
+                    'jordan-intro-icon-group jordan-intro-visual jordan-intro-build-question',
+                  )}
+                >
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-item"
+                    icon={faCircleQuestion}
+                    size="2x"
+                  />
+
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-item"
+                    icon={faCubesStacked}
+                    size="2x"
+                  />
+
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-item"
+                    icon={faArrowRight}
+                    size="2x"
+                  />
+
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-item"
+                    icon={faLightbulb}
+                    size="2x"
+                  />
+                </div>
+              )}
+
+            {introCue?.character === 'jordan' &&
+              introCue?.type === 'jordan-help' && (
+                <div
+                  className={introVisualClass(
+                    'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
+                  )}
+                >
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-item"
+                    icon={faHandPointer}
+                    size="2x"
+                  />
+                  <FontAwesomeIcon
+                    className="jordan-intro-icon jordan-intro-item"
+                    icon={faClipboardList}
+                    size="2x"
+                  />
+                </div>
+              )}
+
+            {jordanGuidance && isJordanWorkspaceOpen && (
+              <JordanExplorationCard
+                guidance={jordanGuidance}
+                conversationModel={jordanConversationModel}
+                onDismiss={dismissJordanGuidance}
+              />
+            )}
+          </div>
+
+          <div className="mi-character-label mi-character-label-jordan">
+            <span>Exploration Guide</span>
+            <strong>Jordan</strong>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

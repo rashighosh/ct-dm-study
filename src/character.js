@@ -491,6 +491,23 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 500,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_1_CONTROL.mp3': [
+    { engine: 'native', word: 'hi', gesture: 'handup', dur: 0.8, reset: false },
+    {
+      engine: 'native',
+      word: 'I',
+      gesture: 'chest',
+      dur: 1.2,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'help',
+      gesture: 'talkopen',
+      dur: 2,
+      resetTransition: 300,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_2.mp3': [
     {
       engine: 'native',
