@@ -19,7 +19,7 @@ const jordanEnding = `And I have the sources Doctor Alex used earlier in your co
 
 const ALEX_INTRO_1 =
   "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation."
-const ALEX_INTRO_1_CONTROL =
+const ALEX_INTRO_1_FORAGING_COMBINED =
   "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation."
 const ALEX_INTRO_2 =
   "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute."
@@ -27,8 +27,12 @@ const ALEX_INTRO_3 =
   'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.'
 const ALEX_INTRO_4 =
   "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
+const ALEX_INTRO_4_1_FORAGING =
+  "As you explore, I'll also keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+const ALEX_INTRO_4_2_FORAGING =
+  "In between me answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
 const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
-const ALEX_INTRO_5_CONTROL =
+const ALEX_INTRO_5_FORAGING_COMBINED =
   "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!"
 
 const JORDAN_INTRO_1 =
@@ -40,17 +44,20 @@ const JORDAN_INTRO_3 =
 const JORDAN_INTRO_4 =
   "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!"
 
-const ALEX_INSTRUCTION =
+const ALEX_INSTRUCTION_FORAGING =
   "Here are the sources I used. Remember, you can save any of them to read later, and I'll keep sharing my sources throughout our conversation."
 
 const JORDAN_INSTRUCTION =
+  "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
+
+const ALEX_INSTRUCTION_SENSEMAKING =
   "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
 
 const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: ALEX_INTRO_1_CONTROL,
+    text: ALEX_INSTRUCTION_FORAGING,
     character: 'doctor',
   }),
 })
@@ -58,11 +65,11 @@ const res = await fetch(`${BASE_URL}/tts`, {
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/doctor-audio-ALEX_INTRO_1_CONTROL.mp3',
+  'public/intro-voices/doctor-audio-ALEX_INSTRUCTION_FORAGING.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/doctor-timestamps-ALEX_INTRO_1_CONTROL.json',
+  'public/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_FORAGING.json',
   JSON.stringify(timestamps, null, 2),
 )
 

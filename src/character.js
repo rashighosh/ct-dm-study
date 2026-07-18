@@ -491,7 +491,7 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 500,
     },
   ],
-  '/intro-voices/doctor-audio-ALEX_INTRO_1_CONTROL.mp3': [
+  '/intro-voices/doctor-audio-ALEX_INTRO_1_FORAGING_COMBINED.mp3': [
     { engine: 'native', word: 'hi', gesture: 'handup', dur: 0.8, reset: false },
     {
       engine: 'native',
@@ -598,6 +598,45 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 200,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_4_1_FORAGING.mp3': [
+    {
+      engine: 'native',
+      word: 'explore',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'information',
+      gesture: 'talkopen',
+      dur: 2,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'suggest',
+      gesture: 'rightGesture',
+      dur: 2,
+      reset: false,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_4_2_FORAGING.mp3': [
+    {
+      engine: 'native',
+      word: 'between',
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'click',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_5.mp3': [
     {
       engine: 'native',
@@ -607,15 +646,31 @@ const STATIC_GESTURE_MAPS = {
       reset: false,
     },
   ],
-  '/intro-voices/doctor-audio-ALEX_INSTRUCTION.mp3': [
+  '/intro-voices/doctor-audio-ALEX_INTRO_5_FORAGING_COMBINED.mp3': [
+    {
+      engine: 'native',
+      word: 'whenever',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INSTRUCTION_FORAGING.mp3': [
     {
       engine: 'native',
       word: 'shared',
       gesture: 'rightGesture',
       dur: 2.1,
-      transition: 1800,
-      resetTransition: 1600,
-      reset: true,
+      resetTransition: 300,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INSTRUCTION_SENSEMAKING.mp3': [
+    {
+      engine: 'native',
+      word: 'track',
+      gesture: 'leftGesture',
+      dur: 1.5,
+      resetTransition: 200,
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_1.mp3': [

@@ -2370,7 +2370,7 @@ span.alex-source-card-badge {
 
 /* Active-label pulses */
 
-.mi-character-zone-alex.mi-character-label-pulsing .mi-character-label-alex {
+.mi-character-zone-speaking .mi-character-label-alex {
   background: rgba(var(--primary-orange));
   animation: pulse-animation-alex 2s infinite;
 }
@@ -2549,7 +2549,7 @@ span.alex-source-card-badge {
 }
 
 .mi-start-overlay-content {
-  width: min(720px, 90vw);
+  width: 1000px;
   max-height: 95vh;
   display: flex;
   flex-direction: column;
@@ -2982,6 +2982,10 @@ span.alex-source-card-badge {
   animation: jordanWorkspaceTriggerIn 0.3s ease forwards;
 }
 
+.jordan-workspace-trigger.alex-workspace-trigger {
+  right: 5rem;
+}
+
 .jordan-workspace-trigger::before,
 .jordan-workspace-trigger::after {
   content: '';
@@ -3106,6 +3110,11 @@ span.alex-source-card-badge {
 
 .alex-talking-point:nth-child(3) {
   animation-delay: 4s;
+}
+
+.alex-talking-points.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes alexTalkingPointIn {
@@ -3330,6 +3339,7 @@ span.alex-source-card-badge {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  line-height: normal;
 }
 
 /* -------------------------------------------------------------------------- */

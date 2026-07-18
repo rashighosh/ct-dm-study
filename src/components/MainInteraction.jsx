@@ -60,61 +60,160 @@ import {
 /* Constants                                                                  */
 /* -------------------------------------------------------------------------- */
 
-const ALEX_INTROS = [
-  "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation.",
-  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute.",
-  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.',
-  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
-  "Now, I'll hand it over to Jordan.",
+const ALEX_INTRO_1 =
+  "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation."
+const ALEX_INTRO_1_FORAGING_COMBINED =
+  "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation."
+const ALEX_INTRO_2 =
+  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute."
+const ALEX_INTRO_3 =
+  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.'
+const ALEX_INTRO_4 =
+  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
+const ALEX_INTRO_4_1_FORAGING =
+  "As you explore, I'll also keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+const ALEX_INTRO_4_2_FORAGING =
+  "In between me answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
+const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
+const ALEX_INTRO_5_FORAGING_COMBINED =
+  "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!"
+
+const JORDAN_INTRO_1 =
+  "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process."
+const JORDAN_INTRO_2 =
+  "As you explore, I'll keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+const JORDAN_INTRO_3 =
+  "In between Alex answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
+const JORDAN_INTRO_4 =
+  "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!"
+
+const ALEX_INSTRUCTION_FORAGING =
+  "Here are the sources I used. Remember, you can save any of them to read later, and I'll keep sharing my sources throughout our conversation."
+
+const JORDAN_INSTRUCTION =
+  "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
+
+const ALEX_INSTRUCTION_SENSEMAKING =
+  "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
+
+const ALEX_INTROS_DISTRIBUTED = [
+  {
+    key: 'ALEX_INTRO_1',
+    text: ALEX_INTRO_1,
+  },
+  {
+    key: 'ALEX_INTRO_2',
+    text: ALEX_INTRO_2,
+  },
+  {
+    key: 'ALEX_INTRO_3',
+    text: ALEX_INTRO_3,
+  },
+  {
+    key: 'ALEX_INTRO_4',
+    text: ALEX_INTRO_4,
+  },
+  {
+    key: 'ALEX_INTRO_5',
+    text: ALEX_INTRO_5,
+  },
 ]
 
-const ALEX_INTROS_CONTROL = [
-  "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation.",
-  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute.",
-  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.',
-  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
-  "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!",
+const ALEX_INTROS_FORAGING_ONLY = [
+  {
+    key: 'ALEX_INTRO_1_FORAGING_COMBINED',
+    text: ALEX_INTRO_1_FORAGING_COMBINED,
+  },
+  {
+    key: 'ALEX_INTRO_2',
+    text: ALEX_INTRO_2,
+  },
+  {
+    key: 'ALEX_INTRO_3',
+    text: ALEX_INTRO_3,
+  },
+  {
+    key: 'ALEX_INTRO_4',
+    text: ALEX_INTRO_4,
+  },
+  {
+    key: 'ALEX_INTRO_5_FORAGING_COMBINED',
+    text: ALEX_INTRO_5_FORAGING_COMBINED,
+  },
+]
+
+const ALEX_INTROS_COMBINED = [
+  {
+    key: 'ALEX_INTRO_1_FORAGING_COMBINED',
+    text: ALEX_INTRO_1_FORAGING_COMBINED,
+  },
+  {
+    key: 'ALEX_INTRO_2',
+    text: ALEX_INTRO_2,
+  },
+  {
+    key: 'ALEX_INTRO_3',
+    text: ALEX_INTRO_3,
+  },
+  {
+    key: 'ALEX_INTRO_4',
+    text: ALEX_INTRO_4,
+  },
+  {
+    key: 'ALEX_INTRO_4_1_FORAGING',
+    text: ALEX_INTRO_4_1_FORAGING,
+  },
+  {
+    key: 'ALEX_INTRO_4_2_FORAGING',
+    text: ALEX_INTRO_4_2_FORAGING,
+  },
+  {
+    key: 'ALEX_INTRO_5_FORAGING_COMBINED',
+    text: ALEX_INTRO_5_FORAGING_COMBINED,
+  },
 ]
 
 const JORDAN_INTROS = [
-  "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process.",
-  "As you explore, I'll keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding.",
-  "In between Alex answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far.",
-  "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!",
+  {
+    key: 'JORDAN_INTRO_1',
+    text: JORDAN_INTRO_1,
+  },
+  {
+    key: 'JORDAN_INTRO_2',
+    text: JORDAN_INTRO_2,
+  },
+  {
+    key: 'JORDAN_INTRO_3',
+    text: JORDAN_INTRO_3,
+  },
+  {
+    key: 'JORDAN_INTRO_4',
+    text: JORDAN_INTRO_4,
+  },
 ]
-
-const ALEX_INSTRUCTION =
-  "I've shared the sources I used over here if you'd like to take a look. I'll keep sharing my sources throughout our conversation."
-
-const JORDAN_INSTRUCTION =
-  "As you chat with Alex, I'll keep track of important ideas and how they fit together. You can click on me at any time to take a look!"
 
 const INTRO_VISUAL_TIMELINE = {
   alex: {
-    1: [
+    ALEX_INTRO_1: [
       { delay: 2500, duration: 2000, cue: { type: 'ai' } },
       { delay: 5000, duration: 2200, cue: { type: 'explore' } },
     ],
-    2: [
+    ALEX_INTRO_1_FORAGING_COMBINED: [
+      { delay: 2500, duration: 2000, cue: { type: 'ai' } },
+      { delay: 5000, duration: 2200, cue: { type: 'explore' } },
+    ],
+    ALEX_INTRO_2: [
       { delay: 3500, duration: 5500, cue: { type: 'search-documents' } },
       { delay: 9500, duration: 3000, cue: { type: 'verified-document' } },
     ],
-    3: [
+    ALEX_INTRO_3: [
       { delay: 500, duration: 5000, cue: { type: 'topic-checklist' } },
       { delay: 8000, duration: 4000, cue: { type: 'save-sources' } },
     ],
-    4: [{ delay: 1800, duration: 5000, cue: { type: 'no-specific-trials' } }],
-  },
-  jordan: {
-    1: [
-      {
-        delay: 1800,
-        duration: 3500,
-        cue: { type: 'jordan-guidance' },
-      },
+    ALEX_INTRO_4: [
+      { delay: 1800, duration: 5000, cue: { type: 'no-specific-trials' } },
     ],
-
-    2: [
+    ALEX_INTRO_4_1_FORAGING: [
       {
         delay: 1800,
         duration: 6200,
@@ -122,7 +221,34 @@ const INTRO_VISUAL_TIMELINE = {
       },
     ],
 
-    3: [
+    ALEX_INTRO_4_2_FORAGING: [
+      {
+        delay: 1800,
+        duration: 3000,
+        cue: { type: 'jordan-help' },
+      },
+    ],
+    ALEX_INTRO_5: [],
+    ALEX_INTRO_5_FORAGING_COMBINED: [],
+  },
+  jordan: {
+    JORDAN_INTRO_1: [
+      {
+        delay: 1800,
+        duration: 3500,
+        cue: { type: 'jordan-guidance' },
+      },
+    ],
+
+    JORDAN_INTRO_2: [
+      {
+        delay: 1800,
+        duration: 6200,
+        cue: { type: 'jordan-build-question' },
+      },
+    ],
+
+    JORDAN_INTRO_3: [
       {
         delay: 1800,
         duration: 3000,
@@ -130,7 +256,7 @@ const INTRO_VISUAL_TIMELINE = {
       },
     ],
 
-    4: [
+    JORDAN_INTRO_4: [
       {
         delay: 1600,
         duration: 4000,
@@ -209,8 +335,36 @@ export default function MainInteraction() {
     searchParams.get('PROLIFIC_PID') ||
     'test-participant'
 
-  const condition = Number(searchParams.get('c') || 1)
-  const hasJordan = condition !== 0
+  // ---------------------------------------------------------------------
+  // BEGIN HANDLING/DETERMINING OF CONDITIONS
+  // ---------------------------------------------------------------------
+
+  const condition = Number(searchParams.get('c') || 2)
+  /*
+   * Study conditions
+   *
+   * 0: Alex performs information foraging only
+   * 1: Alex performs both information foraging and sensemaking
+   * 2: Alex performs information foraging; Jordan performs sensemaking
+   */
+  const CONDITION = {
+    FORAGING_ONLY: 0,
+    COMBINED: 1,
+    DISTRIBUTED: 2,
+  }
+
+  const isForagingOnlyCondition = condition === CONDITION.FORAGING_ONLY
+  const isDistributedCondition = condition === CONDITION.DISTRIBUTED
+  const isCombinedCondition = condition === CONDITION.COMBINED
+
+  // Capabilities
+  const hasSensemaking = !isForagingOnlyCondition
+  const hasSeparateSensemakingCharacter = isDistributedCondition
+  const alexHandlesSensemaking = isCombinedCondition
+
+  // ---------------------------------------------------------------------
+  // END HANDLING/DETERMINING OF CONDITIONS
+  // ---------------------------------------------------------------------
 
   const doctorRef = useRef(null)
   const companionRef = useRef(null)
@@ -247,7 +401,7 @@ export default function MainInteraction() {
   }
 
   const savedSession = getSavedSession()
-
+  const [isSensemakingActive, setIsSensemakingActive] = useState(false)
   const [jordanConversationModel, setJordanConversationModel] = useState(() => {
     const savedModel = savedSession?.jordanConversationModel
 
@@ -328,6 +482,11 @@ export default function MainInteraction() {
     savedSession?.jordanInstructionSpoken ?? false,
   )
 
+  const [
+    alexSensemakingInstructionSpoken,
+    setAlexSensemakingInstructionSpoken,
+  ] = useState(savedSession?.alexSensemakingInstructionSpoken ?? false)
+
   const canStart = Object.values(startChecks).every(Boolean)
 
   useEffect(() => {
@@ -345,6 +504,7 @@ export default function MainInteraction() {
       previousJordanGuidanceTypes: previousJordanGuidanceTypes.current,
       previousJordanGuidanceMessages: previousJordanGuidanceMessages.current,
       jordanConversationModel,
+      alexSensemakingInstructionSpoken,
     }
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
   }, [
@@ -360,10 +520,15 @@ export default function MainInteraction() {
     jordanGuidance,
     savedResources,
     jordanConversationModel,
+    alexSensemakingInstructionSpoken,
   ])
 
   const completedAlexResponses = messages.filter(
-    (message) => message.from === 'alex' && !message.isIntro,
+    (message) =>
+      message.from === 'alex' &&
+      !message.isIntro &&
+      !message.isInstruction &&
+      !message.isSensemaking,
   ).length
 
   const showFinishButton = completedAlexResponses >= 1
@@ -408,16 +573,26 @@ export default function MainInteraction() {
         setIsAlexActive(false)
         setIsJordanActive(false)
 
-        /* Initialize the characters needed for this condition */
+        /*
+         * Initialize & render characters
+         *
+         * Always initiate & render Alex
+         * if hasSeparateSensemakingCharacter (Distributed condition)
+         * then also init & render Jordan
+         */
         await Promise.all([
           initDoctorCharacter(doctorRef.current),
-          ...(hasJordan ? [initCompanionCharacter(companionRef.current)] : []),
+          ...(hasSeparateSensemakingCharacter
+            ? [initCompanionCharacter(companionRef.current)]
+            : []),
         ])
 
         /* Wait until the initialized character canvases have rendered */
         await Promise.all([
           waitForCharacterRender(doctorRef.current),
-          ...(hasJordan ? [waitForCharacterRender(companionRef.current)] : []),
+          ...(hasSeparateSensemakingCharacter
+            ? [waitForCharacterRender(companionRef.current)]
+            : []),
         ])
 
         /* Reveal the character canvases behind the loading overlay */
@@ -431,7 +606,7 @@ export default function MainInteraction() {
         })
 
         /* Turn the characters toward each other when Jordan is present */
-        if (hasJordan) {
+        if (hasSeparateSensemakingCharacter) {
           playGesture('jordanLookAtAlex')
           playGesture('alexLookAtJordan')
         }
@@ -439,7 +614,7 @@ export default function MainInteraction() {
         /* Give the turning gestures time to settle */
         await new Promise((resolve) => setTimeout(resolve, 1200))
 
-        if (hasJordan) {
+        if (hasSeparateSensemakingCharacter) {
           playGesture('stopCompanionGesture')
         }
         playGesture('stopAlexGesture')
@@ -466,9 +641,7 @@ export default function MainInteraction() {
         if (restoredInteractionRef.current) {
           setIsAlexActive(false)
           setIsJordanActive(false)
-          if (hasJordan) {
-            playGesture('thinking')
-          }
+
           return
         }
 
@@ -486,19 +659,19 @@ export default function MainInteraction() {
         /* Alex introduction                                                      */
         /* ---------------------------------------------------------------------- */
 
-        if (hasJordan) {
+        if (hasSeparateSensemakingCharacter) {
           playGesture('jordanLookAtAlex')
         }
 
-        const alexIntros = hasJordan ? ALEX_INTROS : ALEX_INTROS_CONTROL
+        const alexIntros = hasSeparateSensemakingCharacter
+          ? ALEX_INTROS_DISTRIBUTED
+          : alexHandlesSensemaking
+            ? ALEX_INTROS_COMBINED
+            : ALEX_INTROS_FORAGING_ONLY
 
-        for (const [index, text] of alexIntros.entries()) {
+        for (const [index, intro] of alexIntros.entries()) {
           const introNumber = index + 1
-
-          const introFileName =
-            !hasJordan && (introNumber === 1 || introNumber === 5)
-              ? `ALEX_INTRO_${introNumber}_CONTROL`
-              : `ALEX_INTRO_${introNumber}`
+          const { key: introFileName, text } = intro
 
           setMessages((prev) => [
             ...prev,
@@ -515,10 +688,11 @@ export default function MainInteraction() {
 
           updateIntroTranscript('alex', text, {
             intro_part: introNumber,
+            intro_key: introFileName,
             intro_character: 'alex',
           })
 
-          scheduleIntroVisuals('alex', introNumber)
+          scheduleIntroVisuals('alex', introFileName)
 
           await speakWithLipsyncStatic(
             `/intro-voices/doctor-audio-${introFileName}.mp3`,
@@ -538,7 +712,7 @@ export default function MainInteraction() {
         setAlexSubtitle('')
         setIsAlexActive(false)
 
-        if (hasJordan) {
+        if (hasSeparateSensemakingCharacter) {
           setIsJordanActive(true)
 
           playGesture('alexLookAtJordan')
@@ -547,8 +721,9 @@ export default function MainInteraction() {
           /* Jordan introduction                                                  */
           /* -------------------------------------------------------------------- */
 
-          for (const [index, text] of JORDAN_INTROS.entries()) {
+          for (const [index, intro] of JORDAN_INTROS.entries()) {
             const introNumber = index + 1
+            const { key: introFileName, text } = intro
 
             setMessages((prev) => [
               ...prev,
@@ -565,14 +740,15 @@ export default function MainInteraction() {
 
             updateIntroTranscript('jordan', text, {
               intro_part: introNumber,
+              intro_key: introFileName,
               intro_character: 'jordan',
             })
 
-            scheduleIntroVisuals('jordan', introNumber)
+            scheduleIntroVisuals('jordan', introFileName)
 
             await speakWithLipsyncStatic(
-              `/intro-voices/companion-audio-JORDAN_INTRO_${introNumber}.mp3`,
-              `/intro-voices/companion-timestamps-JORDAN_INTRO_${introNumber}.json`,
+              `/intro-voices/companion-audio-${introFileName}.mp3`,
+              `/intro-voices/companion-timestamps-${introFileName}.json`,
               'companion',
               true,
               setJordanSubtitle,
@@ -621,15 +797,16 @@ export default function MainInteraction() {
   const navigate = useNavigate()
 
   function handleContinue() {
-    sessionStorage.removeItem(SESSION_KEY)
-
     navigate('/notes-review', {
       state: {
         participantId,
         condition,
         savedResources,
+        jordanConversationModel,
       },
     })
+
+    sessionStorage.removeItem(SESSION_KEY)
   }
 
   /* ------------------------------------------------------------------------ */
@@ -682,10 +859,10 @@ export default function MainInteraction() {
     setIntroCue(null)
   }
 
-  function scheduleIntroVisuals(character, introNumber) {
+  function scheduleIntroVisuals(character, introKey) {
     clearIntroCues()
 
-    const visualCues = INTRO_VISUAL_TIMELINE[character]?.[introNumber] || []
+    const visualCues = INTRO_VISUAL_TIMELINE[character]?.[introKey] || []
 
     visualCues.forEach(({ delay, duration, cue }) => {
       const showTimer = setTimeout(() => {
@@ -713,11 +890,15 @@ export default function MainInteraction() {
     })
   }
 
-  function clearJordanUI() {
+  function clearSensemakingUI() {
     setJordanGuidance(null)
     setIsJordanGuidanceLoading(false)
     setIsJordanWorkspaceOpen(false)
-    playGesture('stopCompanionGesture')
+
+    // For when Jordan is the distributed sensemaking character
+    if (hasSeparateSensemakingCharacter) {
+      playGesture('stopCompanionGesture')
+    }
   }
 
   async function updateJordanTurn({
@@ -816,48 +997,69 @@ export default function MainInteraction() {
     })
   }
 
-  async function handleJordanClick() {
+  async function handleSensemakingClick() {
     if (!jordanGuidance) return
     if (isAlexActive || isJordanActive || isForaging) return
 
+    const sensemakingActor = alexHandlesSensemaking ? 'alex' : 'jordan'
     const shouldSpeak = !jordanGuidance.hasSpoken
 
+    setIsSensemakingActive(true)
     setIsJordanWorkspaceOpen(false)
-    playGesture('stopCompanionGesture')
 
-    updateTranscript('jordan_workspace_action', 'opened Jordan workspace', {
-      action: 'opened',
-      guidance_id: jordanGuidance.id,
-      guidance_type: jordanGuidance.guidance_type,
-      spoke_guidance: shouldSpeak,
-      theme_id: jordanGuidance.theme_id,
-      theme_label: jordanGuidance.theme_label,
-      detail_id: jordanGuidance.detail_id,
-      earlier_detail_id: jordanGuidance.earlier_detail_id,
-      earlier_question_reference: jordanGuidance.earlier_question_reference,
-      connection_label: jordanGuidance.connection_label,
-    })
+    if (hasSeparateSensemakingCharacter) {
+      playGesture('stopCompanionGesture')
+    } else {
+      playGesture('stopAlexGesture')
+    }
 
-    incrementInteractionCount(participantId, 'jordan_click_count').catch(
-      (error) => {
-        console.error('Jordan click count update failed:', error)
+    updateTranscript(
+      'sensemaking_workspace_action',
+      `opened ${sensemakingActor} sensemaking workspace`,
+      {
+        action: 'opened',
+        sensemaking_actor: sensemakingActor,
+        guidance_id: jordanGuidance.id,
+        guidance_type: jordanGuidance.guidance_type,
+        spoke_guidance: shouldSpeak,
+        theme_id: jordanGuidance.theme_id,
+        theme_label: jordanGuidance.theme_label,
+        detail_id: jordanGuidance.detail_id,
+        earlier_detail_id: jordanGuidance.earlier_detail_id,
+        earlier_question_reference: jordanGuidance.earlier_question_reference,
+        connection_label: jordanGuidance.connection_label,
       },
     )
 
-    // Jordan has already spoken, so just open the workspace.
+    incrementInteractionCount(participantId, 'sensemaking_click_count').catch(
+      (error) => {
+        console.error('Sensemaking click count update failed:', error)
+      },
+    )
+
+    // Alex/Jordan has already spoken, so just open the workspace.
     // Do not mark him active.
     if (!shouldSpeak) {
-      setIsJordanActive(true)
       setIsJordanWorkspaceOpen(true)
-      playGesture('lookright')
+
+      if (hasSeparateSensemakingCharacter) {
+        playGesture('lookright')
+        setIsJordanActive(true)
+      } else {
+        setIsAlexActive(true)
+      }
+
       return
     }
 
-    playGesture('stopCompanionGesture')
-    playGesture('alexLookAtJordan')
-
-    // Jordan is active only while his audio is playing.
-    setIsJordanActive(true)
+    if (hasSeparateSensemakingCharacter) {
+      playGesture('stopCompanionGesture')
+      playGesture('alexLookAtJordan')
+      setIsJordanActive(true)
+    } else {
+      playGesture('stopAlexGesture')
+      setIsAlexActive(true)
+    }
 
     setJordanGuidance((previous) =>
       previous
@@ -871,7 +1073,7 @@ export default function MainInteraction() {
     try {
       await speakWithLipsync(
         jordanGuidance.jordan_message,
-        'companion',
+        alexHandlesSensemaking ? 'doctor' : 'companion',
         null,
         () => {
           setMessages((previous) => [
@@ -879,7 +1081,8 @@ export default function MainInteraction() {
             {
               id: uid(),
               guidanceId: jordanGuidance.id,
-              from: 'jordan',
+              from: sensemakingActor,
+              isSensemaking: true,
               text: jordanGuidance.jordan_message,
               guidanceType: jordanGuidance.guidance_type,
               themeId: jordanGuidance.theme_id,
@@ -892,9 +1095,10 @@ export default function MainInteraction() {
           ])
 
           updateTranscript(
-            'jordan_guidance_spoken',
+            'sensemaking_guidance_spoken',
             jordanGuidance.jordan_message,
             {
+              sensemaking_actor: sensemakingActor,
               guidance_id: jordanGuidance.id,
               guidance_type: jordanGuidance.guidance_type,
               theme_id: jordanGuidance.theme_id,
@@ -908,11 +1112,11 @@ export default function MainInteraction() {
             },
           )
         },
-        setJordanSubtitle,
+        alexHandlesSensemaking ? setAlexSubtitle : setJordanSubtitle,
       )
 
-      // First time jordan is clicked explains
-      if (!jordanInstructionSpoken) {
+      // First click: explain how the sensemaking workspace works.
+      if (hasSeparateSensemakingCharacter && !jordanInstructionSpoken) {
         setJordanInstructionSpoken(true)
 
         setMessages((previous) => [
@@ -926,7 +1130,9 @@ export default function MainInteraction() {
         ])
 
         await new Promise((resolve) => setTimeout(resolve, 500))
+
         updateTranscript('jordan_instruction_spoken', JORDAN_INSTRUCTION)
+
         setIsJordanWorkspaceOpen(true)
         playGesture('lookright')
 
@@ -943,30 +1149,84 @@ export default function MainInteraction() {
         }
 
         setJordanSubtitle('')
+      } else if (alexHandlesSensemaking && !alexSensemakingInstructionSpoken) {
+        setAlexSensemakingInstructionSpoken(true)
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            id: uid(),
+            from: 'alex',
+            text: ALEX_INSTRUCTION_SENSEMAKING,
+            isInstruction: true,
+          },
+        ])
+
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        updateTranscript(
+          'alex_sensemaking_instruction_spoken',
+          ALEX_INSTRUCTION_SENSEMAKING,
+        )
+
+        setIsJordanWorkspaceOpen(true)
+
+        try {
+          await speakWithLipsyncStatic(
+            '/intro-voices/doctor-audio-ALEX_INSTRUCTION_SENSEMAKING.mp3',
+            '/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_SENSEMAKING.json',
+            'doctor',
+            true,
+            setAlexSubtitle,
+          )
+        } catch (error) {
+          console.error('Alex sensemaking instruction speech failed:', error)
+        }
+
+        setAlexSubtitle('')
       }
     } catch (error) {
       console.error('Jordan guidance speech failed:', error)
     } finally {
       setJordanSubtitle('')
-      playGesture('stopCompanionGesture')
-      playGesture('stopAlexGesture')
+      setAlexSubtitle('')
+
+      if (hasSeparateSensemakingCharacter) {
+        playGesture('stopCompanionGesture')
+        playGesture('stopAlexGesture')
+        playGesture('lookright')
+      } else {
+        playGesture('stopAlexGesture')
+      }
+
       setIsJordanWorkspaceOpen(true)
-      playGesture('lookright')
     }
   }
 
   function dismissJordanGuidance() {
     if (jordanGuidance) {
-      updateTranscript('jordan_workspace_action', 'closed Jordan workspace', {
-        action: 'closed',
-        guidance_id: jordanGuidance.id,
-        guidance_type: jordanGuidance.guidance_type,
-      })
+      const sensemakingActor = alexHandlesSensemaking ? 'alex' : 'jordan'
+
+      updateTranscript(
+        'sensemaking_workspace_action',
+        `closed ${sensemakingActor} sensemaking workspace`,
+        {
+          action: 'closed',
+          sensemaking_actor: sensemakingActor,
+          guidance_id: jordanGuidance.id,
+          guidance_type: jordanGuidance.guidance_type,
+        },
+      )
     }
 
+    setIsSensemakingActive(false)
     setIsJordanWorkspaceOpen(false)
-    setIsJordanActive(false)
-    playGesture('stopCompanionGesture')
+    setIsAlexActive(false)
+
+    if (hasSeparateSensemakingCharacter) {
+      playGesture('stopCompanionGesture')
+      setIsJordanActive(false)
+    }
 
     playGesture('stopAlexGesture')
   }
@@ -1003,14 +1263,16 @@ export default function MainInteraction() {
     clearIntroCues()
     setIsAlexActive(true)
     playGesture('startSwiping')
-    if (hasJordan) {
-      playGesture('jordanLookAtAlex')
-    }
     setShowCards(true)
     setAlexSources([])
     setAlexTalkingPoints([])
-    if (hasJordan) {
-      clearJordanUI()
+
+    if (hasSensemaking) {
+      clearSensemakingUI()
+    }
+
+    if (hasSeparateSensemakingCharacter) {
+      playGesture('jordanLookAtAlex')
     }
 
     setIsForaging(true)
@@ -1030,10 +1292,16 @@ export default function MainInteraction() {
 
     try {
       const history = messages
-        .filter((m) => m.from === 'user' || m.from === 'alex')
-        .map((m) => ({
-          role: m.from === 'user' ? 'user' : 'assistant',
-          content: m.text,
+        .filter(
+          (message) =>
+            !message.isIntro &&
+            !message.isInstruction &&
+            !message.isSensemaking &&
+            (message.from === 'user' || message.from === 'alex'),
+        )
+        .map((message) => ({
+          role: message.from === 'user' ? 'user' : 'assistant',
+          content: message.text,
         }))
       const response = await fetch(`${BASE_URL}/rag-chat`, {
         method: 'POST',
@@ -1055,7 +1323,7 @@ export default function MainInteraction() {
 
       let jordanTurnPromise = Promise.resolve(null)
 
-      if (hasJordan) {
+      if (hasSensemaking) {
         setIsJordanGuidanceLoading(true)
 
         const jordanModelSnapshot = jordanConversationModel
@@ -1122,6 +1390,10 @@ export default function MainInteraction() {
       setAlexSources(data.sources || [])
       setIsAlexActive(false)
 
+      if (hasSeparateSensemakingCharacter) {
+        playGesture('thinking')
+      }
+
       // After alex's first answer explain the sources stuff
       if (!alexInstructionSpoken) {
         setAlexInstructionSpoken(true)
@@ -1131,19 +1403,19 @@ export default function MainInteraction() {
           {
             id: uid(),
             from: 'alex',
-            text: ALEX_INSTRUCTION,
+            text: ALEX_INSTRUCTION_FORAGING,
             sources: [],
             isInstruction: true,
           },
         ])
 
-        updateTranscript('alex_instruction_spoken', ALEX_INSTRUCTION)
+        updateTranscript('alex_instruction_spoken', ALEX_INSTRUCTION_FORAGING)
 
         try {
           await new Promise((resolve) => setTimeout(resolve, 500))
           await speakWithLipsyncStatic(
-            '/intro-voices/doctor-audio-ALEX_INSTRUCTION.mp3',
-            '/intro-voices/doctor-timestamps-ALEX_INSTRUCTION.json',
+            '/intro-voices/doctor-audio-ALEX_INSTRUCTION_FORAGING.mp3',
+            '/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_FORAGING.json',
             'doctor',
             true,
             setAlexSubtitle,
@@ -1188,8 +1460,8 @@ export default function MainInteraction() {
           .find((detail) => detail.source_question === trimmed)
 
         /*
-         * Store the visible guidance separately. Jordan will speak it only
-         * when the workspace button is clicked for the first time.
+         * Store the visible guidance separately.
+         * The sensemaking character will present it when clicked.
          */
         const guidanceWithId = {
           id: uid(),
@@ -1233,45 +1505,52 @@ export default function MainInteraction() {
 
         setJordanGuidance(guidanceWithId)
         setIsJordanWorkspaceOpen(false)
-        playGesture('stopCompanionGesture')
 
-        updateTranscript('jordan_turn_updated', jordanTurnData.jordan_message, {
-          guidance_id: guidanceWithId.id,
-          guidance_type: jordanTurnData.guidance_type,
+        const sensemakingActor = alexHandlesSensemaking ? 'alex' : 'jordan'
 
-          user_question: trimmed,
-          alex_answer: data.answer,
-          for_message_id: alexMsgId,
+        updateTranscript(
+          'sensemaking_turn_updated',
+          jordanTurnData.jordan_message,
+          {
+            sensemaking_actor: sensemakingActor,
+            guidance_id: guidanceWithId.id,
+            guidance_type: jordanTurnData.guidance_type,
 
-          themes: updatedThemes,
-          latest_connection: latestConnection,
+            user_question: trimmed,
+            alex_answer: data.answer,
+            for_message_id: alexMsgId,
 
-          new_detail_id: newestDetail?.id || null,
-          new_detail_text: newestDetail?.text || null,
+            themes: updatedThemes,
+            latest_connection: latestConnection,
 
-          theme_id: guidanceWithId.theme_id,
-          theme_label: guidanceWithId.theme_label,
+            new_detail_id: newestDetail?.id || null,
+            new_detail_text: newestDetail?.text || null,
 
-          earlier_detail_id: latestConnection?.earlier_detail_id || null,
-          earlier_question_reference:
-            latestConnection?.earlier_question_reference || null,
+            theme_id: guidanceWithId.theme_id,
+            theme_label: guidanceWithId.theme_label,
 
-          connection_label: latestConnection?.label || null,
-          connection_text: latestConnection?.text || null,
-        })
+            earlier_detail_id: latestConnection?.earlier_detail_id || null,
+            earlier_question_reference:
+              latestConnection?.earlier_question_reference || null,
 
-        playGesture('thinking')
+            connection_label: latestConnection?.label || null,
+            connection_text: latestConnection?.text || null,
+          },
+        )
       }
 
-      if (hasJordan) {
+      if (hasSensemaking) {
         setIsJordanGuidanceLoading(false)
       }
     } catch (err) {
       console.error(err)
 
       setIsAlexActive(false)
-      if (hasJordan) {
+      if (hasSensemaking) {
         setIsJordanGuidanceLoading(false)
+      }
+      if (hasSeparateSensemakingCharacter) {
+        playGesture('stopCompanionGesture')
       }
       setIsForaging(false)
       setIsForagingFading(false)
@@ -1301,7 +1580,7 @@ export default function MainInteraction() {
 
           <h2>Clinical Trials Education</h2>
           <h1>
-            {hasJordan
+            {hasSeparateSensemakingCharacter
               ? 'Chat with Virtual Characters'
               : 'Chat with a Virtual Character'}
           </h1>
@@ -1310,7 +1589,7 @@ export default function MainInteraction() {
             In this activity, you'll learn about clinical trials with the help
             of{' '}
             <strong>
-              {hasJordan
+              {hasSeparateSensemakingCharacter
                 ? 'two virtual characters: Alex and Jordan'
                 : 'a virtual character: Alex'}
             </strong>
@@ -1324,7 +1603,7 @@ export default function MainInteraction() {
                 />
                 <p>Alex</p>
               </div>
-              {hasJordan && (
+              {hasSeparateSensemakingCharacter && (
                 <div>
                   <img
                     src={jordan}
@@ -1335,9 +1614,18 @@ export default function MainInteraction() {
                 </div>
               )}
             </div>
-            {hasJordan ? 'They' : 'Alex'} will provide{' '}
+            {hasSeparateSensemakingCharacter ? 'They' : 'Alex'} will provide{' '}
             <strong>general information</strong> and help you explore questions
-            about clinical trial participation.
+            about clinical trial participation. <br /> <br />
+            <strong>Remember</strong>: Imagine you are the person described in
+            the pre-survey. Ask the questions you would genuinely have if you
+            were in their situation.{' '}
+            <strong>
+              After your first question, a Finish button will appear.
+            </strong>{' '}
+            You may continue asking as many or as few questions as you'd like
+            until you feel you've experienced how the website can help someone
+            learn about clinical trial participation.
           </div>
 
           <div className="mi-start-instructions">
@@ -1404,7 +1692,11 @@ export default function MainInteraction() {
       <div className="tool-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>
-        <h1>Chat with Virtual Characters</h1>
+        <h1>
+          {hasSeparateSensemakingCharacter
+            ? 'Chat with Virtual Characters'
+            : 'Chat with a Virtual Character'}
+        </h1>
       </div>
       <button className="history-btn" onClick={() => setShowHistory(true)}>
         <FontAwesomeIcon icon={faCommentDots} size="sm" />
@@ -1420,7 +1712,8 @@ export default function MainInteraction() {
       <main className="mi-main">
         <section className="mi-chat-card">
           <AlexHeader
-            hasJordan={hasJordan}
+            alexHandlesSensemaking={alexHandlesSensemaking}
+            hasSeparateSensemakingCharacter={hasSeparateSensemakingCharacter}
             charactersReady={charactersReady}
             doctorRef={doctorRef}
             companionRef={companionRef}
@@ -1437,11 +1730,12 @@ export default function MainInteraction() {
             jordanGuidance={jordanGuidance}
             dismissJordanGuidance={dismissJordanGuidance}
             isJordanWorkspaceOpen={isJordanWorkspaceOpen}
-            onJordanClick={handleJordanClick}
+            onSensemakingClick={handleSensemakingClick}
             talkingPoints={alexTalkingPoints}
             jordanConversationModel={jordanConversationModel}
             savedResources={savedResources}
             onToggleSavedResource={handleToggleSavedResource}
+            isSensemakingActive={isSensemakingActive}
           />
 
           <ChatInput
@@ -1471,7 +1765,7 @@ export default function MainInteraction() {
           role="status"
           aria-live="polite"
           aria-label={
-            hasJordan
+            hasSeparateSensemakingCharacter
               ? 'Preparing the virtual characters'
               : 'Preparing the virtual character'
           }
@@ -1491,10 +1785,12 @@ export default function MainInteraction() {
             </div>
 
             <h2>
-              {hasJordan ? 'Preparing Alex and Jordan' : 'Preparing Alex'}
+              {hasSeparateSensemakingCharacter
+                ? 'Preparing Alex and Jordan'
+                : 'Preparing Alex'}
             </h2>
             <p>
-              {hasJordan
+              {hasSeparateSensemakingCharacter
                 ? 'Getting the virtual characters ready...'
                 : 'Getting the virtual character ready...'}
             </p>
@@ -1509,25 +1805,45 @@ export default function MainInteraction() {
 /* Render helpers                                                             */
 /* -------------------------------------------------------------------------- */
 
-function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
+function SensemakingExplorationCard({
+  guidance,
+  conversationModel,
+  onDismiss,
+}) {
   const themes = conversationModel?.themes || []
   const latestConnection = conversationModel?.latestConnection || null
 
   const [expandedThemeIds, setExpandedThemeIds] = useState(() => new Set())
 
+  const newThemeId = guidance?.detail_id
+    ? themes.find((theme) =>
+        (theme.details || []).some(
+          (detail) => detail.id === guidance.detail_id,
+        ),
+      )?.id || null
+    : null
+
   const currentThemeId =
-    guidance?.theme_id ||
-    latestConnection?.theme_id ||
-    themes[themes.length - 1]?.id ||
-    null
+    newThemeId || guidance?.theme_id || themes[themes.length - 1]?.id || null
+
+  const earlierThemeId = latestConnection?.earlier_detail_id
+    ? themes.find((theme) =>
+        (theme.details || []).some(
+          (detail) => detail.id === latestConnection.earlier_detail_id,
+        ),
+      )?.id || null
+    : null
 
   useEffect(() => {
-    if (!currentThemeId) return
+    const themeIdsToExpand = [currentThemeId, earlierThemeId].filter(Boolean)
 
-    // Whenever a new turn arrives, collapse older themes and
-    // automatically open only the theme relevant to this turn.
-    setExpandedThemeIds(new Set([currentThemeId]))
-  }, [currentThemeId, guidance?.detail_id])
+    setExpandedThemeIds(new Set(themeIdsToExpand))
+  }, [
+    currentThemeId,
+    earlierThemeId,
+    guidance?.detail_id,
+    latestConnection?.earlier_detail_id,
+  ])
 
   function toggleTheme(themeId) {
     setExpandedThemeIds((previous) => {
@@ -1561,7 +1877,7 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
           type="button"
           className="jordan-exploration-close"
           onClick={onDismiss}
-          aria-label="Close Jordan's workspace"
+          aria-label="Close sensemaking workspace"
         >
           <FontAwesomeIcon icon={faXmark} />
         </button>
@@ -1588,7 +1904,7 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
           <div className="jordan-theme-list">
             {themes.map((theme) => {
               const isExpanded = expandedThemeIds.has(theme.id)
-              const isCurrentTheme = theme.id === currentThemeId
+              const isCurrentTheme = theme.id === newThemeId
               const orderedDetails = [...(theme.details || [])].sort((a, b) => {
                 if (a.id === latestConnection?.earlier_detail_id) return -1
                 if (b.id === latestConnection?.earlier_detail_id) return 1
@@ -1651,15 +1967,6 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
 
                         return (
                           <div key={detail.id}>
-                            {showConnectionBridge && (
-                              <div className="jordan-theme-connection-bridge">
-                                <FontAwesomeIcon icon={faArrowRight} />
-                                <span>
-                                  {latestConnection.label || 'Builds on'}
-                                </span>
-                              </div>
-                            )}
-
                             <div
                               className={[
                                 'jordan-theme-detail',
@@ -1697,7 +2004,8 @@ function JordanExplorationCard({ guidance, conversationModel, onDismiss }) {
 }
 
 function AlexHeader({
-  hasJordan,
+  alexHandlesSensemaking,
+  hasSeparateSensemakingCharacter,
   charactersReady,
   doctorRef,
   companionRef,
@@ -1714,11 +2022,12 @@ function AlexHeader({
   jordanGuidance,
   dismissJordanGuidance,
   isJordanWorkspaceOpen,
-  onJordanClick,
+  onSensemakingClick,
   talkingPoints,
   jordanConversationModel,
   savedResources,
   onToggleSavedResource,
+  isSensemakingActive,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -1728,7 +2037,7 @@ function AlexHeader({
   return (
     <div
       className={`mi-chat-header mi-shared-character-stage
-    ${hasJordan ? '' : 'mi-shared-character-stage-solo'}
+    ${hasSeparateSensemakingCharacter ? '' : 'mi-shared-character-stage-solo'}
     ${charactersReady ? 'characters-ready' : 'characters-loading'}
     ${isAlexActive ? 'alex-speaking' : ''}
     ${isJordanActive ? 'jordan-speaking' : ''}
@@ -1741,12 +2050,12 @@ function AlexHeader({
 
       <div
         className={`mi-character-zone mi-character-zone-alex
-    ${!hasJordan ? 'mi-character-zone-alex-solo' : ''}
+    ${!hasSeparateSensemakingCharacter ? 'mi-character-zone-alex-solo' : ''}
     ${isAlexActive ? 'mi-character-zone-speaking' : ''}
     ${isJordanActive ? 'mi-character-zone-listening' : ''}
     ${
-      isAlexActive && !isForaging && !isForagingFading
-        ? 'mi-character-label-pulsing'
+      alexHandlesSensemaking && isJordanWorkspaceOpen
+        ? 'mi-character-zone-workspace-open'
         : ''
     }
   `}
@@ -1762,6 +2071,33 @@ function AlexHeader({
             </div>
           )}
 
+          {alexHandlesSensemaking &&
+            jordanGuidance &&
+            !isJordanWorkspaceOpen &&
+            !isAlexActive && (
+              <button
+                type="button"
+                className="jordan-workspace-trigger alex-workspace-trigger"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onSensemakingClick?.()
+                }}
+              >
+                <FontAwesomeIcon icon={faLightbulb} />
+                <span>How this information fits</span>
+              </button>
+            )}
+
+          {alexHandlesSensemaking &&
+            jordanGuidance &&
+            isJordanWorkspaceOpen && (
+              <SensemakingExplorationCard
+                guidance={jordanGuidance}
+                conversationModel={jordanConversationModel}
+                onDismiss={dismissJordanGuidance}
+              />
+            )}
+
           {isAlexActive && (isForaging || isForagingFading) && (
             <div
               className={`alex-foraging-layer ${
@@ -1775,7 +2111,9 @@ function AlexHeader({
 
               <div
                 className={`alex-foraging-card alex-foraging-card-2 ${
-                  hasJordan ? '' : 'alex-solo-foraging-card'
+                  hasSeparateSensemakingCharacter
+                    ? ''
+                    : 'alex-solo-foraging-card'
                 }`}
               >
                 <FontAwesomeIcon icon={faObjectGroup} />
@@ -1911,19 +2249,76 @@ function AlexHeader({
               </div>
             )}
 
+          {introCue?.character === 'alex' &&
+            introCue?.type === 'jordan-build-question' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-build-question',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faCircleQuestion}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faCubesStacked}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faArrowRight}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faLightbulb}
+                  size="2x"
+                />
+              </div>
+            )}
+
+          {introCue?.character === 'alex' &&
+            introCue?.type === 'jordan-help' && (
+              <div
+                className={introVisualClass(
+                  'jordan-intro-icon-group jordan-intro-visual jordan-intro-perspectives',
+                )}
+              >
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faHandPointer}
+                  size="2x"
+                />
+
+                <FontAwesomeIcon
+                  className="jordan-intro-icon jordan-intro-item"
+                  icon={faClipboardList}
+                  size="2x"
+                />
+              </div>
+            )}
+
           {talkingPoints?.length > 0 && (
-            <div className="alex-talking-points">
+            <div
+              className={`alex-talking-points ${
+                isSensemakingActive ? 'is-hidden' : ''
+              }`}
+            >
               {talkingPoints.slice(0, 3).map((point, index) => (
                 <div key={`${point}-${index}`} className="alex-talking-point">
                   <span className="alex-talking-point-number">{index + 1}</span>
-
                   <span>{point}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {uniqueSources.length > 0 && (
+          {!isSensemakingActive && sources?.length > 0 && (
             <div className="alex-source-panel">
               <div className="alex-source-panel-header">
                 <span className="alex-source-label">Sources</span>
@@ -1983,7 +2378,7 @@ function AlexHeader({
         </div>
       </div>
 
-      {hasJordan && (
+      {hasSeparateSensemakingCharacter && (
         <div
           className={`mi-character-zone mi-character-zone-jordan
           ${isJordanActive ? 'mi-character-zone-speaking' : ''}
@@ -2010,7 +2405,7 @@ function AlexHeader({
                 className="jordan-workspace-trigger"
                 onClick={(event) => {
                   event.stopPropagation()
-                  onJordanClick?.()
+                  onSensemakingClick?.()
                 }}
               >
                 <FontAwesomeIcon icon={faLightbulb} />
@@ -2093,7 +2488,7 @@ function AlexHeader({
               )}
 
             {jordanGuidance && isJordanWorkspaceOpen && (
-              <JordanExplorationCard
+              <SensemakingExplorationCard
                 guidance={jordanGuidance}
                 conversationModel={jordanConversationModel}
                 onDismiss={dismissJordanGuidance}
