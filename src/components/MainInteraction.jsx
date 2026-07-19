@@ -1046,6 +1046,7 @@ export default function MainInteraction() {
         playGesture('lookright')
         setIsJordanActive(true)
       } else {
+        playGesture('alexLookAtJordan')
         setIsAlexActive(true)
       }
 

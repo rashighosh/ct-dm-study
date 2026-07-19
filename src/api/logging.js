@@ -275,7 +275,7 @@ export async function logSummaryUrl(participantId, summaryUrl) {
   }
 }
 
-export async function logSummaryRequest(participantId, wantsSummary) {
+export async function logSummaryRequest(participantId, clicked_print_summary) {
   if (!participantId) {
     return {
       ok: false,

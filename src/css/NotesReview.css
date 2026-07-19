@@ -72,12 +72,14 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
+  justify-content: center;
   gap: 5rem;
 }
 
 .review-area > * {
   flex: 1;
   min-width: 0;
+  max-width: 55%;
 }
 
 .notes-review-section {
@@ -86,7 +88,7 @@
   gap: 1rem;
 }
 
-.notes-review-section .virtual-character {
+.virtual-character {
   height: 105px;
   width: 105px;
   border-radius: 50%;

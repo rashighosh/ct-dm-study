@@ -27,6 +27,8 @@ export default function NotesReview() {
     latestConnection: null,
   }
 
+  console.log('CONDITION IS', condition)
+
   const jordanThemes = jordanConversationModel.themes || []
 
   async function handlePrintSummary() {
@@ -49,7 +51,7 @@ export default function NotesReview() {
     setIsContinuing(true)
 
     window.location.href =
-      `https://ufl.qualtrics.com/jfe/form/SV_5d3HxZpa1fP1r2S` +
+      `https://ufl.qualtrics.com/jfe/form/SV_1YA3FWgZ1TQuNIa` +
       `?id=${encodeURIComponent(participantId)}` +
       `&c=${encodeURIComponent(condition)}`
   }
@@ -88,14 +90,27 @@ export default function NotesReview() {
             </button>
           </div>
 
+          {condition !== 2 && (
+            <img
+              src={alex}
+              className="virtual-character"
+              alt="alex character"
+            />
+          )}
+
           <div className="review-area">
             {savedResources.length > 0 && (
-              <section className="notes-review-section">
-                <img
-                  src={alex}
-                  className="virtual-character"
-                  alt="alex character"
-                />
+              <section
+                className={`notes-review-section ${condition === 0 ? 'single-character' : ''}`}
+              >
+                {condition === 2 && (
+                  <img
+                    src={alex}
+                    className="virtual-character"
+                    alt="alex character"
+                  />
+                )}
+
                 <div className="notes-review-section-header sources">
                   <FontAwesomeIcon icon={faBookmark} />
                   <h2>Saved Sources</h2>
@@ -150,11 +165,14 @@ export default function NotesReview() {
 
             {jordanThemes.length > 0 && (
               <section className="notes-review-section">
-                <img
-                  src={jordan}
-                  className="virtual-character"
-                  alt="jordan character"
-                />
+                {condition === 2 && (
+                  <img
+                    src={jordan}
+                    className="virtual-character"
+                    alt="jordan character"
+                  />
+                )}
+
                 <div className="notes-review-section-header notes">
                   <FontAwesomeIcon icon={faPenToSquare} />
                   <h2>Notes From Your Exploration</h2>

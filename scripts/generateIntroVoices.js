@@ -51,13 +51,13 @@ const JORDAN_INSTRUCTION =
   "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
 
 const ALEX_INSTRUCTION_SENSEMAKING =
-  "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
+  "This is where I'll keep track of important ideas and how they fit together as you chat with me. Remember, you can click on me at any time to take a look!"
 
 const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: ALEX_INSTRUCTION_FORAGING,
+    text: ALEX_INSTRUCTION_SENSEMAKING,
     character: 'doctor',
   }),
 })
@@ -65,11 +65,11 @@ const res = await fetch(`${BASE_URL}/tts`, {
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/doctor-audio-ALEX_INSTRUCTION_FORAGING.mp3',
+  'public/intro-voices/doctor-audio-ALEX_INSTRUCTION_SENSEMAKING.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_FORAGING.json',
+  'public/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_SENSEMAKING.json',
   JSON.stringify(timestamps, null, 2),
 )
 
