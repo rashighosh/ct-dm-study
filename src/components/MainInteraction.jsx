@@ -1198,6 +1198,7 @@ export default function MainInteraction() {
         playGesture('lookright')
       } else {
         playGesture('stopAlexGesture')
+        playGesture('alexLookAtJordan')
       }
 
       setIsJordanWorkspaceOpen(true)
