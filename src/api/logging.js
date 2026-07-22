@@ -1,6 +1,6 @@
-const BASE_URL = 'http://127.0.0.1:8000/pilot'
-// const BASE_URL =
-//   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws/pilot'
+// const BASE_URL = 'http://127.0.0.1:8000/pilot'
+const BASE_URL =
+  'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws/pilot'
 
 export async function logMainInteraction(participantId, transcript) {
   if (!participantId) return
@@ -33,6 +33,7 @@ const CONDITION_NAMES = {
   0: 'Single + Foraging',
   1: 'Single + Foraging + Sensemaking',
   2: 'Multiple + Foraging + Sensemaking',
+  3: 'Workspace Multiple + Foraging + Sensemaking',
 }
 
 export async function logSession(participantId, condition) {
