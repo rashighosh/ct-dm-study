@@ -1069,6 +1069,25 @@ class TalkingHead {
         // Look down
         'Neck.rotation': { x: 0.5, y: 0, z: 0 },
       },
+      thinkTurn: {
+        // Left side
+        'LeftShoulder.rotation': { x: 1.25, y: 0.084, z: -1.7 },
+        'LeftArm.rotation': { x: 1.364, y: 0.4, z: 0.3 },
+        'LeftForeArm.rotation': { x: 0.75, y: 1.1, z: 1 },
+        'LeftHand.rotation': { x: 0.104, y: 0.5, z: -0.174 },
+
+        // Right side
+        'RightShoulder.rotation': { x: 1.5, y: 0, z: 1.7 },
+        'RightArm.rotation': { x: 1.273, y: -0.352, z: -0.7 },
+        'RightForeArm.rotation': { x: -0.1, y: -0.031, z: -2 },
+        'RightHand.rotation': { x: 1, y: 0.1, z: -1 },
+
+        // Look down
+        'Neck.rotation': { x: 0.1, y: 0.1, z: 0 },
+        'Spine.rotation': { x: -0.123, y: 0.15, z: 0.018 },
+        'Spine1.rotation': { x: 0.002, y: 0.3, z: -0.001 },
+        'Hips.rotation': { x: 0, y: 0.75, z: 0 },
+      },
       lookdown: {
         // Look down
         'Neck.rotation': { x: 0.5, y: 0, z: 0 },

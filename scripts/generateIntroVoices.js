@@ -39,8 +39,12 @@ const JORDAN_INTRO_1 =
   "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process."
 const JORDAN_INTRO_2 =
   "As you explore, I'll keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+const JORDAN_INTRO_2_V2 =
+  "As you explore, I'll keep track of the information you discover and try to connect related ideas on this white board behind me."
 const JORDAN_INTRO_3 =
   "In between Alex answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
+const JORDAN_INTRO_3_V3 =
+  'In between Alex answering your questions, you can open the board to edit any notes I take.'
 const JORDAN_INTRO_4 =
   "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!"
 
@@ -57,19 +61,19 @@ const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: ALEX_INSTRUCTION_SENSEMAKING,
-    character: 'doctor',
+    text: JORDAN_INTRO_3_V3,
+    character: 'companion',
   }),
 })
 
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/doctor-audio-ALEX_INSTRUCTION_SENSEMAKING.mp3',
+  'public/intro-voices/companion-audio-JORDAN_INTRO_3_V3.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_SENSEMAKING.json',
+  'public/intro-voices/companion-timestamps-JORDAN_INTRO_3_V3.json',
   JSON.stringify(timestamps, null, 2),
 )
 

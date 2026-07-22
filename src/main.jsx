@@ -7,6 +7,7 @@ import GuidedInteraction from './components/GuidedInteraction.jsx'
 import PersonaChat from './components/PersonaChat.jsx'
 import GoalSetting from './components/GoalSetting.jsx'
 import MainInteraction from './components/MainInteraction.jsx'
+import MainInteraction1 from './components/MainInteraction1.jsx'
 import NotesReview from './components/NotesReview'
 
 createRoot(document.getElementById('root')).render(
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')).render(
       <Route path="/trials-layout" element={<TrialLayout />} />
       <Route path="/guided-interaction" element={<GuidedInteraction />} />
       <Route path="/notes-review" element={<NotesReview />} />
+      <Route path="/interact" element={<MainInteraction1 />} />
     </Routes>
   </BrowserRouter>,
 )
