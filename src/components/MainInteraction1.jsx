@@ -448,13 +448,18 @@ export default function MainInteraction() {
   const [jordanConversationModel, setJordanConversationModel] = useState(() => {
     const savedModel = savedSession?.jordanConversationModel
 
-    /*
-     * Restore only the new theme-based shape.
-     * Old sessions may still contain turnNotes/runningSummary.
-     */
     if (Array.isArray(savedModel?.themes)) {
+      const cleanedThemes = savedModel.themes.map((theme) => ({
+        ...theme,
+        details: (theme.details || []).map((detail) => ({
+          ...detail,
+          source_question: detail.source_question ?? '',
+          source_answer: detail.source_answer ?? '',
+        })),
+      }))
+
       return {
-        themes: savedModel.themes,
+        themes: cleanedThemes,
         latestConnection: savedModel.latestConnection ?? null,
       }
     }
@@ -1571,6 +1576,9 @@ export default function MainInteraction() {
             console.error('Jordan turn update failed:', error)
             return null
           })
+          .finally(() => {
+            setIsJordanGuidanceLoading(false)
+          })
       }
 
       console.log('Sources', data.sources)
@@ -1817,10 +1825,6 @@ export default function MainInteraction() {
             connection_text: latestConnection?.text || null,
           },
         )
-      }
-
-      if (hasSensemaking) {
-        setIsJordanGuidanceLoading(false)
       }
     } catch (err) {
       console.error(err)
