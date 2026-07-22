@@ -993,8 +993,8 @@ export default function MainInteraction() {
     setJordanGuidance(null)
     setIsJordanGuidanceLoading(false)
     setIsJordanWorkspaceOpen(false)
+    setIsSensemakingActive(false)
 
-    // For when Jordan is the distributed sensemaking character
     if (hasSeparateSensemakingCharacter) {
       playGesture('stopCompanionGesture')
     }
@@ -1378,7 +1378,6 @@ export default function MainInteraction() {
   }
 
   async function handleWorkspaceToggle() {
-    // First opening: Jordan explains the workspace before it appears
     if (!isJordanWorkspaceOpen && !jordanInstructionSpoken) {
       await handleSensemakingClick()
       return
@@ -1401,7 +1400,8 @@ export default function MainInteraction() {
       )
 
       if (willOpen) {
-        // Stop Jordan's current gesture and leave her still
+        setIsSensemakingActive(true)
+
         playGesture('stopCompanionGesture')
         setIsJordanActive(false)
 
@@ -1412,6 +1412,8 @@ export default function MainInteraction() {
           console.error('Sensemaking click count update failed:', error)
         })
       } else {
+        setIsSensemakingActive(false)
+
         playGesture('stopCompanionGesture')
         setIsJordanActive(false)
         setIsAlexActive(false)
@@ -1542,11 +1544,34 @@ export default function MainInteraction() {
       })
 
       const data = await response.json()
-      console.log('DATA SOURCES ARE', data.sources)
+
+      if (!response.ok) {
+        throw new Error(
+          `Alex request failed: ${response.status} ${JSON.stringify(data)}`,
+        )
+      }
 
       if (!data.answer) {
         throw new Error('Alex response did not include an answer.')
       }
+
+      const nextSources = Array.isArray(data.sources) ? data.sources : []
+
+      const nextTalkingPoints = Array.isArray(data.talking_points)
+        ? data.talking_points
+        : []
+
+      console.log('[RAG CHAT V2 RESPONSE]', {
+        status: response.status,
+        answer: data.answer,
+        answerScope: data.answer_scope,
+        sourceCount: nextSources.length,
+        talkingPointCount: nextTalkingPoints.length,
+        sources: nextSources,
+        talkingPoints: nextTalkingPoints,
+      })
+
+      setIsSensemakingActive(false)
 
       let jordanTurnPromise = Promise.resolve(null)
 
@@ -1590,15 +1615,16 @@ export default function MainInteraction() {
         () => {
           updateTranscript('alex_spoken', data.answer, {
             message_id: alexMsgId,
-            sources: data.sources || [],
-            talking_points: data.talking_points || [],
+            sources: nextSources,
+            talking_points: nextTalkingPoints,
             confidence: data.confidence ?? null,
             answer_scope: data.answer_scope || 'general_answer',
           })
           // This runs when the audio is ready and Alex is about to speak.
+
+          setAlexTalkingPoints(nextTalkingPoints)
           setShowCards(false)
           playGesture('stopSwiping')
-          setAlexTalkingPoints(data.talking_points || [])
 
           setIsForagingFading(true)
 
@@ -1613,8 +1639,8 @@ export default function MainInteraction() {
               id: alexMsgId,
               from: 'alex',
               text: data.answer,
-              talkingPoints: data.talking_points || [],
-              sources: data.sources || [],
+              talkingPoints: nextTalkingPoints,
+              sources: nextSources,
               explanation: data.relevance_explanation,
               confidence: data.confidence,
               answer_scope: data.answer_scope || 'general_answer',
@@ -1623,10 +1649,9 @@ export default function MainInteraction() {
         },
         setAlexSubtitle,
       )
-
+      setAlexSources(nextSources)
       setAlexSubtitle('')
       playGesture('stopAlexGesture')
-      setAlexSources(data.sources || [])
       setIsAlexActive(false)
 
       if (hasSeparateSensemakingCharacter) {

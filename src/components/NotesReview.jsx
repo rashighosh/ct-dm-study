@@ -90,7 +90,7 @@ export default function NotesReview() {
             </button>
           </div>
 
-          {condition !== 2 && (
+          {condition !== 2 && condition !== 3 && (
             <img
               src={alex}
               className="virtual-character"
@@ -103,7 +103,7 @@ export default function NotesReview() {
               <section
                 className={`notes-review-section ${condition === 0 ? 'single-character' : ''}`}
               >
-                {condition === 2 && (
+                {(condition === 2 || condition === 3) && (
                   <img
                     src={alex}
                     className="virtual-character"
@@ -165,7 +165,7 @@ export default function NotesReview() {
 
             {jordanThemes.length > 0 && (
               <section className="notes-review-section">
-                {condition === 2 && (
+                {(condition === 2 || condition === 3) && (
                   <img
                     src={jordan}
                     className="virtual-character"
