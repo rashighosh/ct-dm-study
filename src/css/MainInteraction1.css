@@ -2240,13 +2240,14 @@ span.alex-source-card-badge {
 .main-interaction1
   .mi-character-content.mi-character-zone-alex-single
   .jordan-live-workspace {
-  right: -17.5rem;
+  right: -5rem;
 }
 
 .main-interaction1
   .mi-character-content.mi-character-zone-alex-single
-  .jordan-live-workspace.is-open {
-  right: -9rem;
+  .jordan-live-workspace
+  .jordan-live-workspace-header {
+  justify-content: space-between;
 }
 
 .main-interaction1
