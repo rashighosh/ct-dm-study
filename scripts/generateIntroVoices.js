@@ -29,8 +29,12 @@ const ALEX_INTRO_4 =
   "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
 const ALEX_INTRO_4_1_FORAGING =
   "As you explore, I'll also keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+const ALEX_INTRO_4_1_FORAGING_V2 =
+  "As you explore, I'll also keep track of the information you discover and organize related ideas on the whiteboard behind me."
 const ALEX_INTRO_4_2_FORAGING =
   "In between me answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
+const ALEX_INTRO_4_2_FORAGING_V2 =
+  'In between me answering your questions, you can open the board to edit any notes I take.'
 const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
 const ALEX_INTRO_5_FORAGING_COMBINED =
   "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!"
@@ -61,19 +65,19 @@ const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: JORDAN_INTRO_3_V3,
-    character: 'companion',
+    text: ALEX_INTRO_4_2_FORAGING_V2,
+    character: 'doctor',
   }),
 })
 
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/companion-audio-JORDAN_INTRO_3_V3.mp3',
+  'public/intro-voices/doctor-audio-ALEX_INTRO_4_2_FORAGING_V2.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/companion-timestamps-JORDAN_INTRO_3_V3.json',
+  'public/intro-voices/doctor-timestamps-ALEX_INTRO_4_2_FORAGING_V2.json',
   JSON.stringify(timestamps, null, 2),
 )
 

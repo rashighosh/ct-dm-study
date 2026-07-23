@@ -2229,11 +2229,47 @@ span.alex-source-card-badge {
 }
 
 /* Pull both characters closer to the center by default */
-.mi-character-zone-alex .mi-character-content {
+.main-interaction1 .mi-character-zone-alex .mi-character-content {
   transform: translateX(15%);
 }
 
-.mi-character-zone-jordan .mi-character-content {
+.main-interaction1 .mi-character-content.mi-character-zone-alex-single {
+  transform: none;
+}
+
+.main-interaction1
+  .mi-character-zone-alex
+  .mi-character-content.mi-character-zone-alex-single
+  .alex-talking-points {
+  top: 19%;
+  left: 1rem;
+}
+
+/* Condition 4: Alex stands in front of the whiteboard normally. */
+.mi-character-zone-alex .virtual-doctor {
+  position: relative;
+  z-index: 2;
+}
+
+/* Keep Alex labels and subtitles above both Alex and the board. */
+.mi-character-zone-alex .mi-character-label,
+.mi-character-zone-alex .character-subtitle,
+.mi-character-zone-alex .alex-intro-visual-card {
+  z-index: 6;
+}
+
+/* When the whiteboard is opened, bring it in front of Alex. */
+.mi-character-zone-alex.mi-character-zone-workspace-open
+  .jordan-live-workspace {
+  z-index: 4;
+}
+
+/* Alex remains visible behind the opened board. */
+.mi-character-zone-alex.mi-character-zone-workspace-open .virtual-doctor {
+  z-index: 2;
+}
+
+.main-interaction1 .mi-character-zone-jordan .mi-character-content {
   transform: translateX(-15%);
 }
 

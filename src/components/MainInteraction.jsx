@@ -1690,7 +1690,7 @@ export default function MainInteraction() {
   }
 
   return (
-    <div className="mi-root">
+    <div className="mi-root main-interaction">
       <div className="tool-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>

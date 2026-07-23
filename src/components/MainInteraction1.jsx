@@ -74,8 +74,12 @@ const ALEX_INTRO_4 =
   "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
 const ALEX_INTRO_4_1_FORAGING =
   "As you explore, I'll also keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+const ALEX_INTRO_4_1_FORAGING_V2 =
+  "As you explore, I'll also keep track of the information you discover and organize related ideas on the whiteboard behind me."
 const ALEX_INTRO_4_2_FORAGING =
   "In between me answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
+const ALEX_INTRO_4_2_FORAGING_V2 =
+  'In between me answering your questions, you can open the board to edit any notes I take.'
 const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
 const ALEX_INTRO_5_FORAGING_COMBINED =
   "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!"
@@ -179,6 +183,37 @@ const ALEX_INTROS_COMBINED = [
   },
 ]
 
+const ALEX_INTROS_COMBINED_WORKSPACE = [
+  {
+    key: 'ALEX_INTRO_1_FORAGING_COMBINED',
+    text: ALEX_INTRO_1_FORAGING_COMBINED,
+  },
+  {
+    key: 'ALEX_INTRO_2',
+    text: ALEX_INTRO_2,
+  },
+  {
+    key: 'ALEX_INTRO_3',
+    text: ALEX_INTRO_3,
+  },
+  {
+    key: 'ALEX_INTRO_4',
+    text: ALEX_INTRO_4,
+  },
+  {
+    key: 'ALEX_INTRO_4_1_FORAGING_V2',
+    text: ALEX_INTRO_4_1_FORAGING_V2,
+  },
+  {
+    key: 'ALEX_INTRO_4_2_FORAGING_V2',
+    text: ALEX_INTRO_4_2_FORAGING_V2,
+  },
+  {
+    key: 'ALEX_INTRO_5_FORAGING_COMBINED',
+    text: ALEX_INTRO_5_FORAGING_COMBINED,
+  },
+]
+
 const JORDAN_INTROS = [
   {
     key: 'JORDAN_INTRO_1',
@@ -245,7 +280,6 @@ const INTRO_VISUAL_TIMELINE = {
         cue: { type: 'jordan-build-question' },
       },
     ],
-
     ALEX_INTRO_4_2_FORAGING: [
       {
         delay: 1800,
@@ -380,6 +414,7 @@ export default function MainInteraction() {
     COMBINED: 1,
     DISTRIBUTED: 2,
     DISTRIBUTED_WORKSPACE: 3,
+    COMBINED_WORKSPACE: 4,
   }
 
   const validConditions = Object.values(CONDITION)
@@ -392,18 +427,31 @@ export default function MainInteraction() {
 
   const isCombinedCondition = condition === CONDITION.COMBINED
 
-  const isDistributedCondition =
-    condition === CONDITION.DISTRIBUTED ||
-    condition === CONDITION.DISTRIBUTED_WORKSPACE
+  const isDistributedCondition = condition === CONDITION.DISTRIBUTED
 
   const isDistributedWorkspaceCondition =
     condition === CONDITION.DISTRIBUTED_WORKSPACE
 
+  const isCombinedWorkspaceCondition =
+    condition === CONDITION.COMBINED_WORKSPACE
+
+  // ---------------------------------------------------------------------
   // Capabilities
+  // ---------------------------------------------------------------------
+
   const hasSensemaking = !isForagingOnlyCondition
-  const hasSeparateSensemakingCharacter = isDistributedCondition
-  const alexHandlesSensemaking = isCombinedCondition
-  const hasJordanWorkspace = isDistributedWorkspaceCondition
+
+  // Jordan exists only in conditions 2 and 3.
+  const hasSeparateSensemakingCharacter =
+    isDistributedCondition || isDistributedWorkspaceCondition
+
+  // Alex performs sensemaking in conditions 1 and 4.
+  const alexHandlesSensemaking =
+    isCombinedCondition || isCombinedWorkspaceCondition
+
+  // The new whiteboard exists in conditions 3 and 4.
+  const hasJordanWorkspace =
+    isDistributedWorkspaceCondition || isCombinedWorkspaceCondition
 
   // ---------------------------------------------------------------------
   // END HANDLING/DETERMINING OF CONDITIONS
@@ -497,6 +545,7 @@ export default function MainInteraction() {
   const [alexSources, setAlexSources] = useState([])
   const [alexTalkingPoints, setAlexTalkingPoints] = useState([])
   const [isAlexActive, setIsAlexActive] = useState(false)
+  const [isAlexSpeaking, setIsAlexSpeaking] = useState(false)
   const [isJordanActive, setIsJordanActive] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [input, setInput] = useState(savedSession?.input ?? '')
@@ -717,9 +766,11 @@ export default function MainInteraction() {
 
         const alexIntros = hasSeparateSensemakingCharacter
           ? ALEX_INTROS_DISTRIBUTED
-          : alexHandlesSensemaking
-            ? ALEX_INTROS_COMBINED
-            : ALEX_INTROS_FORAGING_ONLY
+          : isCombinedWorkspaceCondition
+            ? ALEX_INTROS_COMBINED_WORKSPACE
+            : alexHandlesSensemaking
+              ? ALEX_INTROS_COMBINED
+              : ALEX_INTROS_FORAGING_ONLY
 
         for (const [index, intro] of alexIntros.entries()) {
           const introNumber = index + 1
@@ -746,6 +797,17 @@ export default function MainInteraction() {
 
           scheduleIntroVisuals('alex', introFileName)
 
+          let whiteboardRevealTimer = null
+
+          if (
+            isCombinedWorkspaceCondition &&
+            introFileName === 'ALEX_INTRO_4_1_FORAGING_V2'
+          ) {
+            whiteboardRevealTimer = setTimeout(() => {
+              setShowJordanWhiteboard(true)
+            }, 3000)
+          }
+
           await speakWithLipsyncStatic(
             `/intro-voices/doctor-audio-${introFileName}.mp3`,
             `/intro-voices/doctor-timestamps-${introFileName}.json`,
@@ -753,6 +815,11 @@ export default function MainInteraction() {
             true,
             setAlexSubtitle,
           )
+
+          if (whiteboardRevealTimer) {
+            clearTimeout(whiteboardRevealTimer)
+            setShowJordanWhiteboard(true)
+          }
 
           clearIntroCues()
         }
@@ -1175,6 +1242,72 @@ export default function MainInteraction() {
     }
 
     /*
+     * Condition 4:
+     * On the first board click, Alex explains the workspace and opens it.
+     */
+    if (isCombinedWorkspaceCondition && !alexSensemakingInstructionSpoken) {
+      setIsSensemakingActive(true)
+      setIsAlexActive(true)
+
+      playGesture('stopAlexGesture')
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          id: uid(),
+          from: 'alex',
+          text: ALEX_INSTRUCTION_SENSEMAKING,
+          isInstruction: true,
+        },
+      ])
+
+      updateTranscript(
+        'sensemaking_workspace_action',
+        'opened alex sensemaking workspace',
+        {
+          action: 'opened',
+          interaction_type: 'workspace',
+          interaction_source: 'workspace_button',
+          sensemaking_actor: 'alex',
+          first_workspace_click: true,
+        },
+      )
+
+      updateTranscript(
+        'alex_sensemaking_instruction_spoken',
+        ALEX_INSTRUCTION_SENSEMAKING,
+      )
+
+      incrementInteractionCount(participantId, 'sensemaking_click_count').catch(
+        (error) => {
+          console.error('Sensemaking click count update failed:', error)
+        },
+      )
+
+      setAlexSensemakingInstructionSpoken(true)
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 500))
+
+        await speakWithLipsyncStatic(
+          '/intro-voices/doctor-audio-ALEX_INSTRUCTION_SENSEMAKING.mp3',
+          '/intro-voices/doctor-timestamps-ALEX_INSTRUCTION_SENSEMAKING.json',
+          'doctor',
+          true,
+          setAlexSubtitle,
+        )
+      } catch (error) {
+        console.error('Alex sensemaking instruction speech failed:', error)
+      } finally {
+        setAlexSubtitle('')
+        setIsAlexActive(false)
+        playGesture('stopAlexGesture')
+        setIsJordanWorkspaceOpen(true)
+      }
+
+      return
+    }
+
+    /*
      * Normal Jordan guidance requires guidance to be available.
      */
     if (!jordanGuidance) return
@@ -1364,7 +1497,10 @@ export default function MainInteraction() {
         }
       } else {
         playGesture('stopAlexGesture')
-        playGesture('alexLookAtJordan')
+
+        if (!isCombinedWorkspaceCondition) {
+          playGesture('alexLookAtJordan')
+        }
       }
 
       if (hasJordanWorkspace || alexHandlesSensemaking) {
@@ -1378,49 +1514,72 @@ export default function MainInteraction() {
   }
 
   async function handleWorkspaceToggle() {
-    if (!isJordanWorkspaceOpen && !jordanInstructionSpoken) {
+    // Condition 4: Alex explains the board on its first opening.
+    if (
+      isCombinedWorkspaceCondition &&
+      !isJordanWorkspaceOpen &&
+      !alexSensemakingInstructionSpoken
+    ) {
       await handleSensemakingClick()
       return
     }
 
-    setIsJordanWorkspaceOpen((current) => {
-      const willOpen = !current
+    // Condition 3: Jordan explains the board on its first opening.
+    if (
+      !isCombinedWorkspaceCondition &&
+      !isJordanWorkspaceOpen &&
+      !jordanInstructionSpoken
+    ) {
+      await handleSensemakingClick()
+      return
+    }
 
-      updateTranscript(
-        'sensemaking_workspace_action',
-        `${willOpen ? 'opened' : 'closed'} jordan sensemaking workspace`,
-        {
-          action: willOpen ? 'opened' : 'closed',
-          interaction_type: 'workspace',
-          interaction_source: 'workspace_button',
-          sensemaking_actor: 'jordan',
-          guidance_id: jordanGuidance?.id ?? null,
-          guidance_type: jordanGuidance?.guidance_type ?? null,
-        },
-      )
+    const willOpen = !isJordanWorkspaceOpen
+    const sensemakingActor = alexHandlesSensemaking ? 'alex' : 'jordan'
 
-      if (willOpen) {
-        setIsSensemakingActive(true)
+    setIsJordanWorkspaceOpen(willOpen)
 
-        playGesture('stopCompanionGesture')
-        setIsJordanActive(false)
+    updateTranscript(
+      'sensemaking_workspace_action',
+      `${willOpen ? 'opened' : 'closed'} ${sensemakingActor} sensemaking workspace`,
+      {
+        action: willOpen ? 'opened' : 'closed',
+        interaction_type: 'workspace',
+        interaction_source: 'workspace_button',
+        sensemaking_actor: sensemakingActor,
+        guidance_id: jordanGuidance?.id ?? null,
+        guidance_type: jordanGuidance?.guidance_type ?? null,
+      },
+    )
 
-        incrementInteractionCount(
-          participantId,
-          'sensemaking_click_count',
-        ).catch((error) => {
-          console.error('Sensemaking click count update failed:', error)
-        })
-      } else {
-        setIsSensemakingActive(false)
+    if (willOpen) {
+      setIsSensemakingActive(true)
 
-        playGesture('stopCompanionGesture')
-        setIsJordanActive(false)
+      if (alexHandlesSensemaking) {
+        playGesture('stopAlexGesture')
         setIsAlexActive(false)
+      } else {
+        playGesture('stopCompanionGesture')
+        setIsJordanActive(false)
       }
 
-      return willOpen
-    })
+      incrementInteractionCount(participantId, 'sensemaking_click_count').catch(
+        (error) => {
+          console.error('Sensemaking click count update failed:', error)
+        },
+      )
+    } else {
+      setIsSensemakingActive(false)
+
+      if (alexHandlesSensemaking) {
+        playGesture('stopAlexGesture')
+      } else {
+        playGesture('stopCompanionGesture')
+      }
+
+      setIsJordanActive(false)
+      setIsAlexActive(false)
+    }
   }
 
   function dismissJordanGuidance() {
@@ -1608,47 +1767,52 @@ export default function MainInteraction() {
 
       console.log('Sources', data.sources)
 
-      await speakWithLipsync(
-        data.answer,
-        'doctor',
-        null,
-        () => {
-          updateTranscript('alex_spoken', data.answer, {
-            message_id: alexMsgId,
-            sources: nextSources,
-            talking_points: nextTalkingPoints,
-            confidence: data.confidence ?? null,
-            answer_scope: data.answer_scope || 'general_answer',
-          })
-          // This runs when the audio is ready and Alex is about to speak.
+      setIsAlexSpeaking(true)
 
-          setAlexTalkingPoints(nextTalkingPoints)
-          setShowCards(false)
-          playGesture('stopSwiping')
-
-          setIsForagingFading(true)
-
-          setTimeout(() => {
-            setIsForaging(false)
-            setIsForagingFading(false)
-          }, 450)
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: alexMsgId,
-              from: 'alex',
-              text: data.answer,
-              talkingPoints: nextTalkingPoints,
+      try {
+        await speakWithLipsync(
+          data.answer,
+          'doctor',
+          null,
+          () => {
+            updateTranscript('alex_spoken', data.answer, {
+              message_id: alexMsgId,
               sources: nextSources,
-              explanation: data.relevance_explanation,
-              confidence: data.confidence,
+              talking_points: nextTalkingPoints,
+              confidence: data.confidence ?? null,
               answer_scope: data.answer_scope || 'general_answer',
-            },
-          ])
-        },
-        setAlexSubtitle,
-      )
+            })
+
+            setAlexTalkingPoints(nextTalkingPoints)
+            setShowCards(false)
+            playGesture('stopSwiping')
+
+            setIsForagingFading(true)
+
+            setTimeout(() => {
+              setIsForaging(false)
+              setIsForagingFading(false)
+            }, 450)
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: alexMsgId,
+                from: 'alex',
+                text: data.answer,
+                talkingPoints: nextTalkingPoints,
+                sources: nextSources,
+                explanation: data.relevance_explanation,
+                confidence: data.confidence,
+                answer_scope: data.answer_scope || 'general_answer',
+              },
+            ])
+          },
+          setAlexSubtitle,
+        )
+      } finally {
+        setIsAlexSpeaking(false)
+      }
       setAlexSources(nextSources)
       setAlexSubtitle('')
       playGesture('stopAlexGesture')
@@ -1997,7 +2161,7 @@ export default function MainInteraction() {
   }
 
   return (
-    <div className="mi-root">
+    <div className="mi-root main-interaction1">
       <div className="tool-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>
@@ -2022,6 +2186,7 @@ export default function MainInteraction() {
         <section className="mi-chat-card">
           <AlexHeader
             alexHandlesSensemaking={alexHandlesSensemaking}
+            isCombinedWorkspaceCondition={isCombinedWorkspaceCondition}
             hasSeparateSensemakingCharacter={hasSeparateSensemakingCharacter}
             hasJordanWorkspace={hasJordanWorkspace}
             charactersReady={charactersReady}
@@ -2050,6 +2215,7 @@ export default function MainInteraction() {
             isSensemakingActive={isSensemakingActive}
             onWorkspaceAction={logWorkspaceAction}
             showJordanWhiteboard={showJordanWhiteboard}
+            isAlexSpeaking={isAlexSpeaking}
           />
 
           <ChatInput
@@ -2132,6 +2298,7 @@ function LiveJordanWorkspace({
   onToggleEditing,
   onUpdateConversationModel,
   onWorkspaceAction,
+  isCombinedWorkspaceCondition,
 }) {
   const themes = conversationModel?.themes || []
   const latestConnection = conversationModel?.latestConnection || null
@@ -2250,9 +2417,15 @@ function LiveJordanWorkspace({
       <div className="jordan-live-workspace-header">
         <div>
           <strong>Live Workspace Notes</strong>
-          <span>
-            I'll take notes here as you explore information with Alex!
-          </span>
+          {isCombinedWorkspaceCondition ? (
+            <span>
+              I'll take notes here as you explore information with me!
+            </span>
+          ) : (
+            <span>
+              I'll take notes here as you explore information with Alex!
+            </span>
+          )}
         </div>
 
         <button
@@ -2661,6 +2834,7 @@ function SensemakingExplorationCard({
 
 function AlexHeader({
   alexHandlesSensemaking,
+  isCombinedWorkspaceCondition,
   hasSeparateSensemakingCharacter,
   hasJordanWorkspace,
   charactersReady,
@@ -2689,6 +2863,7 @@ function AlexHeader({
   isSensemakingActive,
   onWorkspaceAction,
   showJordanWhiteboard,
+  isAlexSpeaking,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -2731,8 +2906,26 @@ function AlexHeader({
     }
   `}
       >
-        <div className="mi-character-content">
+        <div
+          className={`mi-character-content ${isCombinedWorkspaceCondition ? 'mi-character-zone-alex-single' : ''}`}
+        >
           {showCards && <SwipingCards />}
+
+          {isCombinedWorkspaceCondition &&
+            showJordanWhiteboard &&
+            !isForaging &&
+            !isForagingFading &&
+            (!isAlexSpeaking || isJordanWorkspaceOpen) && (
+              <LiveJordanWorkspace
+                conversationModel={jordanConversationModel}
+                guidance={jordanGuidance}
+                isOpen={isJordanWorkspaceOpen}
+                onToggleEditing={onToggleWorkspaceEditing}
+                onUpdateConversationModel={onUpdateJordanConversationModel}
+                onWorkspaceAction={onWorkspaceAction}
+                isCombinedWorkspaceCondition={isCombinedWorkspaceCondition}
+              />
+            )}
 
           <div className="virtual-doctor" id="virtualdoctor" ref={doctorRef} />
 
@@ -2743,6 +2936,7 @@ function AlexHeader({
           )}
 
           {alexHandlesSensemaking &&
+            !isCombinedWorkspaceCondition &&
             jordanGuidance &&
             !isJordanWorkspaceOpen &&
             !isAlexActive && (
@@ -2760,6 +2954,7 @@ function AlexHeader({
             )}
 
           {alexHandlesSensemaking &&
+            !isCombinedWorkspaceCondition &&
             jordanGuidance &&
             isJordanWorkspaceOpen && (
               <SensemakingExplorationCard
