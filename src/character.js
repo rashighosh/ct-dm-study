@@ -628,6 +628,15 @@ const STATIC_GESTURE_MAPS = {
       reset: false,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_4_1_FORAGING_V2.mp3': [
+    {
+      engine: 'native',
+      word: 'whiteboard',
+      gesture: 'leftGesture',
+      dur: 1.5,
+      reset: false,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_4_2_FORAGING.mp3': [
     {
       engine: 'native',
@@ -641,6 +650,15 @@ const STATIC_GESTURE_MAPS = {
       word: 'click',
       gesture: 'chest',
       dur: 1.5,
+      reset: false,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_4_2_FORAGING_V2.mp3': [
+    {
+      engine: 'native',
+      word: 'questions',
+      gesture: 'rightGesture',
+      dur: 2,
       reset: false,
     },
   ],

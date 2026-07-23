@@ -1299,7 +1299,6 @@ export default function MainInteraction() {
         console.error('Alex sensemaking instruction speech failed:', error)
       } finally {
         setAlexSubtitle('')
-        setIsAlexActive(false)
         playGesture('stopAlexGesture')
         setIsJordanWorkspaceOpen(true)
       }
@@ -1557,7 +1556,7 @@ export default function MainInteraction() {
 
       if (alexHandlesSensemaking) {
         playGesture('stopAlexGesture')
-        setIsAlexActive(false)
+        setIsAlexActive(true)
       } else {
         playGesture('stopCompanionGesture')
         setIsJordanActive(false)
@@ -3174,7 +3173,7 @@ function AlexHeader({
             <div
               className={`alex-talking-points ${
                 isSensemakingActive ? 'is-hidden' : ''
-              }`}
+              } ${isAlexActive ? 'lower' : ''}`}
             >
               {talkingPoints.slice(0, 3).map((point, index) => (
                 <div key={`${point}-${index}`} className="alex-talking-point">

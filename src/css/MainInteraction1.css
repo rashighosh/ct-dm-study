@@ -2238,10 +2238,30 @@ span.alex-source-card-badge {
 }
 
 .main-interaction1
+  .mi-character-content.mi-character-zone-alex-single
+  .jordan-live-workspace {
+  right: -17.5rem;
+}
+
+.main-interaction1
+  .mi-character-content.mi-character-zone-alex-single
+  .jordan-live-workspace.is-open {
+  right: -9rem;
+}
+
+.main-interaction1
   .mi-character-zone-alex
   .mi-character-content.mi-character-zone-alex-single
   .alex-talking-points {
-  top: 19%;
+  top: 12%;
+  left: 1rem;
+}
+
+.main-interaction1
+  .mi-character-zone-alex
+  .mi-character-content.mi-character-zone-alex-single
+  .alex-talking-points.lower {
+  top: 25%;
   left: 1rem;
 }
 
