@@ -2276,7 +2276,7 @@ span.alex-source-card-badge {
 .mi-character-zone-alex .mi-character-label,
 .mi-character-zone-alex .character-subtitle,
 .mi-character-zone-alex .alex-intro-visual-card {
-  z-index: 6;
+  z-index: 15;
 }
 
 /* When the whiteboard is opened, bring it in front of Alex. */
