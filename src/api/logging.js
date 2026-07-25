@@ -59,10 +59,6 @@ export async function logSession(participantId, condition) {
     })
 
     const data = await response.json().catch(() => null)
-
-    console.log('log-session status:', response.status)
-    console.log('log-session response:', data)
-
     if (!response.ok) {
       console.error('Failed to log session:', response.status, data)
     }
@@ -178,9 +174,6 @@ export async function logIntroPart(participantId, introTranscript) {
 
   const result = await response.json().catch(() => null)
 
-  console.log('[log-intro-part] status:', response.status)
-  console.log('[log-intro-part] response:', result)
-
   if (!response.ok) {
     throw new Error(
       result?.detail ||
@@ -260,8 +253,6 @@ export async function logSummaryUrl(participantId, summaryUrl) {
       )
     }
 
-    console.log('Summary URL saved:', data)
-
     return {
       ok: true,
       data,
@@ -303,8 +294,6 @@ export async function logSummaryRequest(participantId, clicked_print_summary) {
         data?.detail || `Summary request logging failed: ${response.status}`,
       )
     }
-
-    console.log('Summary request saved:', data)
 
     return {
       ok: true,
