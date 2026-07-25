@@ -1764,8 +1764,6 @@ export default function MainInteraction() {
           })
       }
 
-      console.log('Sources', data.sources)
-
       setIsAlexSpeaking(true)
 
       try {
