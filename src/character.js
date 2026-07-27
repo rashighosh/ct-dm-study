@@ -93,6 +93,83 @@ export function stopCharacter() {
   head?.stop()
 }
 
+async function disposeTalkingHead(instance) {
+  if (!instance) return
+
+  // Stop current speech, gestures, and animation activity.
+  try {
+    instance.stop?.()
+  } catch (error) {
+    console.warn('Could not stop TalkingHead:', error)
+  }
+
+  try {
+    instance.stopGesture?.(0)
+  } catch (error) {
+    console.warn('Could not stop TalkingHead gesture:', error)
+  }
+
+  // Prefer the library's own cleanup method when available.
+  if (typeof instance.dispose === 'function') {
+    try {
+      await instance.dispose()
+      return
+    } catch (error) {
+      console.warn('TalkingHead dispose failed; using fallback cleanup:', error)
+    }
+  }
+
+  // Fallback cleanup for the underlying Three.js renderer.
+  try {
+    instance.renderer?.setAnimationLoop?.(null)
+    instance.renderer?.dispose?.()
+    instance.renderer?.forceContextLoss?.()
+  } catch (error) {
+    console.warn('Could not dispose TalkingHead renderer:', error)
+  }
+
+  try {
+    instance.controls?.dispose?.()
+  } catch (error) {
+    console.warn('Could not dispose TalkingHead controls:', error)
+  }
+
+  // Remove the old WebGL canvas.
+  try {
+    instance.renderer?.domElement?.remove()
+  } catch (error) {
+    console.warn('Could not remove TalkingHead canvas:', error)
+  }
+
+  // Release its audio context.
+  try {
+    if (instance.audioCtx && instance.audioCtx.state !== 'closed') {
+      await instance.audioCtx.close()
+    }
+  } catch (error) {
+    console.warn('Could not close TalkingHead audio context:', error)
+  }
+}
+
+export async function disposeCharacters() {
+  // Stop any persistent loops or stale subtitle callbacks.
+  isSwiping = false
+  subtitleRunId += 1
+  onSubtitleCallback = null
+
+  const doctor = head
+  const companion = head1
+
+  // Clear the shared references immediately so no new calls use old instances.
+  head = null
+  head1 = null
+
+  await Promise.allSettled([
+    disposeTalkingHead(doctor),
+    disposeTalkingHead(companion),
+  ])
+}
+
 // ============================================================
 // Gestures (TalkingHead built-in gesture system)
 // Mostly act on head1 (Jordan/companion); a couple act on head
@@ -320,6 +397,121 @@ function createSubtitleTimers({
   }
 
   return timers
+}
+
+// ============================================================
+// Preparing & queuing speech
+// ============================================================
+
+export async function prepareSpeech(text, character = 'doctor') {
+  const activeHead = character === 'companion' ? head1 : head
+
+  const ttsRes = await fetch(`${BASE_URL}/tts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, character }),
+  })
+
+  if (!ttsRes.ok) {
+    throw new Error(`TTS request failed (${ttsRes.status})`)
+  }
+
+  const { audio, timestamps: rawTimestamps = [] } = await ttsRes.json()
+
+  const timestamps = isMonotonic(rawTimestamps) ? rawTimestamps : []
+
+  const audioBytes = Uint8Array.from(atob(audio), (character) =>
+    character.charCodeAt(0),
+  )
+
+  const audioBuffer = await activeHead.audioCtx.decodeAudioData(
+    audioBytes.buffer,
+  )
+
+  return {
+    activeHead,
+    text,
+    timestamps,
+    audioBuffer,
+  }
+}
+
+export async function playPreparedSpeech({
+  prepared,
+  gesture = null,
+  onStart = null,
+  onSubtitle = null,
+}) {
+  const { activeHead, text, timestamps, audioBuffer } = prepared
+
+  const words = timestamps.map((item) =>
+    item.word.trim().replace(/[.,!?;:]/g, ''),
+  )
+
+  const wtimes = timestamps.map((item) => item.start * 1000)
+
+  const wdurations = timestamps.map((item) => (item.end - item.start) * 1000)
+
+  activeHead.stopGesture()
+
+  if (gesture) {
+    activeHead.playGesture(gesture, 1)
+  }
+
+  const runId = ++subtitleRunId
+  const subtitleTimers = []
+
+  if (onSubtitle) {
+    if (timestamps.length > 0) {
+      const wordsPerCaption = 8
+
+      for (let index = 0; index < timestamps.length; index += wordsPerCaption) {
+        const timer = window.setTimeout(() => {
+          if (runId !== subtitleRunId) return
+
+          const caption = timestamps
+            .slice(index, index + wordsPerCaption)
+            .map((item) => item.word)
+            .join(' ')
+
+          onSubtitle(caption)
+        }, timestamps[index].start * 1000)
+
+        subtitleTimers.push(timer)
+      }
+    } else {
+      onSubtitle(text)
+    }
+  }
+
+  const { markers, mtimes } = createSpeechGestures(activeHead, audioBuffer)
+
+  onStart?.()
+
+  activeHead.speakAudio(
+    {
+      audio: audioBuffer,
+      words,
+      wtimes,
+      wdurations,
+      markers,
+      mtimes,
+    },
+    { isRaw: true },
+    null,
+  )
+
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      subtitleTimers.forEach(window.clearTimeout)
+
+      if (runId === subtitleRunId) {
+        onSubtitle?.('')
+      }
+
+      resolve()
+    }, audioBuffer.duration * 1000)
+  })
 }
 
 // ============================================================
