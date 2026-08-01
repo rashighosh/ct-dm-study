@@ -175,7 +175,7 @@ const ADAPTIVE_INTRO_VISUAL_TIMELINE = {
   },
 }
 
-// const DEFAULT_BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL = 'http://127.0.0.1:8000'
 const BASE_URL =
   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
@@ -232,7 +232,7 @@ const getSourceKey = (source) =>
   source.url || source.title || source.file || source.source || source.id
 
 export default function AdaptiveInteraction() {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL
+  const baseUrl = BASE_URL
   const [searchParams] = useSearchParams()
 
   const condition = Number(searchParams.get('c') ?? 5)
