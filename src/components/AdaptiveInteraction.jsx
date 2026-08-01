@@ -265,6 +265,7 @@ export default function AdaptiveInteraction() {
   const introStartedRef = useRef(false)
   const introCueTimersRef = useRef([])
 
+  const [isAlexSearching, setIsAlexSearching] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isJordanUpdating, setIsJordanUpdating] = useState(false)
   const [isConsulting, setIsConsulting] = useState(false)
@@ -990,17 +991,30 @@ export default function AdaptiveInteraction() {
           break
         }
 
-        setConsultingDecision(part.route)
-        setConsultingSpeaker(isFactFinding ? 'alex' : 'jordan')
-
-        setIsConsulting(false)
-
         if (isFactFinding) {
+          /*
+           * Alex is ready to lead as soon as the route returns.
+           * Briefly show Alex's document/check decision before searching.
+           */
+          setConsultingDecision('fact_finding')
+          setConsultingSpeaker('alex')
+
+          await wait(350)
+
+          setIsConsulting(false)
           playGesture('stopAlexGesture')
-          setIsAlexSpeaking(true)
+          setIsAlexSearching(true)
           setShowCards(true)
           playGesture('startSwiping')
+          setActivity('alex', 'Searching trusted sources')
+          setActivity('jordan', 'Waiting for new information')
         }
+
+        /*
+         * For hypothesis testing, do not show Jordan's check yet.
+         * The /frame request is still generating what Jordan will say.
+         * Keep the characters consulting until jordan_before arrives.
+         */
 
         break
       }
@@ -1009,11 +1023,19 @@ export default function AdaptiveInteraction() {
         console.log('Information need', part.information_need || '')
         break
 
-      case 'jordan_before':
+      case 'jordan_before': {
         turnState.jordanBefore = part.message
 
         setActivity('jordan', 'Framing your question')
         setActivity('alex', 'Searching for information')
+
+        /*
+         * Jordan's framing response is now ready.
+         * Show the puzzle/check while the speech audio prepares.
+         */
+        setConsultingDecision('hypothesis_testing')
+        setConsultingSpeaker('jordan')
+        setIsConsulting(true)
 
         addMessage('jordan', part.message, 'question_framing')
 
@@ -1021,23 +1043,46 @@ export default function AdaptiveInteraction() {
           part.message,
           'jordan',
           () => {
+            // Jordan starts speaking
+            setIsConsulting(false)
+
+            stopCharactersLookingAtEachOther()
             setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
-            playGesture('alexLookAtJordan')
+
+            // Jordan faces the user
+            playGesture('stopCompanionGesture')
+
+            // Alex also turns back toward the user, then starts searching
+            playGesture('stopAlexGesture')
+            setShowCards(true)
+            playGesture('startSwiping')
+
+            setActivity('jordan', 'Framing your question')
+            setActivity('alex', 'Searching trusted sources')
           },
           () => {
+            // Jordan finishes speaking
             setJordanSubtitle('')
             setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
-            playGesture('jordanLookAtAlex')
-            setIsAlexSpeaking(true)
+
+            // Focus Alex and have Jordan turn toward him
+            setIsAlexSearching(true)
+            window.setTimeout(() => {
+              playGesture('jordanLookAtAlex')
+            }, 50)
+
             setActivity('jordan', 'Waiting for new information')
           },
         )
 
         break
+      }
 
       case 'search_query':
-        setShowCards(true)
-        playGesture('startSwiping')
+        if (!isAlexSearching) {
+          setShowCards(true)
+          playGesture('startSwiping')
+        }
         setActivity('alex', 'Searching trusted sources')
         setActivity('jordan', 'Waiting for new information')
         break
@@ -1076,6 +1121,7 @@ export default function AdaptiveInteraction() {
             }, 1050)
 
             setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
+            setIsAlexSearching(false)
             setShowCards(false)
             playGesture('stopSwiping')
             setAlexTurnComplete(true)
@@ -1575,7 +1621,7 @@ export default function AdaptiveInteraction() {
               workspaceOpen && 'workspace-open',
               workspacePhase === 'consulting' && 'workspace-consulting',
               workspacePhase === 'opening' && 'workspace-opening',
-              isAlexSpeaking && 'alex-focused',
+              (isAlexSpeaking || isAlexSearching) && 'alex-focused',
               isJordanSpeaking && 'jordan-focused',
               alexTurnComplete && 'alex-turn-complete',
               jordanTurnStarted && 'jordan-turn-started',
