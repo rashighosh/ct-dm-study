@@ -52,6 +52,21 @@ const JORDAN_INTRO_3_V3 =
 const JORDAN_INTRO_4 =
   "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!"
 
+const ADAPTIVE_ALEX_INTROS = [
+  "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation.",
+  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several reputable health resources such as the National Cancer Institute to answer questions about clinical trial participation.",
+  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use on this white board behind me that you can save to read later if you want.',
+  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
+  "Now, I'll hand it over to Jordan.",
+]
+
+const ADAPTIVE_JORDAN_INTROS = [
+  "Thanks! As Alex mentioned, I'm Jordan. I'm a virtual companion here to help keep track of your understanding throughout the conversation.",
+  "When Alex shares new information, I'll connect it to what we've already discussed on the white board behind me.",
+  "If Alex doesn't have enough information to answer a question, I'll note that down for you as well.",
+  "Now, whenever you're ready, let's start exploring clinical trial participation with Alex!",
+]
+
 const ALEX_INSTRUCTION_FORAGING =
   "Here are the sources I used. Remember, you can save any of them to read later, and I'll keep sharing my sources throughout our conversation."
 
@@ -65,19 +80,19 @@ const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: ALEX_INTRO_4_2_FORAGING_V2,
-    character: 'doctor',
+    text: ADAPTIVE_JORDAN_INTROS[3],
+    character: 'companion',
   }),
 })
 
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/doctor-audio-ALEX_INTRO_4_2_FORAGING_V2.mp3',
+  'public/intro-voices/companion-audio-JORDAN_INTRO_ADAPTIVE_4.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/doctor-timestamps-ALEX_INTRO_4_2_FORAGING_V2.json',
+  'public/intro-voices/companion-timestamps-JORDAN_INTRO_ADAPTIVE_4.json',
   JSON.stringify(timestamps, null, 2),
 )
 

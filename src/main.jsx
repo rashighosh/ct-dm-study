@@ -9,6 +9,7 @@ import GoalSetting from './components/GoalSetting.jsx'
 import MainInteraction from './components/MainInteraction.jsx'
 import MainInteraction1 from './components/MainInteraction1.jsx'
 import NotesReview from './components/NotesReview'
+import AdaptiveNotesReview from './components/AdaptiveNotesReview'
 import AdaptiveInteraction from './components/AdaptiveInteraction.jsx'
 
 createRoot(document.getElementById('root')).render(
@@ -21,8 +22,12 @@ createRoot(document.getElementById('root')).render(
       <Route path="/trials-layout" element={<TrialLayout />} />
       <Route path="/guided-interaction" element={<GuidedInteraction />} />
       <Route path="/notes-review" element={<NotesReview />} />
+      <Route
+        path="/interaction-notes-review"
+        element={<AdaptiveNotesReview />}
+      />
       <Route path="/interact" element={<MainInteraction1 />} />
-      <Route path="/sensemaking" element={<AdaptiveInteraction />} />
+      <Route path="/interaction" element={<AdaptiveInteraction />} />
     </Routes>
   </BrowserRouter>,
 )

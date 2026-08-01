@@ -20,6 +20,7 @@ let onSubtitleCallback = null
 let subtitleRunId = 0
 
 let isSwiping = false // kill switch for the swipe gesture loop
+let isWriting = false // kill switch for the swipe gesture loop
 
 // Resume suspended audio contexts on first user interaction (autoplay policy)
 document.addEventListener(
@@ -317,6 +318,42 @@ export function stopSwiping() {
   isSwiping = false
 }
 
+export async function startWriting() {
+  if (isWriting) return
+  isWriting = true
+
+  await playSmoothSequence(head1, [{ name: 'boardTurn', dur: 1.6, ms: 1800 }])
+  await playSmoothSequence(head1, [{ name: 'boardReady', dur: 0.6, ms: 800 }])
+
+  const strokeMoves = [
+    { name: 'writeStrokeA', dur: 0.3, ms: 650 },
+    { name: 'writeStrokeB', dur: 0.3, ms: 650 },
+  ]
+
+  let strokeCount = 0
+  while (isWriting) {
+    await playSmoothSequence(head1, strokeMoves)
+    strokeCount++
+    if (isWriting && strokeCount % 4 === 0) {
+      await playSmoothSequence(head1, [
+        { name: 'writeShift', dur: 0.4, ms: 900 },
+      ])
+    }
+  }
+  // No turn-back here anymore — stopWriting owns that now
+}
+
+export async function stopWriting() {
+  if (!isWriting) return
+  isWriting = false
+
+  await playSmoothSequence(head1, [{ name: 'armDown', dur: 0.6, ms: 800 }])
+  await playSmoothSequence(head1, [
+    { name: 'boardTurnBack', dur: 1.0, ms: 1200 },
+  ])
+  await playSmoothSequence(head1, [{ name: null, dur: 0, ms: 200 }])
+}
+
 // Registry mapping gesture names (strings) to their trigger functions,
 // used by playGesture() below to invoke a gesture dynamically by name.
 export const gestures = {
@@ -341,6 +378,8 @@ export const gestures = {
   stopCompanionGesture,
   stopAlexGesture,
   sourcesGesture,
+  startWriting,
+  stopWriting,
 }
 
 export function playGesture(name) {
@@ -690,6 +729,30 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 500,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_1.mp3': [
+    { engine: 'native', word: 'hi', gesture: 'handup', dur: 1.5, reset: false },
+    {
+      engine: 'native',
+      word: 'this',
+      gesture: 'introduceJordan',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'we',
+      gesture: 'chest',
+      dur: 1.2,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'help',
+      gesture: 'talkopen',
+      dur: 2,
+      resetTransition: 500,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_1_FORAGING_COMBINED.mp3': [
     { engine: 'native', word: 'hi', gesture: 'handup', dur: 0.8, reset: false },
     {
@@ -737,6 +800,36 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 200,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_2.mp3': [
+    {
+      engine: 'native',
+      word: 'explain',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'virtual',
+      gesture: 'talkopen',
+      dur: 1,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'search',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'the',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_3.mp3': [
     {
       engine: 'native',
@@ -774,7 +867,74 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 200,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_3.mp3': [
+    {
+      engine: 'native',
+      word: 'these',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'purpose',
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'topics',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'share',
+      gesture: 'chest',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'this',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'save',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_4.mp3': [
+    {
+      engine: 'native',
+      word: 'one',
+      gesture: 'oneQuestion',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'that',
+      gesture: 'talkopen',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'so',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_4.mp3': [
     {
       engine: 'native',
       word: 'one',
@@ -863,6 +1023,15 @@ const STATIC_GESTURE_MAPS = {
       reset: false,
     },
   ],
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_5.mp3': [
+    {
+      engine: 'native',
+      word: 'now',
+      gesture: 'introduceJordan',
+      dur: 1.5,
+      reset: false,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_5_FORAGING_COMBINED.mp3': [
     {
       engine: 'native',
@@ -906,6 +1075,22 @@ const STATIC_GESTURE_MAPS = {
       reset: false,
     },
   ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_ADAPTIVE_1.mp3': [
+    {
+      engine: 'native',
+      word: 'mentioned',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'help',
+      gesture: 'talkopen',
+      dur: 2,
+      reset: false,
+    },
+  ],
   '/intro-voices/companion-audio-JORDAN_INTRO_2.mp3': [
     {
       engine: 'native',
@@ -924,6 +1109,22 @@ const STATIC_GESTURE_MAPS = {
     {
       engine: 'native',
       word: 'suggest',
+      gesture: 'rightGesture',
+      dur: 2,
+      reset: false,
+    },
+  ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_ADAPTIVE_2.mp3': [
+    {
+      engine: 'native',
+      word: 'information',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'white',
       gesture: 'rightGesture',
       dur: 2,
       reset: false,
@@ -954,6 +1155,22 @@ const STATIC_GESTURE_MAPS = {
       reset: false,
     },
   ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_ADAPTIVE_3.mp3': [
+    {
+      engine: 'native',
+      word: 'Alex',
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'question',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+  ],
   '/intro-voices/companion-audio-JORDAN_INTRO_3_V2.mp3': [
     {
       engine: 'native',
@@ -964,6 +1181,15 @@ const STATIC_GESTURE_MAPS = {
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_4.mp3': [
+    {
+      engine: 'native',
+      word: 'whenever',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+  '/intro-voices/companion-audio-JORDAN_INTRO_ADAPTIVE_4.mp3': [
     {
       engine: 'native',
       word: 'whenever',

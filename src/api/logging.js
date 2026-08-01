@@ -1,6 +1,6 @@
-// const BASE_URL = 'http://127.0.0.1:8000/pilot'
-const BASE_URL =
-  'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws/pilot'
+const BASE_URL = 'http://127.0.0.1:8000/pilot'
+// const BASE_URL =
+//   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws/pilot'
 
 export async function logMainInteraction(participantId, transcript) {
   if (!participantId) return
@@ -37,6 +37,7 @@ const CONDITION_NAMES = {
 }
 
 export async function logSession(participantId, condition) {
+  console.log('IN LOG SESSION')
   if (!participantId) return
 
   const conditionName =
