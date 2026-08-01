@@ -175,9 +175,9 @@ const ADAPTIVE_INTRO_VISUAL_TIMELINE = {
   },
 }
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
 function waitForCharacterRender(container, timeout = 10000) {
   return new Promise((resolve, reject) => {
@@ -232,7 +232,6 @@ const getSourceKey = (source) =>
   source.url || source.title || source.file || source.source || source.id
 
 export default function AdaptiveInteraction() {
-  const baseUrl = BASE_URL
   const [searchParams] = useSearchParams()
 
   const condition = Number(searchParams.get('c') ?? 5)
@@ -994,7 +993,6 @@ export default function AdaptiveInteraction() {
         setConsultingDecision(part.route)
         setConsultingSpeaker(isFactFinding ? 'alex' : 'jordan')
 
-        await wait(900)
         setIsConsulting(false)
 
         if (isFactFinding) {
@@ -1227,62 +1225,203 @@ export default function AdaptiveInteraction() {
     }
 
     try {
-      const response = await fetch(`${baseUrl}/adaptive/chat-stream`, {
+      /*
+       * 1. Determine whether Alex or Jordan leads.
+       */
+      const routeResponse = await fetch(`${BASE_URL}/adaptive/route`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message,
+          history,
+        }),
+      })
+
+      if (!routeResponse.ok) {
+        throw new Error(
+          (await routeResponse.text()) ||
+            `Route request failed (${routeResponse.status}).`,
+        )
+      }
+
+      const routeData = await routeResponse.json()
+
+      await handleStreamPart(
+        {
+          part: 'route',
+          route: routeData.route,
+          reason: routeData.reason,
+        },
+        turnState,
+      )
+
+      /*
+       * 2. Determine the information need.
+       */
+      let informationNeed = message
+
+      if (routeData.route === 'hypothesis_testing') {
+        const frameResponse = await fetch(`${BASE_URL}/adaptive/frame`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            history,
+          }),
+        })
+
+        if (!frameResponse.ok) {
+          throw new Error(
+            (await frameResponse.text()) ||
+              `Framing request failed (${frameResponse.status}).`,
+          )
+        }
+
+        const frameData = await frameResponse.json()
+
+        informationNeed = frameData.information_need
+
+        await handleStreamPart(
+          {
+            part: 'information_need',
+            information_need: frameData.information_need,
+          },
+          turnState,
+        )
+
+        await handleStreamPart(
+          {
+            part: 'jordan_before',
+            message: frameData.message,
+          },
+          turnState,
+        )
+      } else {
+        await handleStreamPart(
+          {
+            part: 'information_need',
+            information_need: message,
+          },
+          turnState,
+        )
+      }
+
+      /*
+       * 3. Retrieve evidence and generate Alex's answer.
+       */
+      const alexResponse = await fetch(`${BASE_URL}/adaptive/alex`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original_message: message,
+          information_need: informationNeed,
+          history,
+        }),
+      })
+
+      if (!alexResponse.ok) {
+        throw new Error(
+          (await alexResponse.text()) ||
+            `Alex request failed (${alexResponse.status}).`,
+        )
+      }
+
+      const alexData = await alexResponse.json()
+
+      await handleStreamPart(
+        {
+          part: 'search_query',
+          search_query: alexData.search_query,
+        },
+        turnState,
+      )
+
+      await handleStreamPart(
+        {
+          part: 'alex',
+          message: alexData.answer,
+          sources: alexData.sources || [],
+          talking_points: alexData.talking_points || [],
+          confidence: alexData.confidence,
+          answer_scope: alexData.answer_scope,
+          has_supported_information: alexData.has_supported_information,
+        },
+        turnState,
+      )
+
+      /*
+       * 4. Update Jordan's understanding after Alex has been delivered.
+       */
+      const jordanResponse = await fetch(`${BASE_URL}/adaptive/jordan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          original_message: message,
+          alex_answer: alexData.answer,
+          answer_scope: alexData.answer_scope,
+          has_supported_information: alexData.has_supported_information,
           history,
           mental_model: mentalModel,
           knowledge_gaps: openQuestions,
         }),
       })
 
-      if (!response.ok) {
+      if (!jordanResponse.ok) {
         throw new Error(
-          (await response.text()) || `Request failed (${response.status}).`,
+          (await jordanResponse.text()) ||
+            `Jordan request failed (${jordanResponse.status}).`,
         )
       }
 
-      if (!response.body) {
-        throw new Error(
-          'The browser did not provide a readable response stream.',
+      const jordanData = await jordanResponse.json()
+
+      if (jordanData.message) {
+        await handleStreamPart(
+          {
+            part: 'jordan_after',
+            route: routeData.route,
+            message: jordanData.message,
+            mental_model: jordanData.mental_model,
+            highlighted_text: jordanData.highlighted_text,
+            change_type: jordanData.change_type,
+            knowledge_gaps: jordanData.knowledge_gaps || [],
+          },
+          turnState,
         )
       }
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || ''
-
-        for (const line of lines) {
-          if (!line.trim()) continue
-          await handleStreamPart(JSON.parse(line), turnState)
-        }
-      }
-
-      if (buffer.trim()) {
-        await handleStreamPart(JSON.parse(buffer), turnState)
-      }
+      await handleStreamPart({ part: 'done' }, turnState)
 
       setHistory((previous) => {
-        const next = [...previous, { role: 'user', content: message }]
+        const next = [
+          ...previous,
+          {
+            role: 'user',
+            content: message,
+          },
+        ]
+
         if (turnState.jordanBefore) {
-          next.push({ role: 'jordan', content: turnState.jordanBefore })
+          next.push({
+            role: 'jordan',
+            content: turnState.jordanBefore,
+          })
         }
+
         if (turnState.alexAnswer) {
-          next.push({ role: 'alex', content: turnState.alexAnswer })
+          next.push({
+            role: 'alex',
+            content: turnState.alexAnswer,
+          })
         }
+
         if (turnState.jordanAfter) {
-          next.push({ role: 'jordan', content: turnState.jordanAfter })
+          next.push({
+            role: 'jordan',
+            content: turnState.jordanAfter,
+          })
         }
+
         return next
       })
     } catch (requestError) {
