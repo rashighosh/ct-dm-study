@@ -19,6 +19,7 @@ export default function NotesReview() {
 
   const participantId = state?.participantId || 'test-id'
   const condition = state?.condition ?? ''
+  const isSingleCharacter = Number(condition) === 6
 
   const savedResources = state?.savedResources || []
   const mentalModel = state?.mentalModel || ''
@@ -85,7 +86,11 @@ export default function NotesReview() {
             </button>
           </div>
 
-          <div className="review-area">
+          <div
+            className={`review-area ${
+              isSingleCharacter ? 'single-character' : ''
+            }`}
+          >
             <section className="notes-review-section">
               <img
                 src={alex}
@@ -166,67 +171,124 @@ export default function NotesReview() {
                   </article>
                 )}
               </div>
+              {isSingleCharacter && (
+                <>
+                  <div className="notes-review-section-header notes">
+                    <FontAwesomeIcon icon={faLightbulb} />
+                    <h2>Your Big-Picture Understanding</h2>
+                  </div>
+
+                  <div className="notes-review-jordan-content">
+                    {mentalModel ? (
+                      <article className="notes-review-theme">
+                        <div className="resource-details-theme">
+                          <FontAwesomeIcon icon={faLightbulb} />
+
+                          <div className="resource-details-header">
+                            <p className="notes-review-theme-summary">
+                              {mentalModel}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    ) : (
+                      <article className="notes-review-theme notes-review-empty">
+                        <div className="resource-details-theme">
+                          <FontAwesomeIcon icon={faLightbulb} />
+
+                          <div className="resource-details-header">
+                            <p className="notes-review-theme-summary">
+                              A big-picture understanding was not created during
+                              this conversation.
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    )}
+
+                    {openQuestions.length > 0 && (
+                      <section className="notes-review-open-questions">
+                        <h3>Still to Confirm</h3>
+
+                        <p>
+                          These questions could not be answered using the
+                          available general information and may depend on a
+                          specific trial or individual situation.
+                        </p>
+
+                        <ul>
+                          {openQuestions.map((question, index) => (
+                            <li key={`${question}-${index}`}>{question}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
+                  </div>
+                </>
+              )}
             </section>
 
-            <section className="notes-review-section">
-              <img
-                src={jordan}
-                className="virtual-character"
-                alt="Jordan character"
-              />
+            {!isSingleCharacter && (
+              <section className="notes-review-section">
+                <img
+                  src={jordan}
+                  className="virtual-character"
+                  alt="Jordan character"
+                />
 
-              <div className="notes-review-section-header notes">
-                <FontAwesomeIcon icon={faLightbulb} />
-                <h2>Your Big-Picture Understanding</h2>
-              </div>
+                <div className="notes-review-section-header notes">
+                  <FontAwesomeIcon icon={faLightbulb} />
+                  <h2>Your Big-Picture Understanding</h2>
+                </div>
 
-              <div className="notes-review-jordan-content">
-                {mentalModel ? (
-                  <article className="notes-review-theme">
-                    <div className="resource-details-theme">
-                      <FontAwesomeIcon icon={faLightbulb} />
+                <div className="notes-review-jordan-content">
+                  {mentalModel ? (
+                    <article className="notes-review-theme">
+                      <div className="resource-details-theme">
+                        <FontAwesomeIcon icon={faLightbulb} />
 
-                      <div className="resource-details-header">
-                        <p className="notes-review-theme-summary">
-                          {mentalModel}
-                        </p>
+                        <div className="resource-details-header">
+                          <p className="notes-review-theme-summary">
+                            {mentalModel}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ) : (
-                  <article className="notes-review-theme notes-review-empty">
-                    <div className="resource-details-theme">
-                      <FontAwesomeIcon icon={faLightbulb} />
+                    </article>
+                  ) : (
+                    <article className="notes-review-theme notes-review-empty">
+                      <div className="resource-details-theme">
+                        <FontAwesomeIcon icon={faLightbulb} />
 
-                      <div className="resource-details-header">
-                        <p className="notes-review-theme-summary">
-                          A big-picture understanding was not created during
-                          this conversation.
-                        </p>
+                        <div className="resource-details-header">
+                          <p className="notes-review-theme-summary">
+                            A big-picture understanding was not created during
+                            this conversation.
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                )}
+                    </article>
+                  )}
 
-                {openQuestions.length > 0 && (
-                  <section className="notes-review-open-questions">
-                    <h3>Still to Confirm</h3>
+                  {openQuestions.length > 0 && (
+                    <section className="notes-review-open-questions">
+                      <h3>Still to Confirm</h3>
 
-                    <p>
-                      These questions could not be answered using the available
-                      general information and may depend on a specific trial or
-                      individual situation.
-                    </p>
+                      <p>
+                        These questions could not be answered using the
+                        available general information and may depend on a
+                        specific trial or individual situation.
+                      </p>
 
-                    <ul>
-                      {openQuestions.map((question, index) => (
-                        <li key={`${question}-${index}`}>{question}</li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-              </div>
-            </section>
+                      <ul>
+                        {openQuestions.map((question, index) => (
+                          <li key={`${question}-${index}`}>{question}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
         </div>
 

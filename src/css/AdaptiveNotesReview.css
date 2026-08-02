@@ -728,3 +728,15 @@ a.resource-url:hover {
     text-decoration: none !important;
   }
 }
+
+/* ==========================================================
+   CONDITION 6
+   ========================================================== */
+
+.review-area.single-character {
+  justify-content: center;
+}
+
+.review-area.single-character .notes-review-section {
+  max-width: 750px;
+}

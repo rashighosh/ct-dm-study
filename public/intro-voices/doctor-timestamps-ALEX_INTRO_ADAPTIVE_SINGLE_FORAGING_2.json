@@ -1,0 +1,162 @@
+[
+  {
+    "word": "I'll",
+    "start": 0,
+    "end": 0.38325
+  },
+  {
+    "word": "explain",
+    "start": 0.38325,
+    "end": 0.7665
+  },
+  {
+    "word": "my",
+    "start": 0.7665,
+    "end": 1.14975
+  },
+  {
+    "word": "role",
+    "start": 1.14975,
+    "end": 1.533
+  },
+  {
+    "word": "first.",
+    "start": 1.533,
+    "end": 1.9162499999999998
+  },
+  {
+    "word": "I'm",
+    "start": 1.9162499999999998,
+    "end": 2.2995
+  },
+  {
+    "word": "a",
+    "start": 2.2995,
+    "end": 2.68275
+  },
+  {
+    "word": "virtual",
+    "start": 2.68275,
+    "end": 3.066
+  },
+  {
+    "word": "assistant",
+    "start": 3.066,
+    "end": 3.4492499999999997
+  },
+  {
+    "word": "that",
+    "start": 3.4492499999999997,
+    "end": 3.8324999999999996
+  },
+  {
+    "word": "can",
+    "start": 3.8324999999999996,
+    "end": 4.21575
+  },
+  {
+    "word": "quickly",
+    "start": 4.21575,
+    "end": 4.599
+  },
+  {
+    "word": "search",
+    "start": 4.599,
+    "end": 4.98225
+  },
+  {
+    "word": "information",
+    "start": 4.98225,
+    "end": 5.3655
+  },
+  {
+    "word": "across",
+    "start": 5.3655,
+    "end": 5.748749999999999
+  },
+  {
+    "word": "several",
+    "start": 5.748749999999999,
+    "end": 6.132
+  },
+  {
+    "word": "reputable",
+    "start": 6.132,
+    "end": 6.51525
+  },
+  {
+    "word": "health",
+    "start": 6.51525,
+    "end": 6.898499999999999
+  },
+  {
+    "word": "resources",
+    "start": 6.898499999999999,
+    "end": 7.28175
+  },
+  {
+    "word": "such",
+    "start": 7.28175,
+    "end": 7.664999999999999
+  },
+  {
+    "word": "as",
+    "start": 7.664999999999999,
+    "end": 8.04825
+  },
+  {
+    "word": "the",
+    "start": 8.04825,
+    "end": 8.4315
+  },
+  {
+    "word": "National",
+    "start": 8.4315,
+    "end": 8.81475
+  },
+  {
+    "word": "Cancer",
+    "start": 8.81475,
+    "end": 9.198
+  },
+  {
+    "word": "Institute",
+    "start": 9.198,
+    "end": 9.581249999999999
+  },
+  {
+    "word": "to",
+    "start": 9.581249999999999,
+    "end": 9.9645
+  },
+  {
+    "word": "answer",
+    "start": 9.9645,
+    "end": 10.34775
+  },
+  {
+    "word": "questions",
+    "start": 10.34775,
+    "end": 10.731
+  },
+  {
+    "word": "about",
+    "start": 10.731,
+    "end": 11.11425
+  },
+  {
+    "word": "clinical",
+    "start": 11.11425,
+    "end": 11.497499999999999
+  },
+  {
+    "word": "trial",
+    "start": 11.497499999999999,
+    "end": 11.880749999999999
+  },
+  {
+    "word": "participation.",
+    "start": 11.880749999999999,
+    "end": 12.264
+  }
+]

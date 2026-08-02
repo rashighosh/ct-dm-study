@@ -705,6 +705,198 @@ export async function speakWithLipsync(
 // ============================================================
 
 const STATIC_GESTURE_MAPS = {
+  /* =========================================================
+   CONDITION 6 — SINGLE ALEX INTRO: FORAGING
+   ========================================================= */
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_1.mp3': [
+    {
+      engine: 'native',
+      word: 'Hi',
+      gesture: 'handup',
+      dur: 0.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: "I'm",
+      gesture: 'chest',
+      dur: 1.2,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'help',
+      gesture: 'talkopen',
+      dur: 2,
+      resetTransition: 500,
+    },
+  ],
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_2.mp3': [
+    {
+      engine: 'native',
+      word: 'explain',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'virtual',
+      gesture: 'talkopen',
+      dur: 1,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'search',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'resources',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_3.mp3': [
+    {
+      engine: 'native',
+      word: 'These',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'purpose',
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'topics',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'share',
+      gesture: 'chest',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'white',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+    {
+      engine: 'native',
+      word: 'save',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_4.mp3': [
+    {
+      engine: 'native',
+      word: 'important',
+      gesture: 'oneQuestion',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: "don't",
+      gesture: 'talkopen',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: "can't",
+      gesture: 'rightGesture',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
+
+  /* =========================================================
+   CONDITION 6 — SINGLE ALEX INTRO: SENSEMAKING
+   ========================================================= */
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_1.mp3': [
+    {
+      engine: 'native',
+      word: "I'll",
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'help',
+      gesture: 'talkopen',
+      dur: 2,
+      reset: false,
+    },
+  ],
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_2.mp3': [
+    {
+      engine: 'native',
+      word: 'information',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'white',
+      gesture: 'rightGesture',
+      dur: 2,
+      reset: false,
+    },
+  ],
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_3.mp3': [
+    {
+      engine: 'native',
+      word: "don't",
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'question',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+  ],
+
+  '/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_4.mp3': [
+    {
+      engine: 'native',
+      word: 'whenever',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 200,
+    },
+  ],
   '/intro-voices/doctor-audio-ALEX_INTRO_1.mp3': [
     { engine: 'native', word: 'hi', gesture: 'handup', dur: 1.5, reset: false },
     {

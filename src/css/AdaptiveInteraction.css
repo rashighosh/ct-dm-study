@@ -2560,3 +2560,87 @@
 .adaptive-open-questions li:last-child {
   margin-bottom: 0;
 }
+
+/* =========================================================
+   CONDITION 6 — SINGLE CHARACTER
+   ========================================================= */
+
+/* Alex begins centered and fills the stage */
+.adaptive-stage.single-character .adaptive-character-alex {
+  flex: 0 0 100%;
+  width: auto;
+  max-width: none;
+  z-index: 3;
+  transform: translateX(0) scale(1.01);
+}
+
+.adaptive-stage.single-character .adaptive-character-jordan {
+  display: none;
+}
+
+/* Keep Alex centered while the workspace is hidden or behind him */
+.adaptive-stage.single-character.workspace-consulting .adaptive-character-alex {
+  flex-basis: 100%;
+  margin-right: 0;
+  transform: translateX(0) scale(1.01);
+}
+
+/* Alex smoothly moves left as the workspace appears */
+.adaptive-stage.single-character.workspace-opening .adaptive-character-alex,
+.adaptive-stage.single-character.workspace-open .adaptive-character-alex {
+  flex-basis: 50%;
+  transform: translateX(-105px) scale(1.01);
+}
+
+/*
+ * Prevent the general alex-turn-complete rule from shifting Alex
+ * before the workspace-opening state takes over.
+ */
+.adaptive-stage.single-character.alex-turn-complete:not(.workspace-opening):not(
+    .workspace-open
+  )
+  .adaptive-character-alex {
+  flex-basis: 100%;
+  transform: translateX(0) scale(1.01);
+}
+
+/* Keep Alex's intro visuals beside him while he is centered */
+.adaptive-stage.single-character:not(.workspace-opening):not(.workspace-open)
+  .adaptive-character-alex
+  .adaptive-intro-visual-card {
+  left: 25%;
+}
+
+/* Keep the intro visuals beside Alex after he moves left */
+.adaptive-stage.single-character.workspace-opening
+  .adaptive-character-alex
+  .adaptive-intro-visual-card,
+.adaptive-stage.single-character.workspace-open
+  .adaptive-character-alex
+  .adaptive-intro-visual-card {
+  left: 19%;
+}
+
+@media (max-width: 720px) {
+  .adaptive-stage.single-character .adaptive-character-alex {
+    flex: 0 0 100%;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  .adaptive-stage.single-character.workspace-consulting
+    .adaptive-character-alex,
+  .adaptive-stage.single-character.workspace-opening .adaptive-character-alex,
+  .adaptive-stage.single-character.workspace-open .adaptive-character-alex,
+  .adaptive-stage.single-character.alex-turn-complete .adaptive-character-alex {
+    flex-basis: 100%;
+    transform: none;
+  }
+
+  .adaptive-stage.single-character
+    .adaptive-character-alex
+    .adaptive-intro-visual-card {
+    left: 8px;
+  }
+}

@@ -60,6 +60,20 @@ const ADAPTIVE_ALEX_INTROS = [
   "Now, I'll hand it over to Jordan.",
 ]
 
+const ADAPTIVE_ALEX_INTROS_SINGLE_FORAGING = [
+  "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation.",
+  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several reputable health resources such as the National Cancer Institute to answer questions about clinical trial participation.",
+  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use on this white board behind me that you can save to read later if you want.',
+  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
+]
+
+const ADAPTIVE_ALEX_INTROS_SINGLE_SENSEMAKING = [
+  "Now, I'll also help keep track of your understanding throughout the conversation.",
+  "When I share new information, I'll also connect it to what we've already discussed on the white board behind me.",
+  "If I don't have enough information to answer a question, I'll note that down for you as well.",
+  "Now, whenever you're ready, let's start exploring clinical trial participation!",
+]
+
 const ADAPTIVE_JORDAN_INTROS = [
   "Thanks! As Alex mentioned, I'm Jordan. I'm a virtual companion here to help keep track of your understanding throughout the conversation.",
   "When Alex shares new information, I'll connect it to what we've already discussed on the white board behind me.",
@@ -80,19 +94,19 @@ const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: ADAPTIVE_JORDAN_INTROS[3],
-    character: 'companion',
+    text: ADAPTIVE_ALEX_INTROS_SINGLE_SENSEMAKING[0],
+    character: 'doctor',
   }),
 })
 
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/companion-audio-JORDAN_INTRO_ADAPTIVE_4.mp3',
+  'public/intro-voices/doctor-audio-ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_1.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/companion-timestamps-JORDAN_INTRO_ADAPTIVE_4.json',
+  'public/intro-voices/doctor-timestamps-ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_1.json',
   JSON.stringify(timestamps, null, 2),
 )
 

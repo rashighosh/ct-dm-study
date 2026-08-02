@@ -94,6 +94,44 @@ const ADAPTIVE_JORDAN_INTROS = [
   },
 ]
 
+const ADAPTIVE_ALEX_INTROS_SINGLE_FORAGING = [
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_1',
+    text: "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation.",
+  },
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_2',
+    text: "I'll explain my role first. I'm a virtual assistant that can quickly search information across several reputable health resources such as the National Cancer Institute to answer questions about clinical trial participation.",
+  },
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_3',
+    text: 'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use on this white board behind me that you can save to read later if you want.',
+  },
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_4',
+    text: "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study.",
+  },
+]
+
+const ADAPTIVE_ALEX_INTROS_SINGLE_SENSEMAKING = [
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_1',
+    text: "Now, I'll also help keep track of your understanding throughout the conversation.",
+  },
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_2',
+    text: "When I share new information, I'll also connect it to what we've already discussed on the white board behind me.",
+  },
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_3',
+    text: "If I don't have enough information to answer a question, I'll note that down for you as well.",
+  },
+  {
+    key: 'ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_4',
+    text: "Now, whenever you're ready, let's start exploring clinical trial participation!",
+  },
+]
+
 const ADAPTIVE_INTRO_VISUAL_TIMELINE = {
   alex: {
     ALEX_INTRO_ADAPTIVE_1: [
@@ -173,11 +211,85 @@ const ADAPTIVE_INTRO_VISUAL_TIMELINE = {
 
     JORDAN_INTRO_ADAPTIVE_4: [],
   },
+  single: {
+    ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_1: [
+      {
+        delay: 2200,
+        duration: 2000,
+        cue: { type: 'ai' },
+      },
+      {
+        delay: 4700,
+        duration: 2200,
+        cue: { type: 'explore' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_2: [
+      {
+        delay: 2500,
+        duration: 4800,
+        cue: { type: 'search-documents' },
+      },
+      {
+        delay: 8000,
+        duration: 3000,
+        cue: { type: 'verified-document' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_3: [
+      {
+        delay: 600,
+        duration: 5000,
+        cue: { type: 'topic-checklist' },
+      },
+      {
+        delay: 6500,
+        duration: 4000,
+        cue: { type: 'save-sources' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_4: [
+      {
+        delay: 1700,
+        duration: 5200,
+        cue: { type: 'no-specific-trials' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_1: [
+      {
+        delay: 1500,
+        duration: 4500,
+        cue: { type: 'jordan-understanding' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_2: [
+      {
+        delay: 1000,
+        duration: 5200,
+        cue: { type: 'jordan-connect-information' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_3: [
+      {
+        delay: 1200,
+        duration: 4200,
+        cue: { type: 'jordan-open-questions' },
+      },
+    ],
+
+    ALEX_INTRO_ADAPTIVE_SINGLE_SENSEMAKING_4: [],
+  },
 }
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
 
 function waitForCharacterRender(container, timeout = 10000) {
   return new Promise((resolve, reject) => {
@@ -235,6 +347,7 @@ export default function AdaptiveInteraction() {
   const [searchParams] = useSearchParams()
 
   const condition = Number(searchParams.get('c') ?? 5)
+  const isSingleCharacter = condition === 6
   const participantId =
     searchParams.get('id') ||
     searchParams.get('PROLIFIC_PID') ||
@@ -394,7 +507,9 @@ export default function AdaptiveInteraction() {
   ])
 
   const completedInteractionTurns = messages.filter(
-    (message) => message.from === 'jordan' && message.kind === 'interpretation',
+    (message) =>
+      message.kind === 'interpretation' &&
+      (isSingleCharacter ? message.from === 'alex' : message.from === 'jordan'),
   ).length
 
   const showFinishButton = completedInteractionTurns >= 1
@@ -433,6 +548,11 @@ export default function AdaptiveInteraction() {
 
   // For chat history modal, auto scroll to most recent message
   useEffect(() => {
+    if (isSingleCharacter) {
+      setConsultingSpeaker(null)
+      setConsultingDecision(null)
+      return
+    }
     if (!isConsulting) {
       setConsultingSpeaker('alex')
       setConsultingDecision(null)
@@ -472,11 +592,9 @@ export default function AdaptiveInteraction() {
     return () => {
       cancelled = true
     }
-  }, [isConsulting, consultingDecision])
+  }, [isConsulting, consultingDecision, isSingleCharacter])
 
   useEffect(() => {
-    // While the start overlay is visible, the character containers are not
-    // mounted, so their refs are null. Initialize only after Begin is clicked.
     if (!audioReady) return
 
     let cancelled = false
@@ -485,8 +603,6 @@ export default function AdaptiveInteraction() {
       const doctorContainer = doctorRef.current
       const companionContainer = companionRef.current
 
-      // Wait one paint cycle after removing the overlay so React has mounted
-      // both character containers before TalkingHead reads their dimensions.
       await new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       )
@@ -494,9 +610,9 @@ export default function AdaptiveInteraction() {
       if (
         cancelled ||
         !doctorContainer ||
-        !companionContainer ||
         !doctorContainer.isConnected ||
-        !companionContainer.isConnected
+        (!isSingleCharacter &&
+          (!companionContainer || !companionContainer.isConnected))
       ) {
         return
       }
@@ -504,20 +620,28 @@ export default function AdaptiveInteraction() {
       try {
         setCharactersReady(false)
 
-        await Promise.all([
-          initDoctorCharacter(doctorContainer),
-          initCompanionCharacter(companionContainer),
-        ])
+        if (isSingleCharacter) {
+          await initDoctorCharacter(doctorContainer)
+        } else {
+          await Promise.all([
+            initDoctorCharacter(doctorContainer),
+            initCompanionCharacter(companionContainer),
+          ])
+        }
 
         if (cancelled) {
           await disposeCharacters()
           return
         }
 
-        await Promise.all([
-          waitForCharacterRender(doctorContainer),
-          waitForCharacterRender(companionContainer),
-        ])
+        if (isSingleCharacter) {
+          await waitForCharacterRender(doctorContainer)
+        } else {
+          await Promise.all([
+            waitForCharacterRender(doctorContainer),
+            waitForCharacterRender(companionContainer),
+          ])
+        }
 
         if (cancelled) {
           await disposeCharacters()
@@ -525,42 +649,32 @@ export default function AdaptiveInteraction() {
         }
 
         if (!adaptiveIntroDone) {
-          /*
-           * Keep the loader visible while they turn toward each other.
-           */
-          playGesture('alexLookAtJordan')
-          playGesture('jordanLookAtAlex')
+          if (isSingleCharacter) {
+            // Reveal Alex facing the participant.
+            playGesture('stopAlexGesture')
+            setCharactersReady(true)
+            await wait(300)
+          } else {
+            // Preserve the existing Condition 5 introduction exactly.
+            playGesture('alexLookAtJordan')
+            playGesture('jordanLookAtAlex')
 
-          /*
-           * Give the gestures enough time to reach the looking pose
-           * before revealing the interaction.
-           */
-          await wait(500)
+            await wait(500)
 
-          if (cancelled) return
+            if (cancelled) return
 
-          /*
-           * The loader disappears here, so the first visible frame
-           * already shows Alex and Jordan looking at each other.
-           */
-          setCharactersReady(true)
+            setCharactersReady(true)
 
-          // Keep the visible looking-at-each-other moment.
-          await wait(1500)
+            await wait(1500)
 
-          // Turn both characters toward the user.
-          playGesture('stopAlexGesture')
-          playGesture('stopCompanionGesture')
+            playGesture('stopAlexGesture')
+            playGesture('stopCompanionGesture')
 
-          // Let the forward-facing pose settle before Alex speaks.
-          await wait(300)
+            await wait(300)
+          }
 
           await playAdaptiveIntroSequence()
         } else {
-          /*
-           * On a return visit where the intro already played,
-           * reveal the characters normally.
-           */
           setCharactersReady(true)
         }
       } catch (characterError) {
@@ -569,7 +683,9 @@ export default function AdaptiveInteraction() {
         if (!cancelled) {
           setCharactersReady(false)
           setError(
-            'The virtual characters could not be loaded. Please refresh and try again.',
+            isSingleCharacter
+              ? 'The virtual character could not be loaded. Please refresh and try again.'
+              : 'The virtual characters could not be loaded. Please refresh and try again.',
           )
         }
       }
@@ -585,7 +701,7 @@ export default function AdaptiveInteraction() {
         companionRef.current?.replaceChildren()
       })
     }
-  }, [audioReady])
+  }, [audioReady, isSingleCharacter])
 
   /* ------------------------------------------------------------------------ */
   /* Navigation                                               */
@@ -667,19 +783,31 @@ export default function AdaptiveInteraction() {
   }
 
   function turnCharactersTowardEachOther() {
+    if (isSingleCharacter) {
+      playGesture('stopAlexGesture')
+      return
+    }
+
     playGesture('alexLookAtJordan')
     playGesture('jordanLookAtAlex')
   }
 
   function stopCharactersLookingAtEachOther() {
     playGesture('stopAlexGesture')
-    playGesture('stopCompanionGesture')
+
+    if (!isSingleCharacter) {
+      playGesture('stopCompanionGesture')
+    }
   }
 
   function enqueueSpeech(text, speaker, onStart = null, onEnd = null) {
     if (!text) return Promise.resolve()
 
-    const isAlex = speaker === 'alex'
+    // In Condition 6, Alex physically speaks both Alex and Jordan content.
+    const physicalSpeaker =
+      isSingleCharacter && speaker === 'jordan' ? 'alex' : speaker
+
+    const isAlex = physicalSpeaker === 'alex'
     const character = isAlex ? 'doctor' : 'companion'
     const setSubtitle = isAlex ? setAlexSubtitle : setJordanSubtitle
 
@@ -712,7 +840,7 @@ export default function AdaptiveInteraction() {
             },
           })
         } catch (speechError) {
-          console.error(`${speaker} speech failed:`, speechError)
+          console.error(`${physicalSpeaker} speech failed:`, speechError)
         } finally {
           if (isAlex) {
             setIsAlexSpeaking(false)
@@ -728,7 +856,10 @@ export default function AdaptiveInteraction() {
 
           if (queuedSpeechCountRef.current === 0) {
             playGesture('stopAlexGesture')
-            playGesture('stopCompanionGesture')
+
+            if (!isSingleCharacter) {
+              playGesture('stopCompanionGesture')
+            }
           }
         }
       })
@@ -863,94 +994,161 @@ export default function AdaptiveInteraction() {
         alex: 'Introducing',
         jordan: 'Introducing',
       })
-      // Play all Alex introductions first
-      for (const [index, intro] of ADAPTIVE_ALEX_INTROS.entries()) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            id: `intro-alex-${index}-${Date.now()}`,
-            from: 'alex',
-            text: intro.text,
-            kind: 'intro',
-            isIntro: true,
-            introKey: intro.key,
-            introCharacter: 'alex',
-          },
-        ])
 
-        updateIntroTranscript('alex', intro.text, {
-          intro_part: index + 1,
-          intro_key: intro.key,
-          intro_character: 'alex',
-        })
+      if (isSingleCharacter) {
+        const singleIntros = [
+          ...ADAPTIVE_ALEX_INTROS_SINGLE_FORAGING,
+          ...ADAPTIVE_ALEX_INTROS_SINGLE_SENSEMAKING,
+        ]
 
-        let workspaceRevealTimer = null
+        for (const [index, intro] of singleIntros.entries()) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              id: `intro-alex-single-${index}-${Date.now()}`,
+              from: 'alex',
+              text: intro.text,
+              kind: 'intro',
+              isIntro: true,
+              introKey: intro.key,
+              introCharacter: 'alex',
+              introRole:
+                index < ADAPTIVE_ALEX_INTROS_SINGLE_FORAGING.length
+                  ? 'foraging'
+                  : 'sensemaking',
+            },
+          ])
 
-        if (intro.key === 'ALEX_INTRO_ADAPTIVE_3' && !showWorkspace) {
-          workspaceRevealTimer = window.setTimeout(() => {
+          updateIntroTranscript('alex', intro.text, {
+            intro_part: index + 1,
+            intro_key: intro.key,
+            intro_character: 'alex',
+            intro_role:
+              index < ADAPTIVE_ALEX_INTROS_SINGLE_FORAGING.length
+                ? 'foraging'
+                : 'sensemaking',
+          })
+
+          let workspaceRevealTimer = null
+
+          if (
+            intro.key === 'ALEX_INTRO_ADAPTIVE_SINGLE_FORAGING_3' &&
+            !showWorkspace
+          ) {
+            workspaceRevealTimer = window.setTimeout(() => {
+              setShowWorkspace(true)
+            }, 9500)
+          }
+
+          scheduleAdaptiveIntroVisuals('single', intro.key)
+          setIsAlexSpeaking(true)
+
+          await speakWithLipsyncStatic(
+            `/intro-voices/doctor-audio-${intro.key}.mp3`,
+            `/intro-voices/doctor-timestamps-${intro.key}.json`,
+            'doctor',
+            true,
+            setAlexSubtitle,
+          )
+
+          setIsAlexSpeaking(false)
+          clearAdaptiveIntroCues()
+
+          if (workspaceRevealTimer) {
+            window.clearTimeout(workspaceRevealTimer)
             setShowWorkspace(true)
-          }, 9500)
+          }
+
+          setAlexSubtitle('')
+        }
+      } else {
+        // Existing Condition 5 Alex introduction.
+        for (const [index, intro] of ADAPTIVE_ALEX_INTROS.entries()) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              id: `intro-alex-${index}-${Date.now()}`,
+              from: 'alex',
+              text: intro.text,
+              kind: 'intro',
+              isIntro: true,
+              introKey: intro.key,
+              introCharacter: 'alex',
+            },
+          ])
+
+          updateIntroTranscript('alex', intro.text, {
+            intro_part: index + 1,
+            intro_key: intro.key,
+            intro_character: 'alex',
+          })
+
+          let workspaceRevealTimer = null
+
+          if (intro.key === 'ALEX_INTRO_ADAPTIVE_3' && !showWorkspace) {
+            workspaceRevealTimer = window.setTimeout(() => {
+              setShowWorkspace(true)
+            }, 9500)
+          }
+
+          scheduleAdaptiveIntroVisuals('alex', intro.key)
+          setIsAlexSpeaking(true)
+
+          await speakWithLipsyncStatic(
+            `/intro-voices/doctor-audio-${intro.key}.mp3`,
+            `/intro-voices/doctor-timestamps-${intro.key}.json`,
+            'doctor',
+            true,
+            setAlexSubtitle,
+          )
+
+          setIsAlexSpeaking(false)
+          clearAdaptiveIntroCues()
+
+          if (workspaceRevealTimer) {
+            window.clearTimeout(workspaceRevealTimer)
+            setShowWorkspace(true)
+          }
+
+          setAlexSubtitle('')
         }
 
-        // Start visuals and focus for this specific intro
-        scheduleAdaptiveIntroVisuals('alex', intro.key)
-        setIsAlexSpeaking(true)
+        // Existing Condition 5 Jordan introduction.
+        for (const [index, intro] of ADAPTIVE_JORDAN_INTROS.entries()) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              id: `intro-jordan-${index}-${Date.now()}`,
+              from: 'jordan',
+              text: intro.text,
+              kind: 'intro',
+              isIntro: true,
+              introKey: intro.key,
+              introCharacter: 'jordan',
+            },
+          ])
 
-        await speakWithLipsyncStatic(
-          `/intro-voices/doctor-audio-${intro.key}.mp3`,
-          `/intro-voices/doctor-timestamps-${intro.key}.json`,
-          'doctor',
-          true,
-          setAlexSubtitle,
-        )
+          updateIntroTranscript('jordan', intro.text, {
+            intro_part: ADAPTIVE_ALEX_INTROS.length + index + 1,
+            intro_key: intro.key,
+            intro_character: 'jordan',
+          })
 
-        setIsAlexSpeaking(false)
-        clearAdaptiveIntroCues()
+          scheduleAdaptiveIntroVisuals('jordan', intro.key)
+          setIsJordanSpeaking(true)
 
-        if (workspaceRevealTimer) {
-          window.clearTimeout(workspaceRevealTimer)
-          setShowWorkspace(true)
+          await speakWithLipsyncStatic(
+            `/intro-voices/companion-audio-${intro.key}.mp3`,
+            `/intro-voices/companion-timestamps-${intro.key}.json`,
+            'companion',
+            true,
+            setJordanSubtitle,
+          )
+
+          setIsJordanSpeaking(false)
+          setJordanSubtitle('')
+          clearAdaptiveIntroCues()
         }
-
-        setAlexSubtitle('')
-      }
-
-      // Then play all Jordan introductions
-      for (const [index, intro] of ADAPTIVE_JORDAN_INTROS.entries()) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            id: `intro-jordan-${index}-${Date.now()}`,
-            from: 'jordan',
-            text: intro.text,
-            kind: 'intro',
-            isIntro: true,
-            introKey: intro.key,
-            introCharacter: 'jordan',
-          },
-        ])
-
-        updateIntroTranscript('jordan', intro.text, {
-          intro_part: index + 1,
-          intro_key: intro.key,
-          intro_character: 'jordan',
-        })
-
-        // Start visuals and focus for this specific intro
-        scheduleAdaptiveIntroVisuals('jordan', intro.key)
-        setIsJordanSpeaking(true)
-
-        await speakWithLipsyncStatic(
-          `/intro-voices/companion-audio-${intro.key}.mp3`,
-          `/intro-voices/companion-timestamps-${intro.key}.json`,
-          'companion',
-          true,
-          setJordanSubtitle,
-        )
-
-        setIsJordanSpeaking(false)
-        clearAdaptiveIntroCues()
-        setJordanSubtitle('')
       }
 
       setAdaptiveIntroDone(true)
@@ -992,22 +1190,30 @@ export default function AdaptiveInteraction() {
         }
 
         if (isFactFinding) {
-          /*
-           * Alex is ready to lead as soon as the route returns.
-           * Briefly show Alex's document/check decision before searching.
-           */
-          setConsultingDecision('fact_finding')
-          setConsultingSpeaker('alex')
+          if (isSingleCharacter) {
+            setIsConsulting(false)
+            playGesture('stopAlexGesture')
+            setIsAlexSearching(true)
+            setShowCards(true)
+            playGesture('startSwiping')
+            setActivity('alex', 'Searching trusted sources')
+          } else {
+            /*
+             * Existing Condition 5 behavior.
+             */
+            setConsultingDecision('fact_finding')
+            setConsultingSpeaker('alex')
 
-          await wait(350)
+            await wait(350)
 
-          setIsConsulting(false)
-          playGesture('stopAlexGesture')
-          setIsAlexSearching(true)
-          setShowCards(true)
-          playGesture('startSwiping')
-          setActivity('alex', 'Searching trusted sources')
-          setActivity('jordan', 'Waiting for new information')
+            setIsConsulting(false)
+            playGesture('stopAlexGesture')
+            setIsAlexSearching(true)
+            setShowCards(true)
+            playGesture('startSwiping')
+            setActivity('alex', 'Searching trusted sources')
+            setActivity('jordan', 'Waiting for new information')
+          }
         }
 
         /*
@@ -1026,54 +1232,75 @@ export default function AdaptiveInteraction() {
       case 'jordan_before': {
         turnState.jordanBefore = part.message
 
-        setActivity('jordan', 'Framing your question')
-        setActivity('alex', 'Searching for information')
+        if (isSingleCharacter) {
+          setActivity('alex', 'Framing your question')
+          setIsConsulting(false)
+          stopCharactersLookingAtEachOther()
 
-        /*
-         * Jordan's framing response is now ready.
-         * Show the puzzle/check while the speech audio prepares.
-         */
-        setConsultingDecision('hypothesis_testing')
-        setConsultingSpeaker('jordan')
-        setIsConsulting(true)
+          // Visible transcript and database log show Alex as the speaker.
+          addMessage('alex', part.message, 'question_framing', {
+            original_role: 'jordan',
+          })
 
-        addMessage('jordan', part.message, 'question_framing')
+          // Awaiting this makes the framing speech finish before search begins.
+          await enqueueSpeech(
+            part.message,
+            'alex',
+            () => {
+              setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
+              playGesture('stopAlexGesture')
+              setActivity('alex', 'Framing your question')
+            },
+            () => {
+              setAlexSubtitle('')
+              setIsAlexSearching(true)
+              setShowCards(true)
+              playGesture('startSwiping')
+              setActivity('alex', 'Searching trusted sources')
+            },
+          )
+        } else {
+          // Existing Condition 5 behavior remains unchanged.
+          setActivity('jordan', 'Framing your question')
+          setActivity('alex', 'Searching for information')
 
-        enqueueSpeech(
-          part.message,
-          'jordan',
-          () => {
-            // Jordan starts speaking
-            setIsConsulting(false)
+          setConsultingDecision('hypothesis_testing')
+          setConsultingSpeaker('jordan')
+          setIsConsulting(true)
 
-            stopCharactersLookingAtEachOther()
-            setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
+          addMessage('jordan', part.message, 'question_framing')
 
-            // Jordan faces the user
-            playGesture('stopCompanionGesture')
+          enqueueSpeech(
+            part.message,
+            'jordan',
+            () => {
+              setIsConsulting(false)
 
-            // Alex also turns back toward the user, then starts searching
-            playGesture('stopAlexGesture')
-            setShowCards(true)
-            playGesture('startSwiping')
+              stopCharactersLookingAtEachOther()
+              setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
 
-            setActivity('jordan', 'Framing your question')
-            setActivity('alex', 'Searching trusted sources')
-          },
-          () => {
-            // Jordan finishes speaking
-            setJordanSubtitle('')
-            setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
+              playGesture('stopCompanionGesture')
 
-            // Focus Alex and have Jordan turn toward him
-            setIsAlexSearching(true)
-            window.setTimeout(() => {
-              playGesture('jordanLookAtAlex')
-            }, 50)
+              playGesture('stopAlexGesture')
+              setShowCards(true)
+              playGesture('startSwiping')
 
-            setActivity('jordan', 'Waiting for new information')
-          },
-        )
+              setActivity('jordan', 'Framing your question')
+              setActivity('alex', 'Searching trusted sources')
+            },
+            () => {
+              setJordanSubtitle('')
+              setJordanWhiteboardPhase(mentalModel ? 'open' : 'writing')
+
+              setIsAlexSearching(true)
+              window.setTimeout(() => {
+                playGesture('jordanLookAtAlex')
+              }, 50)
+
+              setActivity('jordan', 'Waiting for new information')
+            },
+          )
+        }
 
         break
       }
@@ -1083,8 +1310,13 @@ export default function AdaptiveInteraction() {
           setShowCards(true)
           playGesture('startSwiping')
         }
+
         setActivity('alex', 'Searching trusted sources')
-        setActivity('jordan', 'Waiting for new information')
+
+        if (!isSingleCharacter) {
+          setActivity('jordan', 'Waiting for new information')
+        }
+
         break
 
       case 'alex': {
@@ -1127,20 +1359,30 @@ export default function AdaptiveInteraction() {
             setAlexTurnComplete(true)
 
             playGesture('stopAlexGesture')
-            playGesture('stopCompanionGesture')
-            playGesture('jordanLookAtAlex')
-            setActivity('alex', 'Presenting information')
-            setActivity('jordan', 'Listening to Alex')
 
-            jordanThinkingTimer = window.setTimeout(() => {
-              playGesture('thinking')
-            }, 2500)
+            if (!isSingleCharacter) {
+              playGesture('stopCompanionGesture')
+              playGesture('jordanLookAtAlex')
+              setActivity('jordan', 'Listening to Alex')
+
+              jordanThinkingTimer = window.setTimeout(() => {
+                playGesture('thinking')
+              }, 2500)
+            }
+
+            setActivity('alex', 'Presenting information')
           },
           () => {
-            window.clearTimeout(jordanThinkingTimer)
+            if (jordanThinkingTimer) {
+              window.clearTimeout(jordanThinkingTimer)
+            }
+
             setShowAlexSources(true)
             playGesture('stopWriting')
-            playGesture('stopCompanionGesture')
+
+            if (!isSingleCharacter) {
+              playGesture('stopCompanionGesture')
+            }
           },
         )
         break
@@ -1159,16 +1401,29 @@ export default function AdaptiveInteraction() {
 
         setOpenQuestions(nextOpenQuestions)
 
-        addMessage('jordan', part.message, 'interpretation', {
+        const interpretationSpeaker = isSingleCharacter ? 'alex' : 'jordan'
+
+        addMessage(interpretationSpeaker, part.message, 'interpretation', {
+          original_role: 'jordan',
           mental_model: nextMentalModel,
           highlighted_text: nextMentalModelHighlight,
           change_type: nextMentalModelChangeType,
           knowledge_gaps: nextOpenQuestions,
         })
 
+        /*
+         * In Condition 6, pause after Alex's factual answer has fully
+         * finished before Alex begins the sensemaking reflection.
+         */
+        if (isSingleCharacter) {
+          speakingQueueRef.current = speakingQueueRef.current
+            .catch(() => undefined)
+            .then(() => wait(1200))
+        }
+
         enqueueSpeech(
           part.message,
-          'jordan',
+          interpretationSpeaker,
           () => {
             setMentalModel(nextMentalModel)
             setMentalModelHighlight(nextMentalModelHighlight)
@@ -1178,17 +1433,27 @@ export default function AdaptiveInteraction() {
             setIsJordanUpdating(false)
             setWorkspacePhase('connecting')
             setJordanWhiteboardPhase('speaking')
-            playGesture('alexLookAtJordan')
-            setActivity('alex', 'Listening to Jordan')
-            setActivity('jordan', 'Connecting this information')
+
+            if (isSingleCharacter) {
+              playGesture('stopAlexGesture')
+              setActivity('alex', 'Connecting this information')
+            } else {
+              playGesture('alexLookAtJordan')
+              setActivity('alex', 'Listening to Jordan')
+              setActivity('jordan', 'Connecting this information')
+            }
           },
           () => {
+            setAlexSubtitle('')
             setJordanSubtitle('')
             setWorkspacePhase('complete')
             setJordanWhiteboardPhase('open')
 
             setActivity('alex', 'Ready')
-            setActivity('jordan', 'Ready')
+
+            if (!isSingleCharacter) {
+              setActivity('jordan', 'Ready')
+            }
           },
         )
 
@@ -1235,8 +1500,12 @@ export default function AdaptiveInteraction() {
     setAlexTurnComplete(false)
     setJordanTurnStarted(false)
 
-    setActivity('alex', 'Planning search')
-    setActivity('jordan', 'Identifying information need')
+    if (!isSingleCharacter) {
+      setActivity('alex', 'Planning search')
+      setActivity('jordan', 'Identifying information need')
+    } else {
+      setActivity('alex', 'Identifying information needs & planning search')
+    }
 
     setSources([])
     setTalkingPoints([])
@@ -1259,9 +1528,15 @@ export default function AdaptiveInteraction() {
     setConsultingSpeaker('alex')
 
     // Characters turn to each other to "decide" who leads
-    turnCharactersTowardEachOther()
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    setIsConsulting(true)
+    if (isSingleCharacter) {
+      stopCharactersLookingAtEachOther()
+      setIsConsulting(false)
+    } else {
+      // Preserve Condition 5's consultation sequence.
+      turnCharactersTowardEachOther()
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setIsConsulting(true)
+    }
 
     const turnState = {
       route: null,
@@ -1313,6 +1588,7 @@ export default function AdaptiveInteraction() {
           body: JSON.stringify({
             message,
             history,
+            single_character: isSingleCharacter,
           }),
         })
 
@@ -1409,6 +1685,7 @@ export default function AdaptiveInteraction() {
           history,
           mental_model: mentalModel,
           knowledge_gaps: openQuestions,
+          single_character: isSingleCharacter,
         }),
       })
 
@@ -1493,32 +1770,58 @@ export default function AdaptiveInteraction() {
         <div className="mi-start-overlay-content">
           <img src={logo} className="logo" alt="Study logo" />
 
-          <h2>Clinical Trials Education</h2>
-          <h1>Chat with Virtual Characters</h1>
+          <h1>
+            {isSingleCharacter
+              ? 'Chat with a Virtual Character'
+              : 'Chat with Virtual Characters'}
+          </h1>
 
           <div className="mi-start-information">
-            In this activity, you'll learn about clinical trials with the help
-            of <strong>two virtual characters: Alex and Jordan</strong>.
-            <div className="character-images-row">
-              <div>
-                <img
-                  src={alex}
-                  className="character-preview"
-                  alt="Alex character"
-                />
-                <p>Alex</p>
-              </div>
+            {isSingleCharacter ? (
+              <>
+                In this activity, you'll learn about clinical trials with the
+                help of <strong> one virtual character: Alex</strong>.
+                <div className="character-images-row">
+                  <div>
+                    <img
+                      src={alex}
+                      className="character-preview"
+                      alt="Alex character"
+                    />
+                    <p>Alex</p>
+                  </div>
+                </div>
+                Alex will provide <strong>general information</strong> and help
+                you
+              </>
+            ) : (
+              <>
+                In this activity, you'll learn about clinical trials with the
+                help of{' '}
+                <strong> two virtual characters: Alex and Jordan</strong>.
+                <div className="character-images-row">
+                  <div>
+                    <img
+                      src={alex}
+                      className="character-preview"
+                      alt="Alex character"
+                    />
+                    <p>Alex</p>
+                  </div>
 
-              <div>
-                <img
-                  src={jordan}
-                  className="character-preview"
-                  alt="Jordan character"
-                />
-                <p>Jordan</p>
-              </div>
-            </div>
-            They will provide <strong>general information</strong> and help you
+                  <div>
+                    <img
+                      src={jordan}
+                      className="character-preview"
+                      alt="Jordan character"
+                    />
+                    <p>Jordan</p>
+                  </div>
+                </div>
+                They will provide <strong>general information</strong> and help
+                you
+              </>
+            )}
             explore questions about clinical trial participation. <br /> <br />
             <strong>Remember</strong>: Imagine you are the person described in
             the pre-survey. Ask the questions you would genuinely have if you
@@ -1618,13 +1921,14 @@ export default function AdaptiveInteraction() {
           <div
             className={[
               'adaptive-stage',
+              isSingleCharacter && 'single-character',
               workspaceOpen && 'workspace-open',
               workspacePhase === 'consulting' && 'workspace-consulting',
               workspacePhase === 'opening' && 'workspace-opening',
               (isAlexSpeaking || isAlexSearching) && 'alex-focused',
-              isJordanSpeaking && 'jordan-focused',
+              !isSingleCharacter && isJordanSpeaking && 'jordan-focused',
               alexTurnComplete && 'alex-turn-complete',
-              jordanTurnStarted && 'jordan-turn-started',
+              !isSingleCharacter && jordanTurnStarted && 'jordan-turn-started',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1655,23 +1959,24 @@ export default function AdaptiveInteraction() {
                 />
 
                 {/* Alex intro visuals go here */}
-                {introCue?.character === 'alex' && introCue.type === 'ai' && (
-                  <div
-                    className={introVisualClass('adaptive-intro-icon-group')}
-                  >
-                    <FontAwesomeIcon
-                      className="adaptive-intro-icon adaptive-intro-icon-1"
-                      icon={faCode}
-                    />
+                {['alex', 'single'].includes(introCue?.character) &&
+                  introCue.type === 'ai' && (
+                    <div
+                      className={introVisualClass('adaptive-intro-icon-group')}
+                    >
+                      <FontAwesomeIcon
+                        className="adaptive-intro-icon adaptive-intro-icon-1"
+                        icon={faCode}
+                      />
 
-                    <FontAwesomeIcon
-                      className="adaptive-intro-icon adaptive-intro-icon-2"
-                      icon={faCommentNodes}
-                    />
-                  </div>
-                )}
+                      <FontAwesomeIcon
+                        className="adaptive-intro-icon adaptive-intro-icon-2"
+                        icon={faCommentNodes}
+                      />
+                    </div>
+                  )}
 
-                {introCue?.character === 'alex' &&
+                {['alex', 'single'].includes(introCue?.character) &&
                   introCue.type === 'explore' && (
                     <div
                       className={introVisualClass('adaptive-intro-icon-group')}
@@ -1683,7 +1988,7 @@ export default function AdaptiveInteraction() {
                     </div>
                   )}
 
-                {introCue?.character === 'alex' &&
+                {['alex', 'single'].includes(introCue?.character) &&
                   introCue.type === 'search-documents' && (
                     <div
                       className={introVisualClass(
@@ -1707,7 +2012,7 @@ export default function AdaptiveInteraction() {
                     </div>
                   )}
 
-                {introCue?.character === 'alex' &&
+                {['alex', 'single'].includes(introCue?.character) &&
                   introCue.type === 'verified-document' && (
                     <div
                       className={introVisualClass(
@@ -1724,7 +2029,7 @@ export default function AdaptiveInteraction() {
                     </div>
                   )}
 
-                {introCue?.character === 'alex' &&
+                {['alex', 'single'].includes(introCue?.character) &&
                   introCue.type === 'topic-checklist' && (
                     <div
                       className={introVisualClass(
@@ -1746,7 +2051,7 @@ export default function AdaptiveInteraction() {
                     </div>
                   )}
 
-                {introCue?.character === 'alex' &&
+                {['alex', 'single'].includes(introCue?.character) &&
                   introCue.type === 'save-sources' && (
                     <div
                       className={introVisualClass('adaptive-intro-icon-group')}
@@ -1763,7 +2068,7 @@ export default function AdaptiveInteraction() {
                     </div>
                   )}
 
-                {introCue?.character === 'alex' &&
+                {['alex', 'single'].includes(introCue?.character) &&
                   introCue.type === 'no-specific-trials' && (
                     <div
                       className={introVisualClass(
@@ -1787,6 +2092,46 @@ export default function AdaptiveInteraction() {
                       </div>
                     </div>
                   )}
+                {isSingleCharacter &&
+                  ['jordan', 'single'].includes(introCue?.character) &&
+                  introCue.type === 'jordan-understanding' && (
+                    <div
+                      className={introVisualClass(
+                        'adaptive-intro-jordan adaptive-intro-jordan-understanding',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faCircleQuestion} />
+                      <FontAwesomeIcon icon={faArrowRight} />
+                      <FontAwesomeIcon icon={faLightbulb} />
+                    </div>
+                  )}
+
+                {isSingleCharacter &&
+                  ['jordan', 'single'].includes(introCue?.character) &&
+                  introCue.type === 'jordan-connect-information' && (
+                    <div
+                      className={introVisualClass(
+                        'adaptive-intro-jordan adaptive-intro-jordan-connect',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faCubesStacked} />
+                      <FontAwesomeIcon icon={faArrowRight} />
+                      <FontAwesomeIcon icon={faLightbulb} />
+                    </div>
+                  )}
+
+                {isSingleCharacter &&
+                  ['jordan', 'single'].includes(introCue?.character) &&
+                  introCue.type === 'jordan-open-questions' && (
+                    <div
+                      className={introVisualClass(
+                        'adaptive-intro-jordan adaptive-intro-jordan-open-questions',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faClipboardList} />
+                      <FontAwesomeIcon icon={faCircleQuestion} />
+                    </div>
+                  )}
               </div>
 
               {alexSubtitle && (
@@ -1799,6 +2144,7 @@ export default function AdaptiveInteraction() {
             <div className="adaptive-shared-workspace">
               {workspaceMounted && showWorkspace && (
                 <SharedWorkspaceBoard
+                  isSingleCharacter={isSingleCharacter}
                   mentalModel={mentalModel}
                   mentalModelHighlight={mentalModelHighlight}
                   mentalModelChangeType={mentalModelChangeType}
@@ -1818,7 +2164,7 @@ export default function AdaptiveInteraction() {
               )}
             </div>
 
-            {isConsulting && (
+            {!isSingleCharacter && isConsulting && (
               <div
                 className={`adaptive-consulting-exchange adaptive-consulting-exchange-${consultingSpeaker}`}
                 aria-hidden="true"
@@ -1890,66 +2236,70 @@ export default function AdaptiveInteraction() {
                 </div>
               </div>
             )}
-
-            <div className="adaptive-character adaptive-character-jordan">
-              <div className="adaptive-character-label jordan">
-                <div className="label">Understanding Guide</div>
-                <div className="name">Jordan</div>
-                <div className="activity">{characterActivity.jordan}</div>
-              </div>
-
-              <div ref={companionRef} className="virtual-companion" />
-
-              {/* Jordan intro visuals go here */}
-              {introCue?.character === 'jordan' &&
-                introCue.type === 'jordan-understanding' && (
-                  <div
-                    className={introVisualClass(
-                      'adaptive-intro-jordan adaptive-intro-jordan-understanding',
-                    )}
-                  >
-                    <FontAwesomeIcon icon={faCircleQuestion} />
-                    <FontAwesomeIcon icon={faArrowRight} />
-                    <FontAwesomeIcon icon={faLightbulb} />
-                  </div>
-                )}
-
-              {introCue?.character === 'jordan' &&
-                introCue.type === 'jordan-connect-information' && (
-                  <div
-                    className={introVisualClass(
-                      'adaptive-intro-jordan adaptive-intro-jordan-connect',
-                    )}
-                  >
-                    <FontAwesomeIcon icon={faCubesStacked} />
-                    <FontAwesomeIcon icon={faArrowRight} />
-                    <FontAwesomeIcon icon={faLightbulb} />
-                  </div>
-                )}
-
-              {introCue?.character === 'jordan' &&
-                introCue.type === 'jordan-open-questions' && (
-                  <div
-                    className={introVisualClass(
-                      'adaptive-intro-jordan adaptive-intro-jordan-open-questions',
-                    )}
-                  >
-                    <FontAwesomeIcon icon={faClipboardList} />
-                    <FontAwesomeIcon icon={faCircleQuestion} />
-                  </div>
-                )}
-
-              {jordanSubtitle && (
-                <div className="adaptive-subtitle adaptive-subtitle-jordan">
-                  {jordanSubtitle}
+            {!isSingleCharacter && (
+              <div className="adaptive-character adaptive-character-jordan">
+                <div className="adaptive-character-label jordan">
+                  <div className="label">Understanding Guide</div>
+                  <div className="name">Jordan</div>
+                  <div className="activity">{characterActivity.jordan}</div>
                 </div>
-              )}
-            </div>
 
+                <div ref={companionRef} className="virtual-companion" />
+
+                {/* Jordan intro visuals go here */}
+                {introCue?.character === 'jordan' &&
+                  introCue.type === 'jordan-understanding' && (
+                    <div
+                      className={introVisualClass(
+                        'adaptive-intro-jordan adaptive-intro-jordan-understanding',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faCircleQuestion} />
+                      <FontAwesomeIcon icon={faArrowRight} />
+                      <FontAwesomeIcon icon={faLightbulb} />
+                    </div>
+                  )}
+
+                {introCue?.character === 'jordan' &&
+                  introCue.type === 'jordan-connect-information' && (
+                    <div
+                      className={introVisualClass(
+                        'adaptive-intro-jordan adaptive-intro-jordan-connect',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faCubesStacked} />
+                      <FontAwesomeIcon icon={faArrowRight} />
+                      <FontAwesomeIcon icon={faLightbulb} />
+                    </div>
+                  )}
+
+                {introCue?.character === 'jordan' &&
+                  introCue.type === 'jordan-open-questions' && (
+                    <div
+                      className={introVisualClass(
+                        'adaptive-intro-jordan adaptive-intro-jordan-open-questions',
+                      )}
+                    >
+                      <FontAwesomeIcon icon={faClipboardList} />
+                      <FontAwesomeIcon icon={faCircleQuestion} />
+                    </div>
+                  )}
+
+                {jordanSubtitle && (
+                  <div className="adaptive-subtitle adaptive-subtitle-jordan">
+                    {jordanSubtitle}
+                  </div>
+                )}
+              </div>
+            )}
             {!charactersReady && (
               <div className="adaptive-character-loader">
                 <FontAwesomeIcon icon={faSpinner} spin />
-                <span>Preparing the virtual characters…</span>
+                <span>
+                  {isSingleCharacter
+                    ? 'Preparing the virtual character…'
+                    : 'Preparing the virtual characters…'}
+                </span>
               </div>
             )}
           </div>
@@ -1995,6 +2345,7 @@ export default function AdaptiveInteraction() {
       </main>
       {showHistory && (
         <HistoryModal
+          isSingleCharacter={isSingleCharacter}
           messages={messages}
           historyBodyRef={historyBodyRef}
           onClose={() => setShowHistory(false)}
@@ -2031,6 +2382,7 @@ function HighlightedMentalModel({ mentalModel, highlightedText }) {
 }
 
 function SharedWorkspaceBoard({
+  isSingleCharacter,
   mentalModel,
   mentalModelHighlight,
   mentalModelChangeType,
@@ -2109,7 +2461,11 @@ function SharedWorkspaceBoard({
           >
             <div className="adaptive-workspace-column-heading">
               <span className="adaptive-workspace-character-dot adaptive-workspace-character-dot-jordan" />
-              <strong>Jordan's Big Picture</strong>
+              <strong>
+                {isSingleCharacter
+                  ? "Alex's Big Picture"
+                  : "Jordan's Big Picture"}
+              </strong>
             </div>
 
             <div className="adaptive-jordan-workspace-content">
@@ -2185,7 +2541,12 @@ function WorkspaceThinking({ label }) {
   )
 }
 
-function HistoryModal({ messages, onClose, historyBodyRef }) {
+function HistoryModal({
+  isSingleCharacter,
+  messages,
+  onClose,
+  historyBodyRef,
+}) {
   return (
     <div
       className="adaptive-history-overlay"
