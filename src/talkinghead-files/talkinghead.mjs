@@ -1184,127 +1184,175 @@ class TalkingHead {
         'Neck.rotation': { x: [0.5, 1, 0.5, 1], y: -0.003, z: 0.012 },
         'Head.rotation': { x: 0.05, y: -0.02, z: -0.017 },
       },
-      boardTurn: {
-        'Hips.rotation': { x: 0, y: -3.05, z: 0 }, // ~175°, not exact π (avoids slerp ambiguity)
-      },
-      // Marker grip, hovering near the board — the "rest" pose between strokes
+      boardTurn: { 'Hips.rotation': { x: 0.047, y: 2.85, z: -0.007 } },
+      // Marker grip, hovering near the board — RIGHT hand
       boardReady: {
-        'LeftShoulder.rotation': { x: 0.5, y: -0.166, z: -1.605 },
-        'LeftArm.rotation': { x: 1.275, y: 0.544, z: -0.092 },
-        'LeftForeArm.rotation': { x: 0.05, y: 0, z: 1.15 },
-        'LeftHand.rotation': { x: -0.35, y: -0.1, z: 0.05 },
-        // --- MARKER GRIP (pinch thumb+index, other 3 curl around the barrel) ---
-        'LeftHandThumb1.rotation': { x: 0.4, y: -0.3, z: 0.5 },
-        'LeftHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
-        'LeftHandIndex1.rotation': { x: 0.5, y: 0, z: -0.1 },
-        'LeftHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
-        'LeftHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
-        'LeftHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
-        'LeftHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
-        'LeftHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
-        'LeftHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
+        // Slight forward lean
+        // Slight forward lean
+        'Spine.rotation': { x: -0.06, y: -0.007, z: 0.005 },
+        'Spine1.rotation': { x: 0.03, y: -0.014, z: 0.012 },
+        'Spine2.rotation': { x: 0.12, y: -0.013, z: 0.013 },
+
+        'RightShoulder.rotation': { x: 0.5, y: 0.166, z: 1.605 },
+        'RightArm.rotation': { x: 1.275, y: -0.544, z: 0.092 },
+        'RightForeArm.rotation': { x: 0.05, y: 0, z: -1.15 },
+        'RightHand.rotation': { x: -0.35, y: 0.1, z: -0.05 },
+
+        // --- MARKER GRIP ---
+        'RightHandThumb1.rotation': { x: 0.4, y: 0.3, z: -0.5 },
+        'RightHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
+        'RightHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
+
+        'RightHandIndex1.rotation': { x: 0.5, y: 0, z: 0.1 },
+        'RightHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
+        'RightHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
+
+        'RightHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
+        'RightHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
+
+        'RightHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
+        'RightHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
+
+        'RightHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
+        'RightHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
+        'RightHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
       },
 
-      // Stroke A — small wrist flick, "up-stroke"
+      // Stroke A — small wrist flick
       writeStrokeA: {
-        'LeftShoulder.rotation': { x: 0.5, y: -0.166, z: -1.605 },
-        'LeftArm.rotation': { x: 1.275, y: 0.544, z: -0.092 },
-        'LeftForeArm.rotation': { x: 0.1, y: 0.06, z: 1.1 },
-        'LeftHand.rotation': { x: -0.48, y: -0.04, z: 0.18 },
-        // fingers stay locked in the grip
-        'LeftHandThumb1.rotation': { x: 0.4, y: -0.3, z: 0.5 },
-        'LeftHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
-        'LeftHandIndex1.rotation': { x: 0.5, y: 0, z: -0.1 },
-        'LeftHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
-        'LeftHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
-        'LeftHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
-        'LeftHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
-        'LeftHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
-        'LeftHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
+        // Slight forward lean
+        // Slight forward lean
+        'Spine.rotation': { x: -0.06, y: -0.007, z: 0.005 },
+        'Spine1.rotation': { x: 0.03, y: -0.014, z: 0.012 },
+        'Spine2.rotation': { x: 0.12, y: -0.013, z: 0.013 },
+
+        'RightShoulder.rotation': { x: 0.5, y: 0.166, z: 1.605 },
+        'RightArm.rotation': { x: 1.275, y: -0.544, z: 0.092 },
+        'RightForeArm.rotation': { x: 0.1, y: -0.06, z: -1.1 },
+        'RightHand.rotation': { x: -0.48, y: 0.04, z: -0.18 },
+
+        'RightHandThumb1.rotation': { x: 0.4, y: 0.3, z: -0.5 },
+        'RightHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
+        'RightHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
+
+        'RightHandIndex1.rotation': { x: 0.5, y: 0, z: 0.1 },
+        'RightHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
+        'RightHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
+
+        'RightHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
+        'RightHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
+
+        'RightHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
+        'RightHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
+
+        'RightHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
+        'RightHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
+        'RightHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
       },
 
-      // Stroke B — opposite flick, "down-stroke"
+      // Stroke B — opposite flick
       writeStrokeB: {
-        'LeftShoulder.rotation': { x: 0.5, y: -0.166, z: -1.605 },
-        'LeftArm.rotation': { x: 1.275, y: 0.544, z: -0.092 },
-        'LeftForeArm.rotation': { x: 0.0, y: -0.06, z: 1.2 },
-        'LeftHand.rotation': { x: -0.22, y: -0.16, z: -0.06 },
-        'LeftHandThumb1.rotation': { x: 0.4, y: -0.3, z: 0.5 },
-        'LeftHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
-        'LeftHandIndex1.rotation': { x: 0.5, y: 0, z: -0.1 },
-        'LeftHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
-        'LeftHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
-        'LeftHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
-        'LeftHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
-        'LeftHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
-        'LeftHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
+        // Slight forward lean
+        // Slight forward lean
+        'Spine.rotation': { x: -0.06, y: -0.007, z: 0.005 },
+        'Spine1.rotation': { x: 0.03, y: -0.014, z: 0.012 },
+        'Spine2.rotation': { x: 0.12, y: -0.013, z: 0.013 },
+
+        'RightShoulder.rotation': { x: 0.5, y: 0.166, z: 1.605 },
+        'RightArm.rotation': { x: 1.275, y: -0.544, z: 0.092 },
+        'RightForeArm.rotation': { x: 0, y: 0.06, z: -1.2 },
+        'RightHand.rotation': { x: -0.22, y: 0.16, z: 0.06 },
+
+        'RightHandThumb1.rotation': { x: 0.4, y: 0.3, z: -0.5 },
+        'RightHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
+        'RightHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
+
+        'RightHandIndex1.rotation': { x: 0.5, y: 0, z: 0.1 },
+        'RightHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
+        'RightHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
+
+        'RightHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
+        'RightHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
+
+        'RightHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
+        'RightHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
+
+        'RightHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
+        'RightHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
+        'RightHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
       },
 
-      // Bigger shift — moving the marker over to start the next word/line
+      // Bigger shift — moving the marker to start the next word/line
       writeShift: {
-        'LeftShoulder.rotation': { x: 0.5, y: -0.15, z: -1.6 },
-        'LeftArm.rotation': { x: 1.3, y: 0.62, z: -0.1 }, // arm swings slightly right
-        'LeftForeArm.rotation': { x: 0.05, y: 0, z: 1.15 },
-        'LeftHand.rotation': { x: -0.35, y: -0.1, z: 0.05 },
-        // fingers same grip
-        'LeftHandThumb1.rotation': { x: 0.4, y: -0.3, z: 0.5 },
-        'LeftHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
-        'LeftHandIndex1.rotation': { x: 0.5, y: 0, z: -0.1 },
-        'LeftHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
-        'LeftHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
-        'LeftHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
-        'LeftHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
-        'LeftHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
-        'LeftHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
-        'LeftHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
-        'LeftHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
-        'LeftHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
-      },
+        // Slight forward lean
+        // Slight forward lean
+        'Spine.rotation': { x: -0.06, y: -0.007, z: 0.005 },
+        'Spine1.rotation': { x: 0.03, y: -0.014, z: 0.012 },
+        'Spine2.rotation': { x: 0.12, y: -0.013, z: 0.013 },
 
+        'RightShoulder.rotation': { x: 0.5, y: 0.15, z: 1.6 },
+        'RightArm.rotation': { x: 1.3, y: -0.62, z: 0.1 },
+        'RightForeArm.rotation': { x: 0.05, y: 0, z: -1.15 },
+        'RightHand.rotation': { x: -0.35, y: 0.1, z: -0.05 },
+
+        'RightHandThumb1.rotation': { x: 0.4, y: 0.3, z: -0.5 },
+        'RightHandThumb2.rotation': { x: 0.3, y: 0, z: 0 },
+        'RightHandThumb3.rotation': { x: 0.2, y: 0, z: 0 },
+
+        'RightHandIndex1.rotation': { x: 0.5, y: 0, z: 0.1 },
+        'RightHandIndex2.rotation': { x: 0.6, y: 0, z: 0 },
+        'RightHandIndex3.rotation': { x: 0.3, y: 0, z: 0 },
+
+        'RightHandMiddle1.rotation': { x: 0.9, y: 0, z: 0 },
+        'RightHandMiddle2.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandMiddle3.rotation': { x: 0.8, y: 0, z: 0 },
+
+        'RightHandRing1.rotation': { x: 1.0, y: 0, z: 0 },
+        'RightHandRing2.rotation': { x: 1.2, y: 0, z: 0 },
+        'RightHandRing3.rotation': { x: 0.9, y: 0, z: 0 },
+
+        'RightHandPinky1.rotation': { x: 1.1, y: 0, z: 0 },
+        'RightHandPinky2.rotation': { x: 1.3, y: 0, z: 0 },
+        'RightHandPinky3.rotation': { x: 1.0, y: 0, z: 0 },
+      },
       armDown: {
-        'LeftShoulder.rotation': { x: 1.62, y: -0.166, z: -1.605 },
-        'LeftArm.rotation': { x: 1.275, y: 0.544, z: -0.092 },
-        'LeftForeArm.rotation': { x: 0, y: 0, z: 0.302 },
-        'LeftHand.rotation': { x: -0.225, y: -0.154, z: 0.11 },
-        'LeftHandThumb1.rotation': { x: 0.435, y: -0.044, z: 0.457 },
-        'LeftHandThumb2.rotation': { x: -0.028, y: 0.002, z: -0.246 },
-        'LeftHandThumb3.rotation': { x: -0.236, y: -0.025, z: 0.113 },
-        'LeftHandIndex1.rotation': { x: 0.218, y: 0.008, z: -0.081 },
-        'LeftHandIndex2.rotation': { x: 0.165, y: -0.001, z: -0.017 },
-        'LeftHandIndex3.rotation': { x: 0.165, y: -0.001, z: -0.017 },
-        'LeftHandMiddle1.rotation': { x: 0.235, y: -0.011, z: -0.065 },
-        'LeftHandMiddle2.rotation': { x: 0.182, y: -0.002, z: -0.019 },
-        'LeftHandMiddle3.rotation': { x: 0.182, y: -0.002, z: -0.019 },
-        'LeftHandRing1.rotation': { x: 0.316, y: -0.017, z: 0.008 },
-        'LeftHandRing2.rotation': { x: 0.253, y: -0.003, z: -0.026 },
-        'LeftHandRing3.rotation': { x: 0.255, y: -0.003, z: -0.026 },
-        'LeftHandPinky1.rotation': { x: 0.336, y: -0.062, z: 0.088 },
-        'LeftHandPinky2.rotation': { x: 0.276, y: -0.004, z: -0.028 },
-        'LeftHandPinky3.rotation': { x: 0.276, y: -0.004, z: -0.028 },
+        'RightShoulder.rotation': { x: 1.615, y: 0.064, z: 1.53 },
+        'RightArm.rotation': { x: 1.313, y: -0.424, z: 0.131 },
+        'RightForeArm.rotation': { x: 0, y: 0, z: -0.317 },
+        'RightHand.rotation': { x: -0.158, y: -0.639, z: -0.196 },
+
+        'RightHandThumb1.rotation': { x: 0.435, y: 0.044, z: -0.457 },
+        'RightHandThumb2.rotation': { x: -0.028, y: -0.002, z: 0.246 },
+        'RightHandThumb3.rotation': { x: -0.236, y: 0.025, z: -0.113 },
+
+        'RightHandIndex1.rotation': { x: 0.218, y: -0.008, z: 0.081 },
+        'RightHandIndex2.rotation': { x: 0.165, y: 0.001, z: 0.017 },
+        'RightHandIndex3.rotation': { x: 0.165, y: 0.001, z: 0.017 },
+
+        'RightHandMiddle1.rotation': { x: 0.235, y: 0.011, z: 0.065 },
+        'RightHandMiddle2.rotation': { x: 0.182, y: 0.002, z: 0.019 },
+        'RightHandMiddle3.rotation': { x: 0.182, y: 0.002, z: 0.019 },
+
+        'RightHandRing1.rotation': { x: 0.316, y: 0.017, z: -0.008 },
+        'RightHandRing2.rotation': { x: 0.253, y: 0.003, z: 0.026 },
+        'RightHandRing3.rotation': { x: 0.255, y: 0.003, z: 0.026 },
+
+        'RightHandPinky1.rotation': { x: 0.336, y: 0.062, z: -0.088 },
+        'RightHandPinky2.rotation': { x: 0.276, y: 0.004, z: 0.028 },
+        'RightHandPinky3.rotation': { x: 0.276, y: 0.004, z: 0.028 },
       },
       boardTurnBack: {
-        'Hips.rotation': { x: 0, y: 0, z: 0 }, // back to just the turn, nothing else
+        'Hips.rotation': { x: 0.047, y: 0.007, z: -0.007 },
+
+        'Spine.rotation': { x: -0.143, y: -0.007, z: 0.005 },
+        'Spine1.rotation': { x: -0.043, y: -0.014, z: 0.012 },
+        'Spine2.rotation': { x: 0.072, y: -0.013, z: 0.013 },
       },
       swipeReady: {
         // LEFT SIDE

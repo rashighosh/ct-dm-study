@@ -54,7 +54,7 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   })
 
   await head.showAvatar({
-    url: '/character-models/doctor.glb',
+    url: '/character-models/female.glb',
     body: 'F',
     avatarMood: 'neutral',
     ttsLang: 'en-GB',
@@ -319,11 +319,12 @@ export function stopSwiping() {
 }
 
 export async function startWriting() {
+  console.log('IN START WRITING')
   if (isWriting) return
   isWriting = true
 
-  await playSmoothSequence(head1, [{ name: 'boardTurn', dur: 1.6, ms: 1800 }])
-  await playSmoothSequence(head1, [{ name: 'boardReady', dur: 0.6, ms: 800 }])
+  await playSmoothSequence(head1, [{ name: 'boardTurn', dur: 2.05, ms: 1800 }])
+  await playSmoothSequence(head1, [{ name: 'boardReady', dur: 0.5, ms: 800 }])
 
   const strokeMoves = [
     { name: 'writeStrokeA', dur: 0.3, ms: 650 },
@@ -334,9 +335,9 @@ export async function startWriting() {
   while (isWriting) {
     await playSmoothSequence(head1, strokeMoves)
     strokeCount++
-    if (isWriting && strokeCount % 4 === 0) {
+    if (isWriting && strokeCount % 6 === 0) {
       await playSmoothSequence(head1, [
-        { name: 'writeShift', dur: 0.4, ms: 900 },
+        { name: 'writeShift', dur: 0.7, ms: 700 },
       ])
     }
   }
@@ -344,12 +345,13 @@ export async function startWriting() {
 }
 
 export async function stopWriting() {
+  console.log('IN STOP WRITING')
   if (!isWriting) return
   isWriting = false
 
-  await playSmoothSequence(head1, [{ name: 'armDown', dur: 0.6, ms: 800 }])
+  await playSmoothSequence(head1, [{ name: 'armDown', dur: 0.5, ms: 800 }])
   await playSmoothSequence(head1, [
-    { name: 'boardTurnBack', dur: 1.0, ms: 1200 },
+    { name: 'boardTurnBack', dur: 2.01, ms: 1200 },
   ])
   await playSmoothSequence(head1, [{ name: null, dur: 0, ms: 200 }])
 }
