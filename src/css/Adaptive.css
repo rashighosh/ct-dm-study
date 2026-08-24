@@ -59,6 +59,13 @@
   width: 25px;
 }
 
+.mi-start-overlay-content > .logo {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 5px;
+  object-fit: contain;
+}
+
 .mi-topbar {
   display: flex;
   align-items: center;
@@ -1282,6 +1289,7 @@ span.alex-source-card-badge {
 .full-input-area .recipient-area button {
   box-shadow: none;
   padding: 3px 9px;
+  cursor: pointer;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease,
@@ -1505,6 +1513,17 @@ span.alex-source-card-badge {
 
 .send-button {
   background-color: rgb(var(--primary-purple));
+  width: auto;
+  border-radius: 15px;
+  border: none;
+  color: white;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 0 25px;
+  gap: 5px;
+  cursor: pointer;
 }
 
 .send-button:not(:disabled):hover {
@@ -1540,6 +1559,19 @@ span.alex-source-card-badge {
 /* -------------------------------------------------------------------------- */
 
 .start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: 28px;
+
+  color: #2c2c2a;
   background:
     linear-gradient(rgba(248, 247, 244, 0.94), rgba(248, 247, 244, 0.94)),
     url('../assets/bg.jpg') center / cover no-repeat;
@@ -2520,7 +2552,7 @@ span.alex-source-card-badge {
   position: fixed;
   inset: 0;
   z-index: 10000;
-
+  pointer-events: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2541,7 +2573,6 @@ span.alex-source-card-badge {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-
   transition:
     opacity 400ms ease,
     visibility 0s linear 400ms;
@@ -2756,6 +2787,71 @@ span.alex-source-card-badge {
 
 .mi-start-check input {
   transform: scale(1.15);
+}
+
+.cssbuttons-io-button {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-purple)) 0%,
+    rgba(var(--primary-purple)) 100%
+  );
+  color: white;
+  font-family: inherit;
+  padding-left: 1.2em;
+  font-size: 17px;
+  font-weight: 500;
+  border: none;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 0 1.6em -0.6em #714da6;
+  overflow: hidden;
+  position: relative;
+  height: 2.8em;
+  padding-right: 3.3em;
+  cursor: pointer;
+}
+
+.cssbuttons-io-button .icon {
+  background: white;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.2em;
+  width: 2.2em;
+  border-radius: 999px;
+  box-shadow: 0.1em 0.1em 0.6em 0.2em #7b52b9;
+  right: 0.3em;
+  transition: all 0.3s;
+}
+
+.cssbuttons-io-button:hover .icon {
+  width: calc(100% - 0.6em);
+}
+
+.cssbuttons-io-button:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(var(--primary-purple)) 0%,
+    rgba(var(--primary-orange)) 100%
+  );
+  animation: pulse-animation 2s infinite;
+}
+
+.cssbuttons-io-button .icon svg {
+  width: 1.1em;
+  height: 1.1em;
+  transition: transform 0.3s;
+  color: rgba(var(--primary-purple));
+}
+
+.cssbuttons-io-button:hover .icon svg {
+  transform: translateX(0.1em);
+}
+
+.cssbuttons-io-button:active .icon {
+  transform: scale(0.95);
 }
 
 .mi-start-overlay-content .cssbuttons-io-button:disabled {
@@ -3214,4 +3310,144 @@ span.alex-source-card-badge {
 
 .jordan-theme.is-current-theme {
   border-color: rgb(var(--primary-blue) / 35%);
+}
+
+.jordan-feedback-bubble {
+  position: absolute;
+  top: 31%;
+  right: 5%;
+  z-index: 20;
+
+  max-width: 180px;
+  padding: 12px 16px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #e2ddd0;
+  border-radius: 16px;
+
+  color: #344054;
+  font-size: 13px;
+  line-height: 1.35;
+
+  box-shadow: 0 8px 22px rgba(40, 55, 75, 0.15);
+
+  pointer-events: none;
+
+  animation: jordanFeedbackBubbleIn 0.25s ease-out;
+}
+
+.jordan-feedback-bubble::after {
+  content: '';
+  position: absolute;
+  left: 25px;
+  bottom: -8px;
+
+  width: 14px;
+  height: 14px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border-right: 1px solid #e2ddd0;
+  border-bottom: 1px solid #e2ddd0;
+
+  transform: rotate(45deg);
+}
+
+@keyframes jordanFeedbackBubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Jordan user-information sticky note                                        */
+/* -------------------------------------------------------------------------- */
+
+.jordan-user-info-board {
+  position: absolute;
+  top: 25%;
+  right: 15%;
+  z-index: 0;
+
+  width: 185px;
+  max-height: 260px;
+  box-sizing: border-box;
+  padding: 16px 15px 18px;
+
+  /* Sticky-note paper */
+  background: #fff3a8;
+  border: none;
+  border-radius: 2px;
+
+  /* More physical/paper-like than the old floating card */
+  box-shadow:
+    2px 4px 7px rgba(40, 45, 55, 0.18),
+    0 1px 2px rgba(40, 45, 55, 0.1);
+
+  /* Slightly imperfect placement */
+  transform: rotate(-1.5deg);
+}
+
+/* subtle paper highlight */
+.jordan-user-info-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.22),
+    transparent 45%
+  );
+}
+
+.jordan-user-info-board-header {
+  position: relative;
+  margin-bottom: 11px;
+
+  color: #514b3d;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.jordan-user-info-list {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  max-height: 205px;
+  overflow-y: auto;
+}
+
+.jordan-user-info-item {
+  padding: 6px 2px;
+
+  /* Don't make each memory another card */
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(105, 92, 53, 0.15);
+
+  color: #514b3d;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.jordan-user-info-empty {
+  position: relative;
+
+  color: #716b5b;
+  font-size: 11px;
+  line-height: 1.45;
+  font-style: italic;
 }

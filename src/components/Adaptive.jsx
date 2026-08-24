@@ -58,204 +58,46 @@ import {
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
 /* -------------------------------------------------------------------------- */
-
 const ALEX_INTRO_1 =
   "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation."
-const ALEX_INTRO_1_FORAGING_COMBINED =
-  "Hi there, I'm Alex! I am an AI powered virtual character here to help you explore and understand clinical trial participation."
 const ALEX_INTRO_2 =
   "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute."
 const ALEX_INTRO_3 =
   'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.'
 const ALEX_INTRO_4 =
   "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
-const ALEX_INTRO_4_1_FORAGING =
-  "As you explore, I'll also keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
-const ALEX_INTRO_4_1_FORAGING_V2 =
-  "As you explore, I'll also keep track of the information you discover and organize related ideas on the whiteboard behind me."
-const ALEX_INTRO_4_2_FORAGING =
-  "In between me answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
-const ALEX_INTRO_4_2_FORAGING_V2 =
-  'In between me answering your questions, you can open the board to review the notes I take.'
 const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
-const ALEX_INTRO_5_FORAGING_COMBINED =
-  "Alright, whenever you're ready, ask me anything you'd like to know about clinical trials!"
 
 const JORDAN_INTRO_1 =
-  "Thanks, Alex! As Alex mentioned, I'm Jordan. I'm a virtual companion here to provide useful guidance during your search process."
+  "Thanks! As Alex mentioned, I'm Jordan. I'm a virtual companion here to help make sure the information Alex gives you is communicated in a way that works for you."
 const JORDAN_INTRO_2 =
-  "As you explore, I'll keep track of the information you discover and try to connect related ideas. I'll also suggest directions to explore to continue building your understanding."
+  "If I notice you sharing something with Alex that might be useful to keep in mind when answering your questions, I'll ask you about it after Alex answers."
 const JORDAN_INTRO_3 =
-  "In between Alex answering your questions, you can click on me to hear my thoughts and revisit what you've learned so far."
+  "You can also talk with me anytime about yourself or how you like information explained, and I'll help Alex keep that in mind."
 const JORDAN_INTRO_4 =
+  "I can't answer questions about clinical trials myself. My role is to talk with you about what Alex should keep in mind when answering your questions."
+const JORDAN_INTRO_5 =
   "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!"
-const JORDAN_INTRO_2_V2 =
-  "As you explore, I'll keep track of the information you discover and try to connect related ideas on this white board behind me."
-const JORDAN_INTRO_3_V2 =
-  'In between Alex answering your questions, you can open the board to review the notes I take.'
-
-const ALEX_INSTRUCTION_FORAGING =
-  "Here are the sources I used. Remember, you can save any of them to read later, and I'll keep sharing my sources throughout our conversation."
-
-const JORDAN_INSTRUCTION =
-  "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
-
-const ALEX_INSTRUCTION_SENSEMAKING =
-  "This is where I'll keep track of important ideas and how they fit together as you chat with Alex. Remember, you can click on me at any time to take a look!"
 
 const ALEX_INTROS_DISTRIBUTED = [
-  {
-    key: 'ALEX_INTRO_1',
-    text: ALEX_INTRO_1,
-  },
-  {
-    key: 'ALEX_INTRO_2',
-    text: ALEX_INTRO_2,
-  },
-  {
-    key: 'ALEX_INTRO_3',
-    text: ALEX_INTRO_3,
-  },
-  {
-    key: 'ALEX_INTRO_4',
-    text: ALEX_INTRO_4,
-  },
-  {
-    key: 'ALEX_INTRO_5',
-    text: ALEX_INTRO_5,
-  },
-]
-
-const ALEX_INTROS_FORAGING_ONLY = [
-  {
-    key: 'ALEX_INTRO_1_FORAGING_COMBINED',
-    text: ALEX_INTRO_1_FORAGING_COMBINED,
-  },
-  {
-    key: 'ALEX_INTRO_2',
-    text: ALEX_INTRO_2,
-  },
-  {
-    key: 'ALEX_INTRO_3',
-    text: ALEX_INTRO_3,
-  },
-  {
-    key: 'ALEX_INTRO_4',
-    text: ALEX_INTRO_4,
-  },
-  {
-    key: 'ALEX_INTRO_5_FORAGING_COMBINED',
-    text: ALEX_INTRO_5_FORAGING_COMBINED,
-  },
-]
-
-const ALEX_INTROS_COMBINED = [
-  {
-    key: 'ALEX_INTRO_1_FORAGING_COMBINED',
-    text: ALEX_INTRO_1_FORAGING_COMBINED,
-  },
-  {
-    key: 'ALEX_INTRO_2',
-    text: ALEX_INTRO_2,
-  },
-  {
-    key: 'ALEX_INTRO_3',
-    text: ALEX_INTRO_3,
-  },
-  {
-    key: 'ALEX_INTRO_4',
-    text: ALEX_INTRO_4,
-  },
-  {
-    key: 'ALEX_INTRO_4_1_FORAGING',
-    text: ALEX_INTRO_4_1_FORAGING,
-  },
-  {
-    key: 'ALEX_INTRO_4_2_FORAGING',
-    text: ALEX_INTRO_4_2_FORAGING,
-  },
-  {
-    key: 'ALEX_INTRO_5_FORAGING_COMBINED',
-    text: ALEX_INTRO_5_FORAGING_COMBINED,
-  },
-]
-
-const ALEX_INTROS_COMBINED_WORKSPACE = [
-  {
-    key: 'ALEX_INTRO_1_FORAGING_COMBINED',
-    text: ALEX_INTRO_1_FORAGING_COMBINED,
-  },
-  {
-    key: 'ALEX_INTRO_2',
-    text: ALEX_INTRO_2,
-  },
-  {
-    key: 'ALEX_INTRO_3',
-    text: ALEX_INTRO_3,
-  },
-  {
-    key: 'ALEX_INTRO_4',
-    text: ALEX_INTRO_4,
-  },
-  {
-    key: 'ALEX_INTRO_4_1_FORAGING_V2',
-    text: ALEX_INTRO_4_1_FORAGING_V2,
-  },
-  {
-    key: 'ALEX_INTRO_4_2_FORAGING_V2',
-    text: ALEX_INTRO_4_2_FORAGING_V2,
-  },
-  {
-    key: 'ALEX_INTRO_5_FORAGING_COMBINED',
-    text: ALEX_INTRO_5_FORAGING_COMBINED,
-  },
+  { key: 'ALEX_INTRO_1', text: ALEX_INTRO_1 },
+  { key: 'ALEX_INTRO_2', text: ALEX_INTRO_2 },
+  { key: 'ALEX_INTRO_3', text: ALEX_INTRO_3 },
+  { key: 'ALEX_INTRO_4', text: ALEX_INTRO_4 },
+  { key: 'ALEX_INTRO_5', text: ALEX_INTRO_5 },
 ]
 
 const JORDAN_INTROS = [
-  {
-    key: 'JORDAN_INTRO_1',
-    text: JORDAN_INTRO_1,
-  },
-  {
-    key: 'JORDAN_INTRO_2',
-    text: JORDAN_INTRO_2,
-  },
-  {
-    key: 'JORDAN_INTRO_3',
-    text: JORDAN_INTRO_3,
-  },
-  {
-    key: 'JORDAN_INTRO_4',
-    text: JORDAN_INTRO_4,
-  },
-]
-
-const JORDAN_INTROS_WORKSPACE = [
-  {
-    key: 'JORDAN_INTRO_1',
-    text: JORDAN_INTRO_1,
-  },
-  {
-    key: 'JORDAN_INTRO_2_V2',
-    text: JORDAN_INTRO_2_V2,
-  },
-  {
-    key: 'JORDAN_INTRO_3_V2',
-    text: JORDAN_INTRO_3_V2,
-  },
-  {
-    key: 'JORDAN_INTRO_4',
-    text: JORDAN_INTRO_4,
-  },
+  { key: 'JORDAN_INTRO_1', text: JORDAN_INTRO_1 },
+  { key: 'JORDAN_INTRO_2', text: JORDAN_INTRO_2 },
+  { key: 'JORDAN_INTRO_3', text: JORDAN_INTRO_3 },
+  { key: 'JORDAN_INTRO_4', text: JORDAN_INTRO_4 },
+  { key: 'JORDAN_INTRO_5', text: JORDAN_INTRO_5 },
 ]
 
 const INTRO_VISUAL_TIMELINE = {
   alex: {
     ALEX_INTRO_1: [
-      { delay: 2500, duration: 2000, cue: { type: 'ai' } },
-      { delay: 5000, duration: 2200, cue: { type: 'explore' } },
-    ],
-    ALEX_INTRO_1_FORAGING_COMBINED: [
       { delay: 2500, duration: 2000, cue: { type: 'ai' } },
       { delay: 5000, duration: 2200, cue: { type: 'explore' } },
     ],
@@ -270,22 +112,7 @@ const INTRO_VISUAL_TIMELINE = {
     ALEX_INTRO_4: [
       { delay: 1800, duration: 5000, cue: { type: 'no-specific-trials' } },
     ],
-    ALEX_INTRO_4_1_FORAGING: [
-      {
-        delay: 1800,
-        duration: 6200,
-        cue: { type: 'jordan-build-question' },
-      },
-    ],
-    ALEX_INTRO_4_2_FORAGING: [
-      {
-        delay: 1800,
-        duration: 3000,
-        cue: { type: 'jordan-help' },
-      },
-    ],
     ALEX_INTRO_5: [],
-    ALEX_INTRO_5_FORAGING_COMBINED: [],
   },
   jordan: {
     JORDAN_INTRO_1: [
@@ -493,12 +320,16 @@ export default function MainInteraction() {
   const [savedResources, setSavedResources] = useState(
     savedSession?.savedResources ?? [],
   )
+  const [adaptationProfile, setAdaptationProfile] = useState(
+    savedSession?.adaptationProfile ?? { user_information: [] },
+  )
   const [isIntroPlaying, setIsIntroPlaying] = useState(false)
   const [hideCharacterLoader, setHideCharacterLoader] = useState(false)
   const [charactersReady, setCharactersReady] = useState(false)
   const [charactersSettled, setCharactersSettled] = useState(false)
   const [alexSubtitle, setAlexSubtitle] = useState('')
   const [jordanSubtitle, setJordanSubtitle] = useState('')
+  const [jordanCheckIn, setJordanCheckIn] = useState('')
   const introStartedRef = useRef(false)
   const [introCue, setIntroCue] = useState(null)
   const [audioReady, setAudioReady] = useState(
@@ -527,9 +358,7 @@ export default function MainInteraction() {
     browser: false,
   })
 
-  const [alexInstructionSpoken, setAlexInstructionSpoken] = useState(
-    savedSession?.alexInstructionSpoken ?? false,
-  )
+  const [alexInstructionSpoken, setAlexInstructionSpoken] = useState(true)
 
   const [jordanInstructionSpoken, setJordanInstructionSpoken] = useState(
     savedSession?.jordanInstructionSpoken ?? false,
@@ -538,7 +367,7 @@ export default function MainInteraction() {
   const hasJordanWorkspace =
     isDistributedWorkspaceCondition || isCombinedWorkspaceCondition
 
-  const [, setShowJordanWhiteboard] = useState(false)
+  const [showJordanWhiteboard, setShowJordanWhiteboard] = useState(false)
 
   const canStart = Object.values(startChecks).every(Boolean)
 
@@ -553,6 +382,7 @@ export default function MainInteraction() {
       transcript,
       introTranscript,
       savedResources,
+      adaptationProfile,
     }
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
   }, [
@@ -566,6 +396,7 @@ export default function MainInteraction() {
     transcript,
     introTranscript,
     savedResources,
+    adaptationProfile,
   ])
 
   const completedAlexResponses = messages.filter(
@@ -707,13 +538,7 @@ export default function MainInteraction() {
           playGesture('jordanLookAtAlex')
         }
 
-        const alexIntros = hasSeparateSensemakingCharacter
-          ? ALEX_INTROS_DISTRIBUTED
-          : isCombinedWorkspaceCondition
-            ? ALEX_INTROS_COMBINED_WORKSPACE
-            : alexHandlesSensemaking
-              ? ALEX_INTROS_COMBINED
-              : ALEX_INTROS_FORAGING_ONLY
+        const alexIntros = ALEX_INTROS_DISTRIBUTED
 
         for (const [index, intro] of alexIntros.entries()) {
           const introNumber = index + 1
@@ -783,9 +608,7 @@ export default function MainInteraction() {
           /* Jordan introduction                                                  */
           /* -------------------------------------------------------------------- */
 
-          const jordanIntros = hasJordanWorkspace
-            ? JORDAN_INTROS_WORKSPACE
-            : JORDAN_INTROS
+          const jordanIntros = JORDAN_INTROS
 
           for (const [index, intro] of jordanIntros.entries()) {
             const introNumber = index + 1
@@ -814,10 +637,10 @@ export default function MainInteraction() {
 
             let whiteboardRevealTimer = null
 
-            if (hasJordanWorkspace && introFileName === 'JORDAN_INTRO_2_V2') {
+            if (introFileName === 'JORDAN_INTRO_3') {
               whiteboardRevealTimer = setTimeout(() => {
                 setShowJordanWhiteboard(true)
-              }, 5600)
+              }, 1800)
             }
 
             await speakWithLipsyncStatic(
@@ -1049,6 +872,181 @@ export default function MainInteraction() {
     handleSend(e)
   }
 
+  async function handleJordanSend(trimmed) {
+    setInput('')
+    setIsJordanActive(true)
+    playGesture('alexLookAtJordan')
+    playGesture('thinking')
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: uid(),
+        from: 'user',
+        text: trimmed,
+        recipient: 'jordan',
+      },
+    ])
+
+    updateTranscript('user_to_jordan', trimmed)
+
+    const recentAlexAnswer = [...messages]
+      .reverse()
+      .find(
+        (message) =>
+          message.from === 'alex' &&
+          !message.isIntro &&
+          !message.isInstruction &&
+          !message.isSensemaking,
+      )
+
+    const recentUserQuestion = [...messages]
+      .reverse()
+      .find(
+        (message) => message.from === 'user' && message.recipient !== 'jordan',
+      )
+
+    const jordanHistory = messages
+      .filter(
+        (message) =>
+          (message.recipient === 'jordan' && message.from === 'user') ||
+          (message.from === 'jordan' && message.isAdaptation),
+      )
+      .slice(-6)
+      .map((message) => ({
+        role: message.from === 'user' ? 'user' : 'assistant',
+        content: message.text,
+      }))
+
+    try {
+      const response = await fetch(`${BASE_URL}/jordan/adaptation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_feedback: trimmed,
+          jordan_invitation: jordanCheckIn,
+          user_question: recentUserQuestion?.text ?? null,
+          alex_answer: recentAlexAnswer?.text ?? null,
+          current_profile: adaptationProfile,
+          jordan_history: jordanHistory,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          `Jordan request failed: ${response.status} ${JSON.stringify(data)}`,
+        )
+      }
+
+      console.log('[JORDAN ADAPTATION RESPONSE]', data)
+
+      setAdaptationProfile(data.updated_profile)
+
+      if (data.side_conversation_done) {
+        setActiveRecipient(null)
+      }
+
+      const jordanMsgId = uid()
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: jordanMsgId,
+          from: 'jordan',
+          text: data.reply,
+          isAdaptation: true,
+        },
+      ])
+
+      updateTranscript('jordan_adaptation', data.reply, {
+        user_feedback: trimmed,
+        profile_changed: data.profile_changed,
+        needs_followup: data.needs_followup,
+        side_conversation_done: data.side_conversation_done,
+        adaptation_profile: data.updated_profile,
+      })
+
+      await speakWithLipsync(
+        data.reply,
+        'companion',
+        null,
+        null,
+        setJordanSubtitle,
+      )
+    } catch (error) {
+      console.error('Jordan adaptation failed:', error)
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uid(),
+          from: 'jordan',
+          text: 'Sorry, I had trouble responding just now.',
+          isAdaptation: true,
+        },
+      ])
+    } finally {
+      setJordanSubtitle('')
+      setIsJordanActive(false)
+      playGesture('stopCompanionGesture')
+      playGesture('stopAlexGesture')
+    }
+  }
+
+  async function generateJordanCheckIn(userQuestion, alexAnswer, answerScope) {
+    try {
+      console.log('[JORDAN CHECK-IN REQUEST]', {
+        userQuestion,
+        alexAnswer,
+        answerScope,
+        adaptationProfile,
+      })
+
+      const response = await fetch(`${BASE_URL}/jordan/invitation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_question: userQuestion,
+          alex_answer: alexAnswer,
+          alex_answer_scope: answerScope || 'general_answer',
+          current_profile: adaptationProfile,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          `Jordan check-in failed: ${response.status} ${JSON.stringify(data)}`,
+        )
+      }
+
+      console.log('[JORDAN INVITATION RESPONSE]', data)
+
+      updateTranscript(
+        'jordan_observation',
+        data.potential_adaptation_signal
+          ? 'Possible adaptation signal detected'
+          : 'No adaptation signal detected',
+        {
+          potential_adaptation_signal: data.potential_adaptation_signal,
+          signal: data.signal,
+        },
+      )
+
+      setJordanCheckIn(data.question || '')
+    } catch (error) {
+      console.error('Jordan check-in failed:', error)
+      setJordanCheckIn('')
+    }
+  }
+
   async function handleSend(e) {
     e.preventDefault()
 
@@ -1059,6 +1057,11 @@ export default function MainInteraction() {
     const trimmed = input.trim()
     if (!trimmed) return
 
+    if (activeRecipient === 'jordan') {
+      await handleJordanSend(trimmed)
+      return
+    }
+
     updateTranscript('user', trimmed)
 
     incrementConversationTurns(participantId).catch((error) => {
@@ -1068,6 +1071,7 @@ export default function MainInteraction() {
     clearIntroCues()
     setIsAlexActive(true)
     playGesture('startSwiping')
+    setJordanCheckIn('')
     setShowCards(true)
     setAlexSources([])
     setAlexTalkingPoints([])
@@ -1098,13 +1102,15 @@ export default function MainInteraction() {
             !message.isIntro &&
             !message.isInstruction &&
             !message.isSensemaking &&
+            !message.isAdaptation &&
+            message.recipient !== 'jordan' &&
             (message.from === 'user' || message.from === 'alex'),
         )
         .map((message) => ({
           role: message.from === 'user' ? 'user' : 'assistant',
           content: message.text,
         }))
-      const response = await fetch(`${BASE_URL}/rag-chat-v2`, {
+      const response = await fetch(`${BASE_URL}/rag-chat-v3`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1112,6 +1118,7 @@ export default function MainInteraction() {
         body: JSON.stringify({
           message: trimmed,
           history,
+          adaptation_profile: adaptationProfile,
         }),
       })
 
@@ -1170,10 +1177,6 @@ export default function MainInteraction() {
               setIsForagingFading(false)
             }, 450)
 
-            setTimeout(() => {
-              playGesture('thinking')
-            }, 5000)
-
             setMessages((prev) => [
               ...prev,
               {
@@ -1198,7 +1201,13 @@ export default function MainInteraction() {
       playGesture('stopAlexGesture')
       playGesture('stopCompanionGesture')
       setIsAlexActive(false)
+
+      // Alex is done speaking, so visually deselect him immediately.
       setActiveRecipient(null)
+
+      if (hasSeparateSensemakingCharacter) {
+        await generateJordanCheckIn(trimmed, data.answer, data.answer_scope)
+      }
 
       if (hasSeparateSensemakingCharacter) {
         if (condition === CONDITION.DISTRIBUTED) {
@@ -1425,6 +1434,12 @@ export default function MainInteraction() {
             onToggleSavedResource={handleToggleSavedResource}
             isAlexSpeaking={isAlexSpeaking}
             activeRecipient={activeRecipient}
+            showJordanFeedbackBubble={
+              hasSeparateSensemakingCharacter && completedAlexResponses > 0
+            }
+            jordanCheckIn={jordanCheckIn}
+            adaptationProfile={adaptationProfile}
+            showJordanWhiteboard={showJordanWhiteboard}
           />
 
           <ChatInput
@@ -1517,6 +1532,10 @@ function AlexHeader({
   onToggleSavedResource,
   isAlexSpeaking,
   activeRecipient,
+  showJordanFeedbackBubble,
+  jordanCheckIn,
+  adaptationProfile,
+  showJordanWhiteboard,
 }) {
   const uniqueSources = dedupeSources(sources)
   const introVisualClass = (extraClass = '') =>
@@ -1853,12 +1872,44 @@ function AlexHeader({
             ${isAlexFocused ? 'mi-character-zone-listening' : ''}
         `}
         >
+          {showJordanWhiteboard && (
+            <div className="jordan-user-info-board">
+              <div className="jordan-user-info-board-header">
+                What Jordan is keeping in mind
+              </div>
+
+              {adaptationProfile?.user_information?.length > 0 ? (
+                <div className="jordan-user-info-list">
+                  {adaptationProfile.user_information.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="jordan-user-info-item"
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="jordan-user-info-empty">
+                  Nothing yet — Jordan will learn what matters to you as you
+                  talk.
+                </div>
+              )}
+            </div>
+          )}
           <div className="mi-character-content">
             <div
               className="virtual-companion"
               id="virtualcompanion"
               ref={companionRef}
             />
+
+            {showJordanFeedbackBubble &&
+              jordanCheckIn &&
+              !isAlexActive &&
+              !isIntroPlaying && (
+                <div className="jordan-feedback-bubble">{jordanCheckIn}</div>
+              )}
 
             {jordanSubtitle && (
               <div className="character-subtitle character-subtitle-jordan">
