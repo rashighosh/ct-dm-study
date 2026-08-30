@@ -7,43 +7,31 @@ const alexEnding = `Thanks for chatting with me about clinical trial participati
 const jordanEnding = `And I have the sources Doctor Alex used earlier in your conversation. You can choose what resources you'd like to receive and they'll be shared with you securely when you finish the post survey.`
 
 const ALEX_INTRO_1 =
-  "Hi there, I'm Alex, and this is Jordan! We are AI powered virtual characters here to help you explore and understand clinical trial participation."
-const ALEX_INTRO_2 =
-  "I'll explain my role first. I'm a virtual assistant that can quickly search information across several trusted health resources to answer questions about clinical trial participation. I pull from reputable sources like the National Cancer Institute."
-const ALEX_INTRO_3 =
-  'These sources cover information such as the purpose and importance of clinical trials, and topics such as safety and costs. As I answer your questions, I will also share the sources I use that you can save to read later if you want.'
-const ALEX_INTRO_4 =
-  "One important thing to note is that I don't have information on specific clinical trials, so I can't help you find a trial to join or answer questions about a particular study."
-const ALEX_INTRO_5 = "Now, I'll hand it over to Jordan."
+  'And my role is to provide information. I can quickly access information from trusted health resources, such as the National Cancer Institute. When questions come up or more information might help, I’ll step in with information to help you better understand the topic.'
 
 const JORDAN_INTRO_1 =
-  "Thanks! As Alex mentioned, I'm Jordan. I'm a virtual companion here to help make sure the information Alex gives you is communicated in a way that works for you."
+  'Hi there, I’m Jordan, and this is Alex. We are AI-powered virtual characters here to help you explore and understand clinical trial participation. My role is to guide our conversation through a few topics chosen based on your earlier survey responses and ask about what you think or feel about each one.'
+
 const JORDAN_INTRO_2 =
-  "If I notice you sharing something with Alex that might be useful to keep in mind when answering your questions, I'll ask you about it after Alex answers."
-const JORDAN_INTRO_3 =
-  "You can also talk with me anytime about yourself or how you like information explained, and I'll help Alex keep that in mind."
-const JORDAN_INTRO_4 =
-  "I can't answer questions about clinical trials myself. My role is to talk with you about what Alex should keep in mind when answering your questions."
-const JORDAN_INTRO_5 =
-  "Whenever you're ready, ask Alex anything you'd like to know about clinical trials!"
+  'We’ll take the topics one at a time, and you can ask questions or share whatever comes to mind along the way. Let’s get started!'
 
 const res = await fetch(`${BASE_URL}/tts`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    text: JORDAN_INTRO_5,
-    character: 'companion',
+    text: ALEX_INTRO_1,
+    character: 'doctor',
   }),
 })
 
 const { audio, timestamps } = await res.json()
 
 fs.writeFileSync(
-  'public/intro-voices/companion-audio-JORDAN_INTRO_5.mp3',
+  'public/intro-voices/doctor-audio-ALEX_INTRO_1.mp3',
   Buffer.from(audio, 'base64'),
 )
 fs.writeFileSync(
-  'public/intro-voices/companion-timestamps-JORDAN_INTRO_5.json',
+  'public/intro-voices/doctor-timestamps-ALEX_INTRO_1.json',
   JSON.stringify(timestamps, null, 2),
 )
 

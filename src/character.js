@@ -1,4 +1,5 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 // ============================================================
 // Config
@@ -36,6 +37,16 @@ document.addEventListener(
   { once: true },
 )
 
+const gltfLoader = new GLTFLoader()
+
+function addChairBehindAvatar(head, url = '/assets/office_chair.glb') {
+  gltfLoader.load(url, (gltf) => {
+    const chair = gltf.scene
+    chair.position.set(0, 0, -0.35) // push further back, no rotation needed
+    head.scene.add(chair)
+  })
+}
+
 // ============================================================
 // Character initialization / lifecycle
 // ============================================================
@@ -44,6 +55,8 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   head = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: view, // full, mid, upper, head,
+    cameraY: 0.25,
+    cameraDistance: -1,
     cameraRotateEnable: false,
     cameraPanEnable: false,
     cameraZoomEnable: false,
@@ -61,6 +74,8 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
     ttsVoice: 'en-GB-Standard-A',
     lipsyncLang: 'en',
   })
+  addChairBehindAvatar(head, '/assets/office_chair.glb')
+  head.playPose('chair')
 
   return head
 }
@@ -69,6 +84,8 @@ export async function initCompanionCharacter(containerNode) {
   head1 = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: 'mid', // full, mid, upper, head,
+    cameraY: 0.31,
+    cameraDistance: -1,
     avatarIdleEyeContact: 1,
     avatarIdleHeadMove: 1,
     avatarSpeakingEyeContact: 1,
@@ -86,6 +103,8 @@ export async function initCompanionCharacter(containerNode) {
     ttsVoice: 'en-GB-Standard-A',
     lipsyncLang: 'en',
   })
+  addChairBehindAvatar(head1, '/assets/office_chair.glb')
+  head1.playPose('chair2')
 
   return head1
 }
@@ -210,8 +229,8 @@ export async function thumbsupQuick() {
 }
 
 export async function wave() {
-  head1.stopGesture(3000)
-  head1?.playGesture('handup')
+  head.stopGesture(3000)
+  head?.playGesture('handup')
 }
 
 export async function ready() {
@@ -236,12 +255,12 @@ export async function lookright() {
 
 export async function alexLookAtJordan() {
   head?.stopGesture(1500)
-  head?.playGesture('lookright', Infinity, true, 1500)
+  head?.playGesture('lookright', Infinity, false, 1500)
 }
 
 export async function jordanLookAtAlex() {
   head1?.stopGesture(1500)
-  head1?.playGesture('lookright', Infinity, false, 1500)
+  head1?.playGesture('lookright', Infinity, true, 1500)
 }
 
 export async function indexFingerRaise() {
@@ -262,8 +281,8 @@ export async function leftGesture() {
   head1?.playGesture('leftGesture', Infinity, true, 1500)
 }
 
-export async function introduceJordan() {
-  head?.playGesture('introduceJordan')
+export async function introduceCharacter() {
+  head1?.playGesture('introduceCharacter')
 }
 
 export async function headNod() {
@@ -707,12 +726,18 @@ export async function speakWithLipsync(
 // ============================================================
 
 const STATIC_GESTURE_MAPS = {
-  '/intro-voices/doctor-audio-ALEX_INTRO_1.mp3': [
-    { engine: 'native', word: 'hi', gesture: 'handup', dur: 1.5, reset: false },
+  '/intro-voices/companion-audio-JORDAN_INTRO_1.mp3': [
+    {
+      engine: 'native',
+      word: 'hi',
+      gesture: 'handup',
+      dur: 1.0,
+      reset: false,
+    },
     {
       engine: 'native',
       word: 'this',
-      gesture: 'introduceJordan',
+      gesture: 'introduceCharacter',
       dur: 1,
       reset: false,
     },
@@ -725,217 +750,112 @@ const STATIC_GESTURE_MAPS = {
     },
     {
       engine: 'native',
-      word: 'help',
+      word: 'are',
+      gesture: 'lookForward',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'here',
+      gesture: 'talkopen',
+      dur: 1.5,
+      resetTransition: 500,
+    },
+    {
+      engine: 'native',
+      word: 'my',
+      gesture: 'chest',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'conversation',
+      gesture: 'talkopen',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'earlier',
+      gesture: 'rightGesture',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: 'think',
       gesture: 'talkopen',
       dur: 2,
       resetTransition: 500,
     },
   ],
-  '/intro-voices/doctor-audio-ALEX_INTRO_2.mp3': [
+  '/intro-voices/doctor-audio-ALEX_INTRO_1.mp3': [
     {
       engine: 'native',
-      word: 'explain',
+      word: 'my',
       gesture: 'chest',
       dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'virtual',
-      gesture: 'talkopen',
-      dur: 1,
-      resetTransition: 500,
-    },
-    {
-      engine: 'native',
-      word: 'search',
-      gesture: 'rightGesture',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-    {
-      engine: 'native',
-      word: 'pull',
-      gesture: 'talkopen',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-  ],
-  '/intro-voices/doctor-audio-ALEX_INTRO_3.mp3': [
-    {
-      engine: 'native',
-      word: 'these',
-      gesture: 'rightGesture',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'purpose',
-      gesture: 'talkopen',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'topics',
-      gesture: 'rightGesture',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-    {
-      engine: 'native',
-      word: 'share',
-      gesture: 'chest',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-    {
-      engine: 'native',
-      word: 'save',
-      gesture: 'talkopen',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-  ],
-  '/intro-voices/doctor-audio-ALEX_INTRO_4.mp3': [
-    {
-      engine: 'native',
-      word: 'one',
-      gesture: 'oneQuestion',
-      dur: 1,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'that',
+      word: 'provide',
       gesture: 'talkopen',
       dur: 1,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'so',
+      word: 'access',
       gesture: 'rightGesture',
-      dur: 1.5,
-      resetTransition: 200,
-    },
-  ],
-  '/intro-voices/doctor-audio-ALEX_INTRO_5.mp3': [
-    {
-      engine: 'native',
-      word: 'now',
-      gesture: 'introduceJordan',
       dur: 1.5,
       reset: false,
     },
-  ],
-  '/intro-voices/companion-audio-JORDAN_INTRO_1.mp3': [
     {
       engine: 'native',
-      word: 'mentioned',
+      word: 'National',
+      gesture: 'talkopen',
+      dur: 1.5,
+      reset: false,
+    },
+    {
+      engine: 'native',
+      word: "I'll",
       gesture: 'chest',
       dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'information',
+      word: 'better',
       gesture: 'talkopen',
-      dur: 2,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'works',
-      gesture: 'rightGesture',
-      dur: 1.5,
+      dur: 1,
       reset: false,
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_2.mp3': [
     {
       engine: 'native',
-      word: 'if',
-      gesture: 'chest',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'notice',
+      word: "We'll",
       gesture: 'talkopen',
       dur: 1.5,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'with',
+      word: 'you',
       gesture: 'rightGesture',
-      dur: 1.5,
+      dur: 1,
       reset: false,
     },
     {
       engine: 'native',
-      word: 'your',
+      word: "Let's",
       gesture: 'talkopen',
       dur: 1.5,
       reset: false,
-    },
-  ],
-  '/intro-voices/companion-audio-JORDAN_INTRO_3.mp3': [
-    {
-      engine: 'native',
-      word: 'talk',
-      gesture: 'chest',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'yourself',
-      gesture: 'talkopen',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'Alex',
-      gesture: 'rightGesture',
-      dur: 1.5,
-      reset: false,
-    },
-  ],
-  '/intro-voices/companion-audio-JORDAN_INTRO_4.mp3': [
-    {
-      engine: 'native',
-      word: "can't",
-      gesture: 'talkopen',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'My',
-      gesture: 'chest',
-      dur: 1.5,
-      reset: false,
-    },
-    {
-      engine: 'native',
-      word: 'when',
-      gesture: 'rightGesture',
-      dur: 1.5,
-      reset: false,
-    },
-  ],
-  '/intro-voices/companion-audio-JORDAN_INTRO_5.mp3': [
-    {
-      engine: 'native',
-      word: 'ready',
-      gesture: 'talkopen',
-      dur: 1.5,
-      resetTransition: 200,
     },
   ],
 }
@@ -1000,14 +920,10 @@ function buildGestureMarkers({
       const startTime = wtimes[index]
 
       markers.push(() => {
-        if (gesture === 'introduceJordan') {
-          wave()
-
-          setTimeout(() => {
-            jordanLookAtAlex()
-          }, 1800)
-        }
         activeHead.playGesture(gesture, dur, mirror, transition)
+        if (gesture === 'introduceCharacter') {
+          wave()
+        }
       })
 
       mtimes.push(startTime)
