@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate, useSearchParams } from 'react-router'
 
-const BASE_URL = 'http://127.0.0.1:8000'
-// const BASE_URL =
-//   'https://brcco3c42yqwcnqmvj4h2k2igu0fysxd.lambda-url.us-east-1.on.aws'
+// const BASE_URL = 'http://127.0.0.1:8000'
+const BASE_URL =
+  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const TOPICS = [
   'What is a placebo?',
@@ -242,7 +242,18 @@ export default function SelectTopics() {
             onClick={handleContinue}
             disabled={selectedTopics.length !== MAX_TOPICS || saving}
           >
-            {saving ? 'Saving...' : 'Continue'}
+            {saving ? (
+              <span className="button-loading">
+                Saving
+                <span className="button-loading-dots" aria-hidden="true">
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                </span>
+              </span>
+            ) : (
+              'Continue'
+            )}
 
             <span className="icon">
               <FontAwesomeIcon icon={faArrowRight} size="xs" />
