@@ -21,10 +21,15 @@ import {
   playGesture,
 } from '../character.js'
 import '../css/Adaptive.css'
+import introSequences from '../data/introSequences.json'
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+
+const CONDITION_SINGLE_INFO = 1
+const CONDITION_SINGLE_COMBINED = 2
+const CONDITION_MULTIPLE = 3
 
 function waitForCharacterRender(container, timeout = 10000) {
   return new Promise((resolve, reject) => {
@@ -66,6 +71,15 @@ export default function MainInteraction() {
     'test-participant'
 
   const condition = Number(searchParams.get('c') ?? 0)
+
+  const isSingleAgent =
+    condition === CONDITION_SINGLE_INFO ||
+    condition === CONDITION_SINGLE_COMBINED
+
+  const conversationalSpeaker =
+    condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+
+  const introMessageCount = introSequences[condition]?.length ?? 0
 
   const doctorRef = useRef(null)
   const companionRef = useRef(null)
@@ -129,7 +143,7 @@ export default function MainInteraction() {
     async function loadTopicState() {
       try {
         const response = await fetch(
-          `${BASE_URL}/conversation/state/${participantId}`,
+          `${BASE_URL}/jordan/state/${participantId}`,
         )
 
         if (!response.ok) {
@@ -145,7 +159,7 @@ export default function MainInteraction() {
         // Keep database copy of conversation state up to date
         try {
           const stateResponse = await fetch(
-            `${BASE_URL}/save-conversation-state`,
+            `${BASE_URL}/logs/save-conversation-state`,
             {
               method: 'POST',
               headers: {
@@ -183,7 +197,7 @@ export default function MainInteraction() {
     async function saveConversationTranscript() {
       try {
         const response = await fetch(
-          `${BASE_URL}/log-conversation-transcript`,
+          `${BASE_URL}/logs/log-conversation-transcript`,
           {
             method: 'POST',
             headers: {
@@ -237,15 +251,20 @@ export default function MainInteraction() {
       try {
         setCharactersReady(false)
 
-        await Promise.all([
-          initDoctorCharacter(doctorRef.current),
-          initCompanionCharacter(companionRef.current),
-        ])
+        if (isSingleAgent) {
+          await initDoctorCharacter(doctorRef.current)
+          await waitForCharacterRender(doctorRef.current)
+        } else {
+          await Promise.all([
+            initDoctorCharacter(doctorRef.current),
+            initCompanionCharacter(companionRef.current),
+          ])
 
-        await Promise.all([
-          waitForCharacterRender(doctorRef.current),
-          waitForCharacterRender(companionRef.current),
-        ])
+          await Promise.all([
+            waitForCharacterRender(doctorRef.current),
+            waitForCharacterRender(companionRef.current),
+          ])
+        }
 
         setCharactersReady(true)
       } catch (error) {
@@ -254,7 +273,7 @@ export default function MainInteraction() {
     }
 
     initCharacters()
-  }, [started])
+  }, [started, isSingleAgent])
 
   useEffect(() => {
     if (!started || !charactersReady) return
@@ -281,99 +300,61 @@ export default function MainInteraction() {
     revealScene()
   }, [started, charactersReady])
 
+  useEffect(() => {
+    if (!showHistory) return
+
+    requestAnimationFrame(() => {
+      if (historyBodyRef.current) {
+        historyBodyRef.current.scrollTop = historyBodyRef.current.scrollHeight
+      }
+    })
+  }, [showHistory])
+
   async function playCharacterIntro() {
-    // Alex intro 1
-    playGesture('jordanLookAtAlex')
+    const introSequence = introSequences[condition]
 
-    setMessages((previous) => [
-      ...previous,
-      {
-        from: 'Alex',
-        text: 'Hi there, I’m Alex, and this is Jordan. We are AI-powered virtual characters here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.',
-      },
-    ])
+    if (!introSequence) {
+      throw new Error(`No intro sequence configured for condition ${condition}`)
+    }
 
-    // Reveal topics 8.7 seconds into Alex's intro
+    // Reveal topics 8.7 seconds into the first intro
     setTimeout(() => {
       setShowTopics(true)
     }, 8700)
 
-    await speakWithLipsyncStatic(
-      '/intro-voices/doctor-audio-ALEX_INTRO_1.mp3',
-      '/intro-voices/doctor-timestamps-ALEX_INTRO_1.json',
-      'doctor',
-      true,
-      setAlexSubtitle,
-    )
+    for (const intro of introSequence) {
+      if (intro.beforeGesture) {
+        playGesture(intro.beforeGesture)
+      }
 
-    setAlexSubtitle('')
+      setMessages((previous) => [
+        ...previous,
+        {
+          from: intro.from,
+          text: intro.text,
+        },
+      ])
 
-    // Jordan intro 1
-    playGesture('alexLookAtJordan')
+      const setSubtitle =
+        intro.character === 'doctor' ? setAlexSubtitle : setJordanSubtitle
 
-    setMessages((previous) => [
-      ...previous,
-      {
-        from: 'Jordan',
-        text: 'And my role is to help you talk through what you think and feel about each topic. This helps us understand what’s important to you so Alex can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let us know by saying something like, ‘Let’s move on’ or ‘Continue.’',
-      },
-    ])
+      await speakWithLipsyncStatic(
+        intro.audio,
+        intro.timestamps,
+        intro.character,
+        true,
+        setSubtitle,
+      )
 
-    await speakWithLipsyncStatic(
-      '/intro-voices/companion-audio-JORDAN_INTRO_1.mp3',
-      '/intro-voices/companion-timestamps-JORDAN_INTRO_1.json',
-      'companion',
-      true,
-      setJordanSubtitle,
-    )
-
-    setJordanSubtitle('')
-
-    // Alex intro 2
-    playGesture('jordanLookAtAlex')
-
-    setMessages((previous) => [
-      ...previous,
-      {
-        from: 'Alex',
-        text: 'Before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.',
-      },
-    ])
-
-    await speakWithLipsyncStatic(
-      '/intro-voices/doctor-audio-ALEX_INTRO_2.mp3',
-      '/intro-voices/doctor-timestamps-ALEX_INTRO_2.json',
-      'doctor',
-      true,
-      setAlexSubtitle,
-    )
-
-    setAlexSubtitle('')
-
-    // Jordan intro 2
-    playGesture('alexLookAtJordan')
-
-    setMessages((previous) => [
-      ...previous,
-      {
-        from: 'Jordan',
-        text: 'With that, let’s get started!',
-      },
-    ])
-
-    await speakWithLipsyncStatic(
-      '/intro-voices/companion-audio-JORDAN_INTRO_2.mp3',
-      '/intro-voices/companion-timestamps-JORDAN_INTRO_2.json',
-      'companion',
-      true,
-      setJordanSubtitle,
-    )
-
-    setJordanSubtitle('')
+      setSubtitle('')
+    }
 
     playGesture('stopAlexGesture')
-    playGesture('stopCompanionGesture')
-    // Highlight Topic 1 as the conversation begins
+
+    if (!isSingleAgent) {
+      playGesture('stopCompanionGesture')
+    }
+
     setHighlightCurrentTopic(true)
   }
 
@@ -392,7 +373,7 @@ export default function MainInteraction() {
       await new Promise((resolve) => setTimeout(resolve, 1500))
 
       // Start generating Topic 1 while the prerecorded intro plays
-      const conversationStartPromise = fetch(`${BASE_URL}/conversation/start`, {
+      const conversationStartPromise = fetch(`${BASE_URL}/jordan/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -400,7 +381,8 @@ export default function MainInteraction() {
         body: JSON.stringify({
           participant_id: participantId,
           conversation_history: [],
-          topic_history_start: 4,
+          topic_history_start: introMessageCount,
+          condition,
         }),
       })
       try {
@@ -413,7 +395,7 @@ export default function MainInteraction() {
           // Log when the character intro actually finishes
           try {
             const introResponse = await fetch(
-              `${BASE_URL}/log-intro-finished`,
+              `${BASE_URL}/logs/log-intro-finished`,
               {
                 method: 'POST',
                 headers: {
@@ -463,7 +445,7 @@ export default function MainInteraction() {
         // Log starting conversation state to database
         try {
           const stateResponse = await fetch(
-            `${BASE_URL}/save-conversation-state`,
+            `${BASE_URL}/logs/save-conversation-state`,
             {
               method: 'POST',
               headers: {
@@ -498,7 +480,9 @@ export default function MainInteraction() {
           },
         ])
 
-        playGesture('jordanLookAtAlex')
+        if (!isSingleAgent) {
+          playGesture('jordanLookAtAlex')
+        }
 
         await speakWithLipsync(
           data.alex_reply,
@@ -510,29 +494,46 @@ export default function MainInteraction() {
 
         setAlexSubtitle('')
 
-        // Jordan then asks for the user's perspective
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Jordan',
-            text: data.jordan_reply,
-          },
-        ])
+        // Conversational follow-up for c=2 and c=3
+        if (condition !== CONDITION_SINGLE_INFO) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              from: conversationalSpeaker,
+              text: data.jordan_reply,
+            },
+          ])
 
-        playGesture('alexLookAtJordan')
+          if (condition === CONDITION_SINGLE_COMBINED) {
+            await speakWithLipsync(
+              data.jordan_reply,
+              'doctor',
+              null,
+              null,
+              setAlexSubtitle,
+            )
 
-        await speakWithLipsync(
-          data.jordan_reply,
-          'companion',
-          null,
-          null,
-          setJordanSubtitle,
-        )
+            setAlexSubtitle('')
+          } else {
+            playGesture('alexLookAtJordan')
 
-        setJordanSubtitle('')
+            await speakWithLipsync(
+              data.jordan_reply,
+              'companion',
+              null,
+              null,
+              setJordanSubtitle,
+            )
+
+            setJordanSubtitle('')
+          }
+        }
 
         playGesture('stopAlexGesture')
-        playGesture('stopCompanionGesture')
+
+        if (!isSingleAgent) {
+          playGesture('stopCompanionGesture')
+        }
       } catch (error) {
         console.error('Could not start conversation:', error)
 
@@ -581,14 +582,16 @@ export default function MainInteraction() {
       setSentMessageAnimation('')
     }, 3500)
 
-    playGesture('alexLookAtJordan')
-    playGesture('jordanLookAtAlex')
+    if (!isSingleAgent) {
+      playGesture('alexLookAtJordan')
+      playGesture('jordanLookAtAlex')
+    }
 
     setIsResponding(true)
 
     try {
       // 1. Send user message to Jordan
-      const response = await fetch(`${BASE_URL}/conversation/turn`, {
+      const response = await fetch(`${BASE_URL}/jordan/turn`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -597,6 +600,7 @@ export default function MainInteraction() {
           participant_id: participantId,
           user_message: trimmed,
           conversation_history: messages,
+          condition,
         }),
       })
 
@@ -619,7 +623,7 @@ export default function MainInteraction() {
         setTopicState(newTopicState)
 
         // Log topic completion without blocking the conversation
-        fetch(`${BASE_URL}/log-topic-covered`, {
+        fetch(`${BASE_URL}/logs/log-topic-covered`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -643,7 +647,7 @@ export default function MainInteraction() {
           })
 
         // Save updated conversation state without blocking the conversation
-        fetch(`${BASE_URL}/save-conversation-state`, {
+        fetch(`${BASE_URL}/logs/save-conversation-state`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -673,7 +677,7 @@ export default function MainInteraction() {
         setResponseStatus('Preparing next topic')
 
         const nextTopicResponse = await fetch(
-          `${BASE_URL}/conversation/prepare-next-topic`,
+          `${BASE_URL}/jordan/prepare-next-topic`,
           {
             method: 'POST',
             headers: {
@@ -688,6 +692,7 @@ export default function MainInteraction() {
                   text: trimmed,
                 },
               ],
+              condition,
             }),
           },
         )
@@ -711,7 +716,9 @@ export default function MainInteraction() {
           },
         ])
 
-        playGesture('jordanLookAtAlex')
+        if (!isSingleAgent) {
+          playGesture('jordanLookAtAlex')
+        }
 
         await speakWithLipsync(
           nextTopicData.alex_reply,
@@ -723,36 +730,76 @@ export default function MainInteraction() {
 
         setAlexSubtitle('')
 
-        // Jordan asks for the user's perspective
+        // Conversational follow-up for c=2 and c=3
+        if (condition !== CONDITION_SINGLE_INFO) {
+          setMessages((previous) => [
+            ...previous,
+            {
+              from: conversationalSpeaker,
+              text: nextTopicData.jordan_reply,
+            },
+          ])
+
+          if (condition === CONDITION_SINGLE_COMBINED) {
+            await speakWithLipsync(
+              nextTopicData.jordan_reply,
+              'doctor',
+              null,
+              null,
+              setAlexSubtitle,
+            )
+
+            setAlexSubtitle('')
+          } else {
+            playGesture('alexLookAtJordan')
+
+            await speakWithLipsync(
+              nextTopicData.jordan_reply,
+              'companion',
+              null,
+              null,
+              setJordanSubtitle,
+            )
+
+            setJordanSubtitle('')
+          }
+        }
+
+        playGesture('stopAlexGesture')
+        if (!isSingleAgent) {
+          playGesture('stopCompanionGesture')
+        }
+
+        return
+      }
+
+      // 2. If Alex sent a direct reply, let Alex respond
+      if (data.alex_reply) {
         setMessages((previous) => [
           ...previous,
           {
-            from: 'Jordan',
-            text: nextTopicData.jordan_reply,
+            from: 'Alex',
+            text: data.alex_reply,
           },
         ])
 
-        playGesture('alexLookAtJordan')
-
         await speakWithLipsync(
-          nextTopicData.jordan_reply,
-          'companion',
+          data.alex_reply,
+          'doctor',
           null,
           null,
-          setJordanSubtitle,
+          setAlexSubtitle,
         )
 
-        setJordanSubtitle('')
-
+        setAlexSubtitle('')
         playGesture('stopAlexGesture')
-        playGesture('stopCompanionGesture')
 
         return
       }
 
       // 2. If Alex is needed, let Alex respond directly
       if (data.alex_info_needed) {
-        const alexResponse = await fetch(`${BASE_URL}/conversation-alex`, {
+        const alexResponse = await fetch(`${BASE_URL}/alex/conversation-alex`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -762,6 +809,7 @@ export default function MainInteraction() {
             history: data.shared_history,
             earlier_memory: data.shared_memory,
             prior_topic_summaries: data.prior_topic_summaries,
+            condition,
           }),
         })
 
@@ -783,26 +831,28 @@ export default function MainInteraction() {
         ])
 
         // Start generating Jordan's follow-up while Alex speaks
-        const jordanAfterAlexPromise = fetch(
-          `${BASE_URL}/conversation/after-alex`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              participant_id: participantId,
-              earlier_memory: data.shared_memory,
-              conversation_history: [
-                ...data.shared_history,
-                { from: 'user', text: trimmed },
-                { from: 'Alex', text: alexData.answer },
-              ],
-            }),
-          },
-        )
+        const jordanAfterAlexPromise =
+          condition !== CONDITION_SINGLE_INFO
+            ? fetch(`${BASE_URL}/jordan/after-alex`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  participant_id: participantId,
+                  earlier_memory: data.shared_memory,
+                  conversation_history: [
+                    ...data.shared_history,
+                    { from: 'user', text: trimmed },
+                    { from: 'Alex', text: alexData.answer },
+                  ],
+                }),
+              })
+            : null
 
-        playGesture('jordanLookAtAlex')
+        if (!isSingleAgent) {
+          playGesture('jordanLookAtAlex')
+        }
 
         // Alex speaks
         await speakWithLipsync(
@@ -815,32 +865,85 @@ export default function MainInteraction() {
 
         setAlexSubtitle('')
 
-        // Get Jordan's follow-up
-        const jordanAfterAlexResponse = await jordanAfterAlexPromise
+        // Conversational follow-up for c=2 and c=3
+        if (jordanAfterAlexPromise) {
+          const jordanAfterAlexResponse = await jordanAfterAlexPromise
 
-        if (!jordanAfterAlexResponse.ok) {
-          throw new Error(
-            `Jordan after Alex request failed: ${jordanAfterAlexResponse.status}`,
-          )
+          if (!jordanAfterAlexResponse.ok) {
+            throw new Error(
+              `Jordan after Alex request failed: ${jordanAfterAlexResponse.status}`,
+            )
+          }
+
+          const jordanAfterAlexData = await jordanAfterAlexResponse.json()
+
+          console.log('Jordan after Alex:', jordanAfterAlexData)
+
+          setMessages((previous) => [
+            ...previous,
+            {
+              from: conversationalSpeaker,
+              text: jordanAfterAlexData.jordan_reply,
+            },
+          ])
+
+          if (condition === CONDITION_SINGLE_COMBINED) {
+            await speakWithLipsync(
+              jordanAfterAlexData.jordan_reply,
+              'doctor',
+              null,
+              null,
+              setAlexSubtitle,
+            )
+
+            setAlexSubtitle('')
+          } else {
+            playGesture('alexLookAtJordan')
+
+            await speakWithLipsync(
+              jordanAfterAlexData.jordan_reply,
+              'companion',
+              null,
+              null,
+              setJordanSubtitle,
+            )
+
+            setJordanSubtitle('')
+          }
         }
 
-        const jordanAfterAlexData = await jordanAfterAlexResponse.json()
+        playGesture('stopAlexGesture')
+        if (!isSingleAgent) {
+          playGesture('stopCompanionGesture')
+        }
 
-        console.log('Jordan after Alex:', jordanAfterAlexData)
+        return
+      }
 
-        // Add Jordan's follow-up to chat
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Jordan',
-            text: jordanAfterAlexData.jordan_reply,
-          },
-        ])
+      // 3. Otherwise, conversational response
+      setMessages((previous) => [
+        ...previous,
+        {
+          from: conversationalSpeaker,
+          text: data.jordan_reply,
+        },
+      ])
 
+      if (condition === CONDITION_SINGLE_COMBINED) {
+        await speakWithLipsync(
+          data.jordan_reply,
+          'doctor',
+          null,
+          null,
+          setAlexSubtitle,
+        )
+
+        setAlexSubtitle('')
+      } else {
         playGesture('alexLookAtJordan')
 
         await speakWithLipsync(
-          jordanAfterAlexData.jordan_reply,
+          data.jordan_reply,
           'companion',
           null,
           null,
@@ -848,36 +951,12 @@ export default function MainInteraction() {
         )
 
         setJordanSubtitle('')
-
-        playGesture('stopAlexGesture')
-        playGesture('stopCompanionGesture')
-
-        return
       }
 
-      // 3. Otherwise, Jordan responds normally
-      setMessages((previous) => [
-        ...previous,
-        {
-          from: 'Jordan',
-          text: data.jordan_reply,
-        },
-      ])
-
-      playGesture('alexLookAtJordan')
-
-      await speakWithLipsync(
-        data.jordan_reply,
-        'companion',
-        null,
-        null,
-        setJordanSubtitle,
-      )
-
-      setJordanSubtitle('')
-
       playGesture('stopAlexGesture')
-      playGesture('stopCompanionGesture')
+      if (!isSingleAgent) {
+        playGesture('stopCompanionGesture')
+      }
     } catch (error) {
       console.error('Conversation error:', error)
     } finally {
@@ -899,15 +978,18 @@ export default function MainInteraction() {
     try {
       setStarting(true)
 
-      const response = await fetch(`${BASE_URL}/log-conversation-started`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${BASE_URL}/logs/log-conversation-started`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+          }),
         },
-        body: JSON.stringify({
-          participant_id: participantId,
-        }),
-      })
+      )
 
       if (!response.ok) {
         throw new Error(`Conversation start logging failed: ${response.status}`)
@@ -929,7 +1011,7 @@ export default function MainInteraction() {
       // 1. Save final conversation state
       if (topicState) {
         const stateResponse = await fetch(
-          `${BASE_URL}/save-conversation-state`,
+          `${BASE_URL}/logs/save-conversation-state`,
           {
             method: 'POST',
             headers: {
@@ -951,7 +1033,7 @@ export default function MainInteraction() {
 
       // 2. Save final transcript
       const transcriptResponse = await fetch(
-        `${BASE_URL}/log-conversation-transcript`,
+        `${BASE_URL}/logs/log-conversation-transcript`,
         {
           method: 'POST',
           headers: {
@@ -972,7 +1054,7 @@ export default function MainInteraction() {
 
       // 3. Log finished timestamp
       const finishResponse = await fetch(
-        `${BASE_URL}/log-conversation-finished`,
+        `${BASE_URL}/logs/log-conversation-finished`,
         {
           method: 'POST',
           headers: {
@@ -1015,14 +1097,25 @@ export default function MainInteraction() {
             <img src={logo} className="logo" alt="Study logo" />
 
             <h2>Clinical Trials Education</h2>
-            <h1>Chat with Virtual Characters</h1>
+            {!isSingleAgent ? (
+              <h1>Chat with Virtual Characters</h1>
+            ) : (
+              <h1>Chat with a Virtual Character</h1>
+            )}
 
             <div className="mi-start-information">
-              <p>
-                You are about to talk about your 3 selected topics with two
-                virtual characters: <strong>Alex</strong> and{' '}
-                <strong>Jordan</strong>!
-              </p>
+              {!isSingleAgent ? (
+                <p>
+                  You are about to talk about your 3 selected topics with two
+                  virtual characters: <strong>Alex</strong> and{' '}
+                  <strong>Jordan</strong>!
+                </p>
+              ) : (
+                <p>
+                  You are about to talk about your 3 selected topics with a
+                  virtual character: <strong>Alex</strong>!
+                </p>
+              )}
               <div className="character-images-row">
                 <div>
                   <img
@@ -1033,32 +1126,49 @@ export default function MainInteraction() {
                   <p>Alex</p>
                 </div>
 
-                <div>
-                  <img
-                    src={jordan}
-                    className="character-preview"
-                    alt="Jordan character"
-                  />
-                  <p>Jordan</p>
-                </div>
+                {!isSingleAgent && (
+                  <div>
+                    <img
+                      src={jordan}
+                      className="character-preview"
+                      alt="Jordan character"
+                    />
+                    <p>Jordan</p>
+                  </div>
+                )}
               </div>
               <p>
                 <span className="notice">Remember:</span>{' '}
-                <strong>
-                  Please interact with the virtual characters as the person
-                  described in the pre-survey.
-                </strong>{' '}
+                {!isSingleAgent ? (
+                  <strong>
+                    Please interact with the virtual characters as the person
+                    described in the pre-survey.
+                  </strong>
+                ) : (
+                  <strong>
+                    Please interact with the virtual character as the person
+                    described in the pre-survey.
+                  </strong>
+                )}{' '}
                 You've been diagnosed with cancer, and your oncologist suggested
                 this site to help you learn about clinical trials as a possible
                 option, before exploring any specific trials.
               </p>
               <p>
                 <span className="notice">Completing the activity:</span>{' '}
-                <strong>
-                  After the virtual characters walk you through the 3 topics, a
-                  Finish Button will appear in the top right corner of your
-                  screen.
-                </strong>{' '}
+                {!isSingleAgent ? (
+                  <strong>
+                    After the virtual characters walk you through the 3 topics,
+                    a Finish Button will appear in the top right corner of your
+                    screen.
+                  </strong>
+                ) : (
+                  <strong>
+                    After the virtual character walks you through the 3 topics,
+                    a Finish Button will appear in the top right corner of your
+                    screen.
+                  </strong>
+                )}{' '}
                 You may continue asking as many or as few questions as you'd
                 like until you feel you've experienced how the website can help
                 someone learn about clinical trial participation.
@@ -1155,7 +1265,11 @@ export default function MainInteraction() {
         <div className="tool-header">
           <img src={logo} className="logo" alt="Study logo" />
           <h2>Clinical Trials Education</h2>
-          <h1>Chat with Virtual Characters</h1>
+          {!isSingleAgent ? (
+            <h1>Chat with Virtual Characters</h1>
+          ) : (
+            <h1>Chat with a Virtual Character</h1>
+          )}
         </div>
 
         <button className="history-btn" onClick={() => setShowHistory(true)}>
@@ -1178,7 +1292,7 @@ export default function MainInteraction() {
             <div
               className={`mi-chat-header mi-shared-character-stage ${
                 charactersReady ? 'characters-ready' : 'characters-loading'
-              }`}
+              } ${isSingleAgent ? 'single-agent' : ''}`}
             >
               <div
                 className="mi-shared-stage-background"
@@ -1235,20 +1349,22 @@ export default function MainInteraction() {
                 </div>
               )}
 
-              <div className="mi-character-zone mi-character-zone-jordan">
-                <div className="mi-character-content">
-                  <div
-                    className="virtual-companion"
-                    id="virtualcompanion"
-                    ref={companionRef}
-                  />
-                  {jordanSubtitle && (
-                    <div className="character-subtitle character-subtitle-jordan">
-                      {jordanSubtitle}
-                    </div>
-                  )}
+              {!isSingleAgent && (
+                <div className="mi-character-zone mi-character-zone-jordan">
+                  <div className="mi-character-content">
+                    <div
+                      className="virtual-companion"
+                      id="virtualcompanion"
+                      ref={companionRef}
+                    />
+                    {jordanSubtitle && (
+                      <div className="character-subtitle character-subtitle-jordan">
+                        {jordanSubtitle}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <ChatInput

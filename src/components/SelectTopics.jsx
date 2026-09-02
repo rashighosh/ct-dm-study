@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate, useSearchParams } from 'react-router'
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const TOPICS = [
   'What is a placebo?',
@@ -39,6 +39,16 @@ const TOPICS = [
 
 const MAX_TOPICS = 3
 
+const CONDITION_NAMES = {
+  1: 'Single Info Only',
+  2: 'Single Combined',
+  3: 'Multiple',
+}
+
+const CONDITION_SINGLE_INFO = 1
+const CONDITION_SINGLE_COMBINED = 2
+const CONDITION_MULTIPLE = 3
+
 function shuffleArray(array) {
   const shuffled = [...array]
 
@@ -61,6 +71,10 @@ export default function SelectTopics() {
 
   const condition = Number(searchParams.get('c') ?? 0)
 
+  const isSingleAgent =
+    condition === CONDITION_SINGLE_INFO ||
+    condition === CONDITION_SINGLE_COMBINED
+
   const SESSION_KEY = `studySession-${participantId}-${condition}`
 
   const [selectedTopics, setSelectedTopics] = useState([])
@@ -69,15 +83,20 @@ export default function SelectTopics() {
   useEffect(() => {
     async function logConversationEntered() {
       try {
-        const response = await fetch(`${BASE_URL}/log-conversation-entered`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const response = await fetch(
+          `${BASE_URL}/logs/log-conversation-entered`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              c: condition,
+              condition_name: CONDITION_NAMES[condition],
+            }),
           },
-          body: JSON.stringify({
-            participant_id: participantId,
-          }),
-        })
+        )
 
         if (!response.ok) {
           throw new Error(
@@ -86,7 +105,6 @@ export default function SelectTopics() {
         }
 
         const data = await response.json()
-
         console.log('Conversation entered logged:', data)
       } catch (error) {
         console.error('Could not log conversation entry:', error)
@@ -94,7 +112,7 @@ export default function SelectTopics() {
     }
 
     logConversationEntered()
-  }, [participantId])
+  }, [participantId, condition])
 
   const topics = useMemo(() => shuffleArray(TOPICS), [])
 
@@ -117,7 +135,7 @@ export default function SelectTopics() {
     try {
       setSaving(true)
 
-      const response = await fetch(`${BASE_URL}/conversation/topics`, {
+      const response = await fetch(`${BASE_URL}/jordan/topics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,6 +143,7 @@ export default function SelectTopics() {
         body: JSON.stringify({
           participant_id: participantId,
           selected_topics: selectedTopics,
+          condition,
         }),
       })
 
@@ -136,7 +155,7 @@ export default function SelectTopics() {
 
       console.log('Topics saved:', data)
 
-      const logResponse = await fetch(`${BASE_URL}/log-selected-topics`, {
+      const logResponse = await fetch(`${BASE_URL}/logs/log-selected-topics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -183,14 +202,20 @@ export default function SelectTopics() {
       <div className="select-topics-logo-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>
-        <h1>Chat with Virtual Characters</h1>
+        {!isSingleAgent ? (
+          <h1>Chat with Virtual Characters</h1>
+        ) : (
+          <h1>Chat with a Virtual Character</h1>
+        )}
       </div>
 
       <main className="select-topics-container">
         <header className="select-topics-header">
           <p>
             Please select <b>{MAX_TOPICS} topics</b> from the options below that
-            you would like to discuss with the virtual characters. <br />
+            you would like to discuss with{' '}
+            {isSingleAgent ? 'the virtual character' : 'the virtual characters'}
+            . <br />
             Then, click the <b>Continue</b> button at the bottom.
           </p>
         </header>

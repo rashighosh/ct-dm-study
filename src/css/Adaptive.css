@@ -295,6 +295,25 @@
     visibility 0s linear 0s;
 }
 
+/* Single-agent conditions: center Alex */
+.mi-shared-character-stage.single-agent {
+  grid-template-columns: 1fr;
+}
+
+.mi-shared-character-stage.single-agent .mi-character-zone-alex {
+  grid-column: 1;
+  grid-row: 1;
+  width: 50%;
+  justify-self: center;
+}
+
+.main-interaction1
+  .mi-shared-character-stage.single-agent
+  .mi-character-zone-alex
+  .mi-character-content {
+  transform: none;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Character subtitles / speech bubbles                                       */
 /* -------------------------------------------------------------------------- */

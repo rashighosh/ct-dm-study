@@ -5,10 +5,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 // Config
 // ============================================================
 
-// const BASE_URL = 'https://fastapi-rashi.onrender.com';
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 // ============================================================
 // Module state

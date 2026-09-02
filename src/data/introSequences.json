@@ -1,0 +1,98 @@
+{
+  "1": [
+    {
+      "from": "Alex",
+      "text": "Hi there, I’m Alex. I am an AI-powered virtual character here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_SINGLE.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_SINGLE_INFO.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_SINGLE_INFO.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "Before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "Alright, with that, let’s get started!",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
+      "character": "doctor"
+    }
+  ],
+
+  "2": [
+    {
+      "from": "Alex",
+      "text": "Hi there, I’m Alex. I am an AI-powered virtual character here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_SINGLE.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "I'll also help you talk through what you think and feel about each topic. This helps me understand what’s important to you so that I can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_SINGLE_COMBINED.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_SINGLE_COMBINED.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "Before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "Alright, with that, let’s get started!",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
+      "character": "doctor"
+    }
+  ],
+
+  "3": [
+    {
+      "from": "Alex",
+      "text": "Hi there, I’m Alex, and this is Jordan. We are AI-powered virtual characters here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_MULTIPLE.json",
+      "character": "doctor",
+      "beforeGesture": "jordanLookAtAlex"
+    },
+    {
+      "from": "Jordan",
+      "text": "And my role is to help you talk through what you think and feel about each topic. This helps us understand what’s important to you so Alex can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let us know by saying something like, ‘Let’s move on’ or ‘Continue.’",
+      "audio": "/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE.mp3",
+      "timestamps": "/intro-voices/companion-timestamps-JORDAN_INTRO_1_MULTIPLE.json",
+      "character": "companion",
+      "beforeGesture": "alexLookAtJordan"
+    },
+    {
+      "from": "Alex",
+      "text": "Before we get started, please remember that we don’t have access to specific clinical trials, so we can’t search for or answer questions about specific trials or treatments. We also can’t provide medical advice.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_MULTIPLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_MULTIPLE.json",
+      "character": "doctor",
+      "beforeGesture": "jordanLookAtAlex"
+    },
+    {
+      "from": "Jordan",
+      "text": "Alright, with that, let’s get started!",
+      "audio": "/intro-voices/companion-audio-JORDAN_INTRO_2_MULTIPLE.mp3",
+      "timestamps": "/intro-voices/companion-timestamps-JORDAN_INTRO_2_MULTIPLE.json",
+      "character": "companion",
+      "beforeGesture": "alexLookAtJordan"
+    }
+  ]
+}
