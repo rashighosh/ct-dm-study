@@ -1268,6 +1268,147 @@
 }
 
 /* -------------------------------------------------------------------------- */
+/* Character thinking bubbles                                                 */
+/* -------------------------------------------------------------------------- */
+
+.character-thinking {
+  position: absolute;
+  z-index: 15;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  pointer-events: none;
+
+  animation: character-thinking-float 1.8s ease-in-out infinite;
+}
+
+/* Alex: slightly above / outside her head */
+.character-thinking-alex {
+  top: 27%;
+  left: 25%;
+}
+
+/* Jordan: mirrored */
+.character-thinking-jordan {
+  top: 27%;
+  right: 25%;
+  align-items: flex-end;
+}
+
+/* Main little bubble */
+.character-thinking-bubble {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  padding: 10px 13px;
+
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+
+  box-shadow: 0 4px 13px rgba(0, 0, 0, 0.14);
+}
+
+/* Actual bouncing dots */
+.character-thinking-bubble > span {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+  background: #777;
+
+  animation: thinking-dot 1.4s ease-in-out infinite;
+}
+
+.character-thinking-bubble > span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.character-thinking-bubble > span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+/* Thought-bubble tail */
+.thinking-tail {
+  display: block;
+
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+/* Alex: tail starts on INNER/right side */
+.character-thinking-alex .thinking-tail-large {
+  width: 9px;
+  height: 9px;
+
+  align-self: flex-end;
+  margin-top: 3px;
+  margin-right: 12px;
+}
+
+.character-thinking-alex .thinking-tail-small {
+  width: 5px;
+  height: 5px;
+
+  align-self: flex-end;
+  margin-top: 3px;
+  margin-right: 4px;
+}
+
+/* Jordan: tail starts on INNER/left side */
+.character-thinking-jordan .thinking-tail-large {
+  width: 9px;
+  height: 9px;
+
+  align-self: flex-start;
+  margin-top: 3px;
+  margin-left: 12px;
+}
+
+.character-thinking-jordan .thinking-tail-small {
+  width: 5px;
+  height: 5px;
+
+  align-self: flex-start;
+  margin-top: 3px;
+  margin-left: 4px;
+}
+
+@keyframes thinking-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes character-thinking-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Responsive                                                                 */
 /* -------------------------------------------------------------------------- */
 

@@ -112,6 +112,7 @@ export default function MainInteraction() {
   const [showStartOverlay, setShowStartOverlay] = useState(true)
   const [showSceneLoading, setShowSceneLoading] = useState(false)
   const [starting, setStarting] = useState(false)
+  const [showThinkingBubble, setShowThinkingBubble] = useState(false)
 
   // Restore saved conversation history
   useEffect(() => {
@@ -588,6 +589,7 @@ export default function MainInteraction() {
     }
 
     setIsResponding(true)
+    setShowThinkingBubble(true)
 
     try {
       // 1. Send user message to Jordan
@@ -674,6 +676,7 @@ export default function MainInteraction() {
       // If we advanced to another topic, Alex introduces it first,
       // then Jordan asks for the user's perspective
       if (data.topic_advanced && data.prepare_next_topic) {
+        setShowThinkingBubble(false)
         setResponseStatus('Preparing next topic')
 
         const nextTopicResponse = await fetch(
@@ -720,6 +723,8 @@ export default function MainInteraction() {
           playGesture('jordanLookAtAlex')
         }
 
+        setShowThinkingBubble(false)
+
         await speakWithLipsync(
           nextTopicData.alex_reply,
           'doctor',
@@ -753,6 +758,8 @@ export default function MainInteraction() {
           } else {
             playGesture('alexLookAtJordan')
 
+            setShowThinkingBubble(false)
+
             await speakWithLipsync(
               nextTopicData.jordan_reply,
               'companion',
@@ -782,6 +789,8 @@ export default function MainInteraction() {
             text: data.alex_reply,
           },
         ])
+
+        setShowThinkingBubble(false)
 
         await speakWithLipsync(
           data.alex_reply,
@@ -854,6 +863,8 @@ export default function MainInteraction() {
           playGesture('jordanLookAtAlex')
         }
 
+        setShowThinkingBubble(false)
+
         // Alex speaks
         await speakWithLipsync(
           alexData.answer,
@@ -888,6 +899,7 @@ export default function MainInteraction() {
           ])
 
           if (condition === CONDITION_SINGLE_COMBINED) {
+            setShowThinkingBubble(false)
             await speakWithLipsync(
               jordanAfterAlexData.jordan_reply,
               'doctor',
@@ -900,6 +912,7 @@ export default function MainInteraction() {
           } else {
             playGesture('alexLookAtJordan')
 
+            setShowThinkingBubble(false)
             await speakWithLipsync(
               jordanAfterAlexData.jordan_reply,
               'companion',
@@ -930,6 +943,7 @@ export default function MainInteraction() {
       ])
 
       if (condition === CONDITION_SINGLE_COMBINED) {
+        setShowThinkingBubble(false)
         await speakWithLipsync(
           data.jordan_reply,
           'doctor',
@@ -942,6 +956,7 @@ export default function MainInteraction() {
       } else {
         playGesture('alexLookAtJordan')
 
+        setShowThinkingBubble(false)
         await speakWithLipsync(
           data.jordan_reply,
           'companion',
@@ -960,6 +975,7 @@ export default function MainInteraction() {
     } catch (error) {
       console.error('Conversation error:', error)
     } finally {
+      setShowThinkingBubble(false)
       setIsResponding(false)
       setResponseStatus('')
     }
@@ -1325,6 +1341,18 @@ export default function MainInteraction() {
                     id="virtualdoctor"
                     ref={doctorRef}
                   />
+                  {showThinkingBubble && (
+                    <div className="character-thinking character-thinking-alex">
+                      <div className="character-thinking-bubble">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+
+                      <span className="thinking-tail thinking-tail-large"></span>
+                      <span className="thinking-tail thinking-tail-small"></span>
+                    </div>
+                  )}
                   {alexSubtitle && (
                     <div className="character-subtitle character-subtitle-alex">
                       {alexSubtitle}
@@ -1357,6 +1385,18 @@ export default function MainInteraction() {
                       id="virtualcompanion"
                       ref={companionRef}
                     />
+                    {showThinkingBubble && (
+                      <div className="character-thinking character-thinking-jordan">
+                        <div className="character-thinking-bubble">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+
+                        <span className="thinking-tail thinking-tail-large"></span>
+                        <span className="thinking-tail thinking-tail-small"></span>
+                      </div>
+                    )}
                     {jordanSubtitle && (
                       <div className="character-subtitle character-subtitle-jordan">
                         {jordanSubtitle}
