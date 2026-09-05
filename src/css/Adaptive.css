@@ -1231,40 +1231,24 @@
   position: absolute;
   top: 15px;
   right: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
 
-  padding: 11px 23px;
+  z-index: 20;
 
-  border: none;
-  border-radius: 15px;
-
-  background: var(--green1);
-  color: white;
   animation: pulse-animation 2s infinite;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform 0.2s ease-in-out,
-    box-shadow 0.2s ease-in-out;
+}
+
+.finish-button:not(:disabled):hover {
+  animation: pulse-animation 2s infinite;
 }
 
 @keyframes pulse-animation {
   0% {
     box-shadow: 0 0 0 0px rgba(0, 0, 0, 0.2);
   }
+
   100% {
     box-shadow: 0 0 0 20px rgba(0, 0, 0, 0);
   }
-}
-
-.finish-button:hover {
-  background: linear-gradient(135deg, var(--green1), var(--green2));
-  animation: pulse-animation 2s infinite;
 }
 
 /* -------------------------------------------------------------------------- */

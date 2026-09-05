@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import logo from '../assets/logo-transparent.png'
 import alex from '../assets/alex.png'
 import jordan from '../assets/jordan.png'
@@ -64,6 +64,7 @@ function waitForCharacterRender(container, timeout = 10000) {
 
 export default function MainInteraction() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const participantId =
     searchParams.get('id') ||
@@ -113,6 +114,7 @@ export default function MainInteraction() {
   const [showSceneLoading, setShowSceneLoading] = useState(false)
   const [starting, setStarting] = useState(false)
   const [showThinkingBubble, setShowThinkingBubble] = useState(false)
+  const [finishing, setFinishing] = useState(false)
 
   // Restore saved conversation history
   useEffect(() => {
@@ -1023,7 +1025,9 @@ export default function MainInteraction() {
   }
 
   async function handleFinish() {
+    if (finishing) return
     try {
+      setFinishing(true)
       // 1. Save final conversation state
       if (topicState) {
         const stateResponse = await fetch(
@@ -1091,9 +1095,10 @@ export default function MainInteraction() {
       const finishData = await finishResponse.json()
       console.log('Conversation finished logged:', finishData)
 
-      alert('TODO: Redirect participant to the next page after finishing!')
+      navigate(`/resources?${searchParams.toString()}`)
     } catch (error) {
       console.error('Could not finish conversation:', error)
+      setFinishing(false)
     }
   }
 
@@ -1295,13 +1300,51 @@ export default function MainInteraction() {
         {topicState?.phase === 'wrapup' && (
           <button
             type="button"
-            className="finish-button"
+            className="cssbuttons-io-button finish-button"
             onClick={handleFinish}
+            disabled={finishing}
           >
-            Finish
-            <FontAwesomeIcon icon={faArrowRight} />
+            {finishing ? (
+              <span className="button-loading">
+                Saving
+                <span className="button-loading-dots" aria-hidden="true">
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                </span>
+              </span>
+            ) : (
+              'Finish'
+            )}
+
+            <span className="icon">
+              <FontAwesomeIcon icon={faArrowRight} size="xs" />
+            </span>
           </button>
         )}
+        <button
+          type="button"
+          className="cssbuttons-io-button finish-button"
+          onClick={handleFinish}
+          disabled={finishing}
+        >
+          {finishing ? (
+            <span className="button-loading">
+              Saving
+              <span className="button-loading-dots" aria-hidden="true">
+                <span>.</span>
+                <span>.</span>
+                <span>.</span>
+              </span>
+            </span>
+          ) : (
+            'Finish'
+          )}
+
+          <span className="icon">
+            <FontAwesomeIcon icon={faArrowRight} size="xs" />
+          </span>
+        </button>
 
         <main className="mi-main">
           <section className="mi-chat-card">
