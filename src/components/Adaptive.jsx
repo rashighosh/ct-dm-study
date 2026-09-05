@@ -1322,29 +1322,6 @@ export default function MainInteraction() {
             </span>
           </button>
         )}
-        <button
-          type="button"
-          className="cssbuttons-io-button finish-button"
-          onClick={handleFinish}
-          disabled={finishing}
-        >
-          {finishing ? (
-            <span className="button-loading">
-              Saving
-              <span className="button-loading-dots" aria-hidden="true">
-                <span>.</span>
-                <span>.</span>
-                <span>.</span>
-              </span>
-            </span>
-          ) : (
-            'Finish'
-          )}
-
-          <span className="icon">
-            <FontAwesomeIcon icon={faArrowRight} size="xs" />
-          </span>
-        </button>
 
         <main className="mi-main">
           <section className="mi-chat-card">
