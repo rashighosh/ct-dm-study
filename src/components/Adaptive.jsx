@@ -158,33 +158,6 @@ export default function MainInteraction() {
         console.log('Topic state:', data)
 
         setTopicState(data)
-
-        // Keep database copy of conversation state up to date
-        try {
-          const stateResponse = await fetch(
-            `${BASE_URL}/logs/save-conversation-state`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                participant_id: participantId,
-                state: data,
-              }),
-            },
-          )
-
-          if (!stateResponse.ok) {
-            throw new Error(
-              `Saving conversation state failed: ${stateResponse.status}`,
-            )
-          }
-
-          console.log('Recovered conversation state logged:', data)
-        } catch (error) {
-          console.error('Could not log recovered conversation state:', error)
-        }
       } catch (error) {
         console.error('Could not load topic state:', error)
       }
@@ -445,35 +418,6 @@ export default function MainInteraction() {
 
         setTopicState(newTopicState)
 
-        // Log starting conversation state to database
-        try {
-          const stateResponse = await fetch(
-            `${BASE_URL}/logs/save-conversation-state`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                participant_id: participantId,
-                state: newTopicState,
-              }),
-            },
-          )
-
-          if (!stateResponse.ok) {
-            throw new Error(
-              `Saving conversation state failed: ${stateResponse.status}`,
-            )
-          }
-
-          const stateData = await stateResponse.json()
-
-          console.log('Conversation state logged:', stateData)
-        } catch (error) {
-          console.error('Could not log conversation state:', error)
-        }
-
         // Alex introduces Topic 1
         setMessages((previous) => [
           ...previous,
@@ -648,30 +592,6 @@ export default function MainInteraction() {
           })
           .catch((error) => {
             console.error('Could not log topic completion:', error)
-          })
-
-        // Save updated conversation state without blocking the conversation
-        fetch(`${BASE_URL}/logs/save-conversation-state`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            participant_id: participantId,
-            state: newTopicState,
-          }),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                `Saving conversation state failed: ${response.status}`,
-              )
-            }
-
-            console.log('Updated conversation state logged:', newTopicState)
-          })
-          .catch((error) => {
-            console.error('Could not log updated conversation state:', error)
           })
       }
 
@@ -1028,28 +948,6 @@ export default function MainInteraction() {
     if (finishing) return
     try {
       setFinishing(true)
-      // 1. Save final conversation state
-      if (topicState) {
-        const stateResponse = await fetch(
-          `${BASE_URL}/logs/save-conversation-state`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              participant_id: participantId,
-              state: topicState,
-            }),
-          },
-        )
-
-        if (!stateResponse.ok) {
-          throw new Error(
-            `Final conversation state save failed: ${stateResponse.status}`,
-          )
-        }
-      }
 
       // 2. Save final transcript
       const transcriptResponse = await fetch(
