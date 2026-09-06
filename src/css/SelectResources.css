@@ -108,8 +108,8 @@
 
   color: #4c4b47;
 
-  font-size: 18px;
-  line-height: 1.55;
+  font-size: 21px;
+  line-height: normal;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -328,7 +328,8 @@
   }
 
   .select-resources-header p {
-    font-size: 16px;
+    font-size: 17px;
+    line-height: normal;
   }
 
   .resource-option {

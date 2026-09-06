@@ -1212,7 +1212,7 @@ export default function MainInteraction() {
                 </span>
               </span>
             ) : (
-              'Finish'
+              'Finish Conversation'
             )}
 
             <span className="icon">

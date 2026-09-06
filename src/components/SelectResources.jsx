@@ -20,6 +20,16 @@ import {
 const BASE_URL =
   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
+const CONDITION_NAMES = {
+  1: 'Single Info Only',
+  2: 'Single Combined',
+  3: 'Multiple',
+}
+
+const CONDITION_SINGLE_INFO = 1
+const CONDITION_SINGLE_COMBINED = 2
+const CONDITION_MULTIPLE = 3
+
 const RESOURCES = [
   {
     id: 'featured-trials',
@@ -96,6 +106,10 @@ export default function SelectResources() {
     'test-participant'
 
   const condition = Number(searchParams.get('c') ?? 0)
+
+  const isSingleAgent =
+    condition === CONDITION_SINGLE_INFO ||
+    condition === CONDITION_SINGLE_COMBINED
 
   const [selectedResources, setSelectedResources] = useState([])
   const [saving, setSaving] = useState(false)
@@ -184,21 +198,24 @@ export default function SelectResources() {
       <div className="select-resources-logo-header">
         <img src={logo} className="logo" alt="Study logo" />
         <h2>Clinical Trials Education</h2>
-        <h1>Next Steps & Resources</h1>
+        {!isSingleAgent ? (
+          <h1>Chat with Virtual Characters</h1>
+        ) : (
+          <h1>Chat with a Virtual Character</h1>
+        )}
       </div>
 
       <main className="select-resources-container">
         <header className="select-resources-header">
-          <h2>What would you like to explore next?</h2>
+          <h2>What would you explore next?</h2>
           <p>
-            Now that you've learned about clinical trials with the virtual
-            character(s),{' '}
+            Now that you've talked about clinical trials with{' '}
+            {isSingleAgent ? 'the virtual character' : 'the virtual characters'}
+            ,{' '}
             <b>
-              please indicate which resources, if any, you would feel ready or
-              interested to explore on your own
+              please select which resources, if any, you would feel ready or
+              interested to explore on your own.
             </b>
-            . Links to the resources you select will be provided in the
-            post-study survey so you can save them and return to them later.
           </p>
         </header>
 
@@ -272,7 +289,7 @@ export default function SelectResources() {
                 </span>
               </span>
             ) : (
-              'Continue to Survey'
+              'Continue to Post-Survey'
             )}
 
             <span className="icon">
