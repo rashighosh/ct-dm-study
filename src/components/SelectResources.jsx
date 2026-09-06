@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import logo from '../assets/logo-transparent.png'
 import '../css/SelectResources.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -16,9 +16,9 @@ import {
   faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons'
 
-const BASE_URL = 'http://127.0.0.1:8000'
-// const BASE_URL =
-//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+// const BASE_URL = 'http://127.0.0.1:8000'
+const BASE_URL =
+  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const RESOURCES = [
   {
@@ -88,7 +88,6 @@ const RESOURCES = [
 ]
 
 export default function SelectResources() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
   const participantId =
@@ -165,8 +164,15 @@ export default function SelectResources() {
       const finishData = await finishResponse.json()
       console.log('Website finished logged:', finishData)
 
-      // 3. TODO: redirect to post-study survey
-      // window.location.href = 'YOUR_POST_SURVEY_URL'
+      // 3. redirect to post-study survey
+      const postSurveyUrl = new URL(
+        'https://ufl.qualtrics.com/jfe/form/SV_1YA3FWgZ1TQuNIa',
+      )
+
+      postSurveyUrl.searchParams.set('id', participantId)
+      postSurveyUrl.searchParams.set('c', String(condition))
+
+      window.location.href = postSurveyUrl.toString()
     } catch (error) {
       console.error('Could not finish resource selection:', error)
       setSaving(false)

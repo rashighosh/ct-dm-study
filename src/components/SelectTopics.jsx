@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate, useSearchParams } from 'react-router'
 
-const BASE_URL = 'http://127.0.0.1:8000'
-// const BASE_URL =
-//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+// const BASE_URL = 'http://127.0.0.1:8000'
+const BASE_URL =
+  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const TOPICS = [
   'What is a placebo?',
