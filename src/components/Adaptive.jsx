@@ -1057,24 +1057,6 @@ export default function MainInteraction() {
                 )}
               </div>
               <p>
-                <span className="notice">Remember:</span>{' '}
-                {!isSingleAgent ? (
-                  <strong>
-                    Please interact with the virtual characters as the person
-                    described in the pre-survey.
-                  </strong>
-                ) : (
-                  <strong>
-                    Please interact with the virtual character as the person
-                    described in the pre-survey.
-                  </strong>
-                )}{' '}
-                You've been diagnosed with cancer, and your oncologist suggested
-                this site to help you learn about clinical trials as a possible
-                option, before exploring any specific trials.
-              </p>
-              <p>
-                <span className="notice">Completing the activity:</span>{' '}
                 {!isSingleAgent ? (
                   <strong>
                     After the virtual characters walk you through the 3 topics,
