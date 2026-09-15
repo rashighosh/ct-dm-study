@@ -180,7 +180,7 @@ export default function SelectResources() {
 
       // 3. redirect to post-study survey
       const postSurveyUrl = new URL(
-        'https://ufl.qualtrics.com/jfe/form/SV_1YA3FWgZ1TQuNIa',
+        'https://ufl.qualtrics.com/jfe/form/SV_cDaUHMgdTcPpzoy',
       )
 
       postSurveyUrl.searchParams.set('id', participantId)
