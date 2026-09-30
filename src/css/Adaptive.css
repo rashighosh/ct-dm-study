@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 
 #root {
-  background: #f8f7f4;
+  background: #fff;
 }
 
 .mi-root {
@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 18px;
 
-  background: #f8f7f4;
+  background: #fff;
 }
 
 .mi-main {
@@ -399,7 +399,7 @@
   gap: 5px;
 
   padding: 15px 19px;
-  background: #fbfaf8;
+  background: #fff;
 }
 
 .full-input-area > p {
@@ -691,7 +691,7 @@
   color: #2c2c2a;
 
   background:
-    linear-gradient(rgba(248, 247, 244, 0.94), rgba(248, 247, 244, 0.94)),
+    linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)),
     url('../assets/bg.jpg') center / cover no-repeat;
 }
 
@@ -1389,6 +1389,82 @@
 
   50% {
     transform: translateY(-3px);
+  }
+}
+
+.participant-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(248, 247, 244, 0.96);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Swipe cards                                                          */
+/* -------------------------------------------------------------------------- */
+
+.swipe-cards-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+
+  pointer-events: none;
+}
+
+.swipe-cards {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 250px;
+  height: 210px;
+  overflow: hidden;
+  animation: fadeIn 0.4s ease forwards;
+  z-index: 999;
+}
+
+.swipe-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-sizing: border-box;
+  transition: opacity 0.4s ease-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-card__title {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: black;
+}
+.swipe-card__subtitle {
+  color: rgba(0, 0, 0, 0.75);
+  font-size: 13px;
+  text-align: center;
+  line-height: normal;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

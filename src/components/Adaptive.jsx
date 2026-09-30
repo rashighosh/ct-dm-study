@@ -12,7 +12,6 @@ import {
   faArrowRight,
   faCheck,
 } from '@fortawesome/free-solid-svg-icons'
-import { faCircleCheck } from '@fortawesome/free-regular-svg-icons'
 import {
   initCompanionCharacter,
   initDoctorCharacter,
@@ -22,6 +21,7 @@ import {
 } from '../character.js'
 import '../css/Adaptive.css'
 import introSequences from '../data/introSequences.json'
+import SwipingCards from './SwipingCards.jsx'
 
 // const BASE_URL = 'http://127.0.0.1:8000'
 const BASE_URL =
@@ -30,6 +30,12 @@ const BASE_URL =
 const CONDITION_SINGLE_INFO = 1
 const CONDITION_SINGLE_COMBINED = 2
 const CONDITION_MULTIPLE = 3
+
+const CONDITION_NAMES = {
+  1: 'Single Info Only',
+  2: 'Single Combined',
+  3: 'Multiple',
+}
 
 function waitForCharacterRender(container, timeout = 10000) {
   return new Promise((resolve, reject) => {
@@ -80,8 +86,6 @@ export default function MainInteraction() {
   const conversationalSpeaker =
     condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
 
-  const introMessageCount = introSequences[condition]?.length ?? 0
-
   const doctorRef = useRef(null)
   const companionRef = useRef(null)
   const textareaRef = useRef(null)
@@ -91,12 +95,12 @@ export default function MainInteraction() {
 
   const SESSION_KEY = `studySession-${participantId}-${condition}`
 
+  const [participantReady, setParticipantReady] = useState(false)
   const [started, setStarted] = useState(false)
   const [charactersReady, setCharactersReady] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
   const [showHistory, setShowHistory] = useState(false)
-  const [topicState, setTopicState] = useState(null)
   const [startChecks, setStartChecks] = useState({
     volume: false,
     browser: false,
@@ -105,16 +109,53 @@ export default function MainInteraction() {
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const [sentMessageAnimation, setSentMessageAnimation] = useState('')
   const [introDone, setIntroDone] = useState(false)
-  const canStart = Object.values(startChecks).every(Boolean)
-  const [showTopics, setShowTopics] = useState(false)
+  const canStart = participantReady && Object.values(startChecks).every(Boolean)
   const [isResponding, setIsResponding] = useState(false)
-  const [highlightCurrentTopic, setHighlightCurrentTopic] = useState(false)
   const [responseStatus, setResponseStatus] = useState('')
   const [showStartOverlay, setShowStartOverlay] = useState(true)
   const [showSceneLoading, setShowSceneLoading] = useState(false)
   const [starting, setStarting] = useState(false)
   const [showThinkingBubble, setShowThinkingBubble] = useState(false)
   const [finishing, setFinishing] = useState(false)
+  const [showSearching, setShowSearching] = useState(false)
+
+  // Log participant to database
+  useEffect(() => {
+    async function logConversationEntered() {
+      try {
+        const response = await fetch(
+          `${BASE_URL}/logs/log-conversation-entered`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              c: condition,
+              condition_name: CONDITION_NAMES[condition],
+            }),
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `Conversation entry logging failed: ${response.status}`,
+          )
+        }
+
+        const data = await response.json()
+
+        console.log('Conversation entered logged:', data)
+
+        setParticipantReady(true)
+      } catch (error) {
+        console.error('Could not log conversation entry:', error)
+      }
+    }
+
+    logConversationEntered()
+  }, [participantId, condition])
 
   // Restore saved conversation history
   useEffect(() => {
@@ -126,45 +167,13 @@ export default function MainInteraction() {
       const session = JSON.parse(saved)
 
       const restoredMessages = session.messages ?? []
-      const restoredTopicState = session.topicState ?? null
 
       setMessages(restoredMessages)
-      setTopicState(restoredTopicState)
       setIntroDone(session.introDone ?? false)
-
-      // If intro already completed, show topics and current-topic highlight
-      setShowTopics(session.introDone ?? false)
-      setHighlightCurrentTopic(session.introDone ?? false)
     } catch (error) {
       console.error('Could not restore session:', error)
     }
   }, [SESSION_KEY])
-
-  useEffect(() => {
-    if (!started) return
-
-    async function loadTopicState() {
-      try {
-        const response = await fetch(
-          `${BASE_URL}/jordan/state/${participantId}`,
-        )
-
-        if (!response.ok) {
-          throw new Error(`Topic state request failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        console.log('Topic state:', data)
-
-        setTopicState(data)
-      } catch (error) {
-        console.error('Could not load topic state:', error)
-      }
-    }
-
-    loadTopicState()
-  }, [started, participantId])
 
   // save conversation transcript
   useEffect(() => {
@@ -212,12 +221,11 @@ export default function MainInteraction() {
       participantId,
       condition,
       messages,
-      topicState,
       introDone,
     }
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  }, [SESSION_KEY, participantId, condition, messages, topicState, introDone])
+  }, [SESSION_KEY, participantId, condition, messages, introDone])
 
   // Initialize both virtual characters after Begin is clicked
   useEffect(() => {
@@ -293,11 +301,6 @@ export default function MainInteraction() {
       throw new Error(`No intro sequence configured for condition ${condition}`)
     }
 
-    // Reveal topics 8.7 seconds into the first intro
-    setTimeout(() => {
-      setShowTopics(true)
-    }, 8700)
-
     for (const intro of introSequence) {
       if (intro.beforeGesture) {
         playGesture(intro.beforeGesture)
@@ -330,13 +333,12 @@ export default function MainInteraction() {
     if (!isSingleAgent) {
       playGesture('stopCompanionGesture')
     }
-
-    setHighlightCurrentTopic(true)
   }
 
   useEffect(() => {
     if (!started || !charactersReady || showStartOverlay || showSceneLoading)
       return
+
     if (conversationStartedRef.current) return
     if (messages.length > 0) return
 
@@ -345,24 +347,11 @@ export default function MainInteraction() {
     async function startConversation() {
       setIsResponding(true)
 
-      // Brief pause after the scene finishes settling
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Start generating Topic 1 while the prerecorded intro plays
-      const conversationStartPromise = fetch(`${BASE_URL}/jordan/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          participant_id: participantId,
-          conversation_history: [],
-          topic_history_start: introMessageCount,
-          condition,
-        }),
-      })
       try {
-        // Play the prerecorded introduction while Topic 1 generates
+        // Brief pause after the scene finishes settling
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+
+        // Play the prerecorded introduction
         if (!introDone && !introStartedRef.current) {
           introStartedRef.current = true
 
@@ -398,83 +387,6 @@ export default function MainInteraction() {
 
           setIntroDone(true)
         }
-        const response = await conversationStartPromise
-
-        // Then begin Topic 1
-        if (!response.ok) {
-          throw new Error(`Conversation start failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        console.log('Conversation started:', data)
-
-        const newTopicState = {
-          current_topic_index: data.current_topic_index,
-          conversation_complete: data.conversation_complete,
-          phase: data.phase,
-          topics: data.topics,
-        }
-
-        setTopicState(newTopicState)
-
-        // Alex introduces Topic 1
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: data.alex_reply,
-          },
-        ])
-
-        if (!isSingleAgent) {
-          playGesture('jordanLookAtAlex')
-        }
-
-        await speakWithLipsync(
-          data.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
-
-        setAlexSubtitle('')
-
-        // Conversational follow-up for c=2 and c=3
-        if (condition !== CONDITION_SINGLE_INFO) {
-          setMessages((previous) => [
-            ...previous,
-            {
-              from: conversationalSpeaker,
-              text: data.jordan_reply,
-            },
-          ])
-
-          if (condition === CONDITION_SINGLE_COMBINED) {
-            await speakWithLipsync(
-              data.jordan_reply,
-              'doctor',
-              null,
-              null,
-              setAlexSubtitle,
-            )
-
-            setAlexSubtitle('')
-          } else {
-            playGesture('alexLookAtJordan')
-
-            await speakWithLipsync(
-              data.jordan_reply,
-              'companion',
-              null,
-              null,
-              setJordanSubtitle,
-            )
-
-            setJordanSubtitle('')
-          }
-        }
 
         playGesture('stopAlexGesture')
 
@@ -483,7 +395,6 @@ export default function MainInteraction() {
         }
       } catch (error) {
         console.error('Could not start conversation:', error)
-
         conversationStartedRef.current = false
       } finally {
         setIsResponding(false)
@@ -529,375 +440,54 @@ export default function MainInteraction() {
       setSentMessageAnimation('')
     }, 3500)
 
-    if (!isSingleAgent) {
-      playGesture('alexLookAtJordan')
-      playGesture('jordanLookAtAlex')
-    }
-
     setIsResponding(true)
-    setShowThinkingBubble(true)
 
     try {
-      // 1. Send user message to Jordan
-      const response = await fetch(`${BASE_URL}/jordan/turn`, {
+      setShowSearching(true)
+      playGesture('startSwiping')
+
+      const response = await fetch(`${BASE_URL}/alex/conversation-alex`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          participant_id: participantId,
-          user_message: trimmed,
-          conversation_history: messages,
+          message: trimmed,
+          history: messages,
+          earlier_memory: '',
+          prior_topic_summaries: [],
           condition,
         }),
       })
 
       if (!response.ok) {
-        throw new Error(`Conversation request failed: ${response.status}`)
+        throw new Error(`Alex request failed: ${response.status}`)
       }
 
       const data = await response.json()
 
-      console.log('Conversation response:', data)
+      console.log('Alex response:', data)
 
-      if (data.topic_advanced) {
-        const newTopicState = {
-          current_topic_index: data.current_topic_index,
-          conversation_complete: data.conversation_complete,
-          phase: data.phase,
-          topics: data.topics,
-        }
-
-        setTopicState(newTopicState)
-
-        // Log topic completion without blocking the conversation
-        fetch(`${BASE_URL}/logs/log-topic-covered`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            participant_id: participantId,
-            topic_number: data.completed_topic_number,
-          }),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                `Topic completion logging failed: ${response.status}`,
-              )
-            }
-
-            console.log('Topic completion logged')
-          })
-          .catch((error) => {
-            console.error('Could not log topic completion:', error)
-          })
-      }
-
-      // If we advanced to another topic, Alex introduces it first,
-      // then Jordan asks for the user's perspective
-      if (data.topic_advanced && data.prepare_next_topic) {
-        setShowThinkingBubble(false)
-        setResponseStatus('Preparing next topic')
-
-        const nextTopicResponse = await fetch(
-          `${BASE_URL}/jordan/prepare-next-topic`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              participant_id: participantId,
-              conversation_history: [
-                ...messages,
-                {
-                  from: 'user',
-                  text: trimmed,
-                },
-              ],
-              condition,
-            }),
-          },
-        )
-
-        if (!nextTopicResponse.ok) {
-          throw new Error(
-            `Preparing next topic failed: ${nextTopicResponse.status}`,
-          )
-        }
-
-        const nextTopicData = await nextTopicResponse.json()
-
-        setResponseStatus('')
-
-        // Alex introduces the next topic
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: nextTopicData.alex_reply,
-          },
-        ])
-
-        if (!isSingleAgent) {
-          playGesture('jordanLookAtAlex')
-        }
-
-        setShowThinkingBubble(false)
-
-        await speakWithLipsync(
-          nextTopicData.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
-
-        setAlexSubtitle('')
-
-        // Conversational follow-up for c=2 and c=3
-        if (condition !== CONDITION_SINGLE_INFO) {
-          setMessages((previous) => [
-            ...previous,
-            {
-              from: conversationalSpeaker,
-              text: nextTopicData.jordan_reply,
-            },
-          ])
-
-          if (condition === CONDITION_SINGLE_COMBINED) {
-            await speakWithLipsync(
-              nextTopicData.jordan_reply,
-              'doctor',
-              null,
-              null,
-              setAlexSubtitle,
-            )
-
-            setAlexSubtitle('')
-          } else {
-            playGesture('alexLookAtJordan')
-
-            setShowThinkingBubble(false)
-
-            await speakWithLipsync(
-              nextTopicData.jordan_reply,
-              'companion',
-              null,
-              null,
-              setJordanSubtitle,
-            )
-
-            setJordanSubtitle('')
-          }
-        }
-
-        playGesture('stopAlexGesture')
-        if (!isSingleAgent) {
-          playGesture('stopCompanionGesture')
-        }
-
-        return
-      }
-
-      // 2. If Alex sent a direct reply, let Alex respond
-      if (data.alex_reply) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: data.alex_reply,
-          },
-        ])
-
-        setShowThinkingBubble(false)
-
-        await speakWithLipsync(
-          data.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
-
-        setAlexSubtitle('')
-        playGesture('stopAlexGesture')
-
-        return
-      }
-
-      // 2. If Alex is needed, let Alex respond directly
-      if (data.alex_info_needed) {
-        const alexResponse = await fetch(`${BASE_URL}/alex/conversation-alex`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: trimmed,
-            history: data.shared_history,
-            earlier_memory: data.shared_memory,
-            prior_topic_summaries: data.prior_topic_summaries,
-            condition,
-          }),
-        })
-
-        if (!alexResponse.ok) {
-          throw new Error(`Alex request failed: ${alexResponse.status}`)
-        }
-
-        const alexData = await alexResponse.json()
-
-        console.log('Alex response:', alexData)
-
-        // Add Alex's response to chat
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: alexData.answer,
-          },
-        ])
-
-        // Start generating Jordan's follow-up while Alex speaks
-        const jordanAfterAlexPromise =
-          condition !== CONDITION_SINGLE_INFO
-            ? fetch(`${BASE_URL}/jordan/after-alex`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  participant_id: participantId,
-                  earlier_memory: data.shared_memory,
-                  conversation_history: [
-                    ...data.shared_history,
-                    { from: 'user', text: trimmed },
-                    { from: 'Alex', text: alexData.answer },
-                  ],
-                }),
-              })
-            : null
-
-        if (!isSingleAgent) {
-          playGesture('jordanLookAtAlex')
-        }
-
-        setShowThinkingBubble(false)
-
-        // Alex speaks
-        await speakWithLipsync(
-          alexData.answer,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
-
-        setAlexSubtitle('')
-
-        // Conversational follow-up for c=2 and c=3
-        if (jordanAfterAlexPromise) {
-          const jordanAfterAlexResponse = await jordanAfterAlexPromise
-
-          if (!jordanAfterAlexResponse.ok) {
-            throw new Error(
-              `Jordan after Alex request failed: ${jordanAfterAlexResponse.status}`,
-            )
-          }
-
-          const jordanAfterAlexData = await jordanAfterAlexResponse.json()
-
-          console.log('Jordan after Alex:', jordanAfterAlexData)
-
-          setMessages((previous) => [
-            ...previous,
-            {
-              from: conversationalSpeaker,
-              text: jordanAfterAlexData.jordan_reply,
-            },
-          ])
-
-          if (condition === CONDITION_SINGLE_COMBINED) {
-            setShowThinkingBubble(false)
-            await speakWithLipsync(
-              jordanAfterAlexData.jordan_reply,
-              'doctor',
-              null,
-              null,
-              setAlexSubtitle,
-            )
-
-            setAlexSubtitle('')
-          } else {
-            playGesture('alexLookAtJordan')
-
-            setShowThinkingBubble(false)
-            await speakWithLipsync(
-              jordanAfterAlexData.jordan_reply,
-              'companion',
-              null,
-              null,
-              setJordanSubtitle,
-            )
-
-            setJordanSubtitle('')
-          }
-        }
-
-        playGesture('stopAlexGesture')
-        if (!isSingleAgent) {
-          playGesture('stopCompanionGesture')
-        }
-
-        return
-      }
-
-      // 3. Otherwise, conversational response
       setMessages((previous) => [
         ...previous,
         {
-          from: conversationalSpeaker,
-          text: data.jordan_reply,
+          from: 'Alex',
+          text: data.answer,
         },
       ])
 
-      if (condition === CONDITION_SINGLE_COMBINED) {
-        setShowThinkingBubble(false)
-        await speakWithLipsync(
-          data.jordan_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
+      setShowSearching(false)
+      playGesture('stopSwiping')
 
-        setAlexSubtitle('')
-      } else {
-        playGesture('alexLookAtJordan')
+      await speakWithLipsync(data.answer, 'doctor', null, null, setAlexSubtitle)
 
-        setShowThinkingBubble(false)
-        await speakWithLipsync(
-          data.jordan_reply,
-          'companion',
-          null,
-          null,
-          setJordanSubtitle,
-        )
-
-        setJordanSubtitle('')
-      }
-
+      setAlexSubtitle('')
       playGesture('stopAlexGesture')
-      if (!isSingleAgent) {
-        playGesture('stopCompanionGesture')
-      }
     } catch (error) {
       console.error('Conversation error:', error)
     } finally {
-      setShowThinkingBubble(false)
+      setShowSearching(false)
+      playGesture('stopSwiping')
       setIsResponding(false)
       setResponseStatus('')
     }
@@ -1012,6 +602,18 @@ export default function MainInteraction() {
     <>
       {showStartOverlay && (
         <div className="start-overlay">
+          {!participantReady && (
+            <div className="participant-loading-overlay">
+              <div className="response-status">
+                <span className="response-status-dots" aria-hidden="true">
+                  <span>.</span>
+                  <span>.</span>
+                  <span>.</span>
+                </span>
+                <span>Getting ready</span>
+              </div>
+            </div>
+          )}
           <div className="mi-start-overlay-content">
             <img src={logo} className="logo" alt="Study logo" />
 
@@ -1025,14 +627,15 @@ export default function MainInteraction() {
             <div className="mi-start-information">
               {!isSingleAgent ? (
                 <p>
-                  You are about to talk about your 3 selected topics with two
-                  virtual characters: <strong>Alex</strong> and{' '}
-                  <strong>Jordan</strong>!
+                  You are about to explore what it means to participate in a
+                  clinical trial with two virtual characters:{' '}
+                  <strong>Alex</strong> and <strong>Jordan</strong>!
                 </p>
               ) : (
                 <p>
-                  You are about to talk about your 3 selected topics with a
-                  virtual character: <strong>Alex</strong>!
+                  You are about to explore what it means to participate in a
+                  clinical trial with a virtual character: <strong>Alex</strong>
+                  !
                 </p>
               )}
               <div className="character-images-row">
@@ -1059,20 +662,28 @@ export default function MainInteraction() {
               <p>
                 {!isSingleAgent ? (
                   <strong>
-                    After the virtual characters walk you through the 3 topics,
-                    a Finish Button will appear in the top right corner of your
-                    screen.
+                    You’ll have a conversation with the virtual characters where
+                    you can ask questions and bring up things you’re curious or
+                    unsure about. The virtual characters will use information
+                    from credible sources to help you explore and organize what
+                    it means to participate in a clinical trial. After the
+                    characters introduce themselves, a Finish button will appear
+                    in the top right corner of your screen.
                   </strong>
                 ) : (
                   <strong>
-                    After the virtual character walks you through the 3 topics,
-                    a Finish Button will appear in the top right corner of your
-                    screen.
+                    You’ll have a conversation with the virtual character where
+                    you can ask questions and bring up things you’re curious or
+                    unsure about. The virtual character will use information
+                    from credible sources to help you explore what it means to
+                    participate in a clinical trial. After the character
+                    introduces themself, a Finish button will appear in the top
+                    right corner of your screen.
                   </strong>
                 )}{' '}
                 You may continue asking as many or as few questions as you'd
                 like until you feel you've experienced how the website can help
-                someone learn about clinical trial participation.
+                you learn about clinical trial participation.
               </p>
             </div>
 
@@ -1177,7 +788,7 @@ export default function MainInteraction() {
           Chat history
         </button>
 
-        {topicState?.phase === 'wrapup' && (
+        {introDone && (
           <button
             type="button"
             className="cssbuttons-io-button finish-button"
@@ -1216,6 +827,11 @@ export default function MainInteraction() {
                   backgroundImage: `url(${stageBackground})`,
                 }}
               />
+              {showSearching && (
+                <div className="swipe-cards-overlay">
+                  <SwipingCards />
+                </div>
+              )}
 
               {started && (
                 <div
@@ -1260,11 +876,6 @@ export default function MainInteraction() {
                   )}
                 </div>
               </div>
-              <TopicProgress
-                topicState={topicState}
-                showTopics={showTopics}
-                highlightCurrentTopic={highlightCurrentTopic}
-              />
 
               {responseStatus && (
                 <div className="response-status">
@@ -1314,7 +925,7 @@ export default function MainInteraction() {
               onSubmit={handleSend}
               onHandleKeyDown={handleKeyDown}
               sentMessageAnimation={sentMessageAnimation}
-              isResponding={isResponding}
+              isResponding={isResponding || showSceneLoading || !introDone}
             />
           </section>
         </main>
@@ -1327,61 +938,6 @@ export default function MainInteraction() {
         )}
       </div>
     </>
-  )
-}
-
-function TopicProgress({ topicState, showTopics, highlightCurrentTopic }) {
-  if (!topicState) return null
-
-  const currentTopicIndex = topicState.current_topic_index
-
-  return (
-    <div
-      className={`topic-progress ${
-        showTopics ? 'topic-progress-visible' : 'topic-progress-hidden'
-      }`}
-    >
-      <div
-        className="topic-progress-list"
-        style={{
-          '--topic-count': topicState.topics.length,
-          '--progress':
-            topicState.topics.length > 1
-              ? currentTopicIndex / (topicState.topics.length - 1)
-              : 0,
-        }}
-      >
-        <div className="topic-progress-line" />
-        <div className="topic-progress-line-fill" />
-
-        {topicState.topics.map((topic, index) => {
-          const statusClass =
-            topic.status === 'active' && !highlightCurrentTopic
-              ? ''
-              : topic.status
-
-          return (
-            <div
-              key={topic.topic}
-              className={`topic-progress-item ${statusClass}`}
-              style={{
-                '--topic-delay': `${index * 160}ms`,
-              }}
-            >
-              <span className="topic-progress-number">
-                {topic.status === 'completed' ? (
-                  <FontAwesomeIcon icon={faCheck} />
-                ) : (
-                  index + 1
-                )}
-              </span>
-
-              <span className="topic-progress-name">{topic.topic}</span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
   )
 }
 

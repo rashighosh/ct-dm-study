@@ -1,0 +1,52 @@
+[
+  {
+    "word": "Whenever",
+    "start": 0,
+    "end": 0.2472
+  },
+  {
+    "word": "you're",
+    "start": 0.2472,
+    "end": 0.4944
+  },
+  {
+    "word": "ready,",
+    "start": 0.4944,
+    "end": 0.7416
+  },
+  {
+    "word": "what",
+    "start": 0.7416,
+    "end": 0.9888
+  },
+  {
+    "word": "would",
+    "start": 0.9888,
+    "end": 1.236
+  },
+  {
+    "word": "you",
+    "start": 1.236,
+    "end": 1.4832
+  },
+  {
+    "word": "like",
+    "start": 1.4832,
+    "end": 1.7304
+  },
+  {
+    "word": "to",
+    "start": 1.7304,
+    "end": 1.9776
+  },
+  {
+    "word": "talk",
+    "start": 1.9776,
+    "end": 2.2248
+  },
+  {
+    "word": "about?",
+    "start": 2.2248,
+    "end": 2.472
+  }
+]

@@ -16,7 +16,7 @@ const CARDS = [
   {
     id: 3,
     title: 'Searching FDA',
-    subtitle: 'Federal Drug Administration',
+    subtitle: 'Food and Drug Administration',
   },
   {
     id: 4,
