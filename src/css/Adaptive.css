@@ -131,6 +131,17 @@
 
   width: 300px;
   max-width: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(30px);
+
+  transition: 0.3s ease-in-out;
+}
+
+.questions-drawer-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
 }
 
 .questions-drawer-open {
@@ -141,7 +152,7 @@
 
 .questions-tab {
   position: absolute;
-  top: 50%;
+  top: 70%;
   right: 0;
   transform: translateY(-50%);
 

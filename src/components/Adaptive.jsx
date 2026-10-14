@@ -99,6 +99,7 @@ export default function MainInteraction() {
   const [messages, setMessages] = useState([])
   const [showHistory, setShowHistory] = useState(false)
   const [showQuestions, setShowQuestions] = useState(false)
+  const [showQuestionsTab, setShowQuestionsTab] = useState(false)
   const [topicState, setTopicState] = useState(null)
   const [startChecks, setStartChecks] = useState({
     volume: false,
@@ -322,6 +323,16 @@ export default function MainInteraction() {
         playGesture(intro.beforeGesture)
       }
 
+      // Reveal the question list 14.5 seconds into Jordan's introduction
+      if (
+        (condition === CONDITION_MULTIPLE &&
+          intro.audio?.includes('JORDAN_INTRO_1_MULTIPLE')) ||
+        (condition === CONDITION_SINGLE_COMBINED &&
+          intro.audio?.includes('ALEX_INTRO_2_SINGLE_COMBINED'))
+      ) {
+        setTimeout(() => setShowQuestionsTab(true), 14500)
+      }
+
       setMessages((previous) => [
         ...previous,
         {
@@ -524,6 +535,9 @@ export default function MainInteraction() {
     const trimmed = input.trim()
 
     if (!trimmed || isResponding) return
+
+    // Slide the question list closed when the user sends a message
+    setShowQuestions(false)
 
     console.log('User sent:', {
       participantId,
@@ -1312,7 +1326,7 @@ export default function MainInteraction() {
                 <div
                   className={`questions-drawer ${
                     showQuestions ? 'questions-drawer-open' : ''
-                  }`}
+                  } ${showQuestionsTab ? 'questions-drawer-visible' : ''}`}
                 >
                   <button
                     type="button"

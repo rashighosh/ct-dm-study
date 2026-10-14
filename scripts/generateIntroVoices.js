@@ -9,11 +9,10 @@ const ALEX_INTRO_1_MULTIPLE =
 const ALEX_INTRO_1_SINGLE =
   'Hi there, I’m Alex. I am an AI-powered virtual character here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.'
 
-const JORDAN_INTRO_1_MULTIPLE =
-  'And my role is to help you talk through what you think and feel about each topic. This helps us understand what’s important to you so Alex can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let us know by saying something like, ‘Let’s move on’ or ‘Continue.’'
+const JORDAN_INTRO_1_MULTIPLE = `And my role is to help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let us know by saying something like, ‘Let’s move on’ or ‘Continue.’`
 
 const ALEX_INTRO_2_SINGLE_COMBINED =
-  "I'll also help you talk through what you think and feel about each topic. This helps me understand what’s important to you so that I can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’"
+  "I'll also help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’"
 
 const ALEX_INTRO_2_SINGLE_INFO =
   'We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’'
@@ -129,6 +128,15 @@ async function generateAllIntros() {
 // Choose what to run
 // --------------------------------------------------------------------------
 
-generateAllIntros()
+// generateAllIntros()
 
-// generateOneIntro('ALEX_INTRO_1_SINGLE_INFO', ALEX_INTRO_1_SINGLE_INFO, 'doctor')
+generateOneIntro(
+  'JORDAN_INTRO_1_MULTIPLE',
+  JORDAN_INTRO_1_MULTIPLE,
+  'companion',
+)
+generateOneIntro(
+  'ALEX_INTRO_2_SINGLE_COMBINED',
+  ALEX_INTRO_2_SINGLE_COMBINED,
+  'doctor',
+)
