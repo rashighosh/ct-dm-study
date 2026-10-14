@@ -529,6 +529,151 @@ export default function MainInteraction() {
     introDone,
   ])
 
+  async function handleNextTopic() {
+    if (isResponding || !topicState || topicState.conversation_complete) return
+
+    setIsResponding(true)
+    setShowQuestions(false)
+
+    try {
+      const response = await fetch(`${BASE_URL}/jordan/advance-topic`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          conversation_history: messages,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Topic advancement failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      console.log('Topic advanced:', data)
+      // Update the topic progress and conversation phase
+      setTopicState({
+        current_topic_index: data.current_topic_index,
+        conversation_complete: data.conversation_complete,
+        phase: data.phase,
+        topics: data.topics,
+      })
+
+      // Log completion of the previous topic
+      fetch(`${BASE_URL}/logs/log-topic-covered`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          topic_number: data.completed_topic_number,
+        }),
+      }).catch((error) => {
+        console.error('Could not log topic completion:', error)
+      })
+
+      // Introduce the next topic
+      if (data.prepare_next_topic) {
+        setResponseStatus('Preparing next topic')
+
+        const nextTopicResponse = await fetch(
+          `${BASE_URL}/jordan/prepare-next-topic`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              conversation_history: messages,
+              condition,
+            }),
+          },
+        )
+
+        if (!nextTopicResponse.ok) {
+          throw new Error(
+            `Preparing next topic failed: ${nextTopicResponse.status}`,
+          )
+        }
+
+        const nextTopicData = await nextTopicResponse.json()
+        setResponseStatus('')
+
+        // Alex introduces the new topic
+        setMessages((previous) => [
+          ...previous,
+          { from: 'Alex', text: nextTopicData.alex_reply },
+        ])
+
+        await speakWithLipsync(
+          nextTopicData.alex_reply,
+          'doctor',
+          null,
+          null,
+          setAlexSubtitle,
+        )
+
+        setAlexSubtitle('')
+
+        // Conversational follow-up in conditions 2 and 3
+        if (condition !== CONDITION_SINGLE_INFO && nextTopicData.jordan_reply) {
+          setMessages((previous) => [
+            ...previous,
+            { from: conversationalSpeaker, text: nextTopicData.jordan_reply },
+          ])
+
+          await speakWithLipsync(
+            nextTopicData.jordan_reply,
+            condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
+            null,
+            null,
+            condition === CONDITION_SINGLE_COMBINED
+              ? setAlexSubtitle
+              : setJordanSubtitle,
+          )
+
+          setAlexSubtitle('')
+          setJordanSubtitle('')
+        }
+      }
+
+      // After the final topic, play the wrap-up
+      if (data.conversation_complete) {
+        const wrapupText = data.alex_reply || data.jordan_reply
+
+        if (wrapupText) {
+          const speaker = condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
+
+          const character =
+            condition === CONDITION_MULTIPLE ? 'companion' : 'doctor'
+
+          const setSubtitle =
+            condition === CONDITION_MULTIPLE
+              ? setJordanSubtitle
+              : setAlexSubtitle
+
+          setMessages((previous) => [
+            ...previous,
+            { from: speaker, text: wrapupText },
+          ])
+
+          await speakWithLipsync(wrapupText, character, null, null, setSubtitle)
+
+          setSubtitle('')
+        }
+      }
+    } catch (error) {
+      console.error('Could not advance topic:', error)
+    } finally {
+      setIsResponding(false)
+    }
+  }
+
   async function handleSend(event) {
     event.preventDefault()
 
@@ -597,148 +742,6 @@ export default function MainInteraction() {
       // Refresh the question list whenever Jordan saves a new question
       if (data.question_saved) {
         await refreshSavedQuestions()
-      }
-
-      if (data.topic_advanced) {
-        const newTopicState = {
-          current_topic_index: data.current_topic_index,
-          conversation_complete: data.conversation_complete,
-          phase: data.phase,
-          topics: data.topics,
-        }
-
-        setTopicState(newTopicState)
-
-        // Log topic completion without blocking the conversation
-        fetch(`${BASE_URL}/logs/log-topic-covered`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            participant_id: participantId,
-            topic_number: data.completed_topic_number,
-          }),
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(
-                `Topic completion logging failed: ${response.status}`,
-              )
-            }
-
-            console.log('Topic completion logged')
-          })
-          .catch((error) => {
-            console.error('Could not log topic completion:', error)
-          })
-      }
-
-      // If we advanced to another topic, Alex introduces it first,
-      // then Jordan asks for the user's perspective
-      if (data.topic_advanced && data.prepare_next_topic) {
-        setShowThinkingBubble(false)
-        setResponseStatus('Preparing next topic')
-
-        const nextTopicResponse = await fetch(
-          `${BASE_URL}/jordan/prepare-next-topic`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              participant_id: participantId,
-              conversation_history: [
-                ...messages,
-                {
-                  from: 'user',
-                  text: trimmed,
-                },
-              ],
-              condition,
-            }),
-          },
-        )
-
-        if (!nextTopicResponse.ok) {
-          throw new Error(
-            `Preparing next topic failed: ${nextTopicResponse.status}`,
-          )
-        }
-
-        const nextTopicData = await nextTopicResponse.json()
-
-        setResponseStatus('')
-
-        // Alex introduces the next topic
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: nextTopicData.alex_reply,
-          },
-        ])
-
-        if (!isSingleAgent) {
-          playGesture('jordanLookAtAlex')
-        }
-
-        setShowThinkingBubble(false)
-
-        await speakWithLipsync(
-          nextTopicData.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
-
-        setAlexSubtitle('')
-
-        // Conversational follow-up for c=2 and c=3
-        if (condition !== CONDITION_SINGLE_INFO) {
-          setMessages((previous) => [
-            ...previous,
-            {
-              from: conversationalSpeaker,
-              text: nextTopicData.jordan_reply,
-            },
-          ])
-
-          if (condition === CONDITION_SINGLE_COMBINED) {
-            await speakWithLipsync(
-              nextTopicData.jordan_reply,
-              'doctor',
-              null,
-              null,
-              setAlexSubtitle,
-            )
-
-            setAlexSubtitle('')
-          } else {
-            playGesture('alexLookAtJordan')
-
-            setShowThinkingBubble(false)
-
-            await speakWithLipsync(
-              nextTopicData.jordan_reply,
-              'companion',
-              null,
-              null,
-              setJordanSubtitle,
-            )
-
-            setJordanSubtitle('')
-          }
-        }
-
-        playGesture('stopAlexGesture')
-        if (!isSingleAgent) {
-          playGesture('stopCompanionGesture')
-        }
-
-        return
       }
 
       // 2. If Alex sent a direct reply, let Alex respond
@@ -1226,7 +1229,7 @@ export default function MainInteraction() {
             type="button"
             className="cssbuttons-io-button finish-button"
             onClick={handleFinish}
-            disabled={finishing}
+            disabled={finishing || isResponding}
           >
             {finishing ? (
               <span className="button-loading">
@@ -1261,10 +1264,30 @@ export default function MainInteraction() {
                 }}
               />
 
+              {topicState?.phase === 'topics' && introDone && (
+                <button
+                  type="button"
+                  className="cssbuttons-io-button next-topic-button"
+                  disabled={isResponding}
+                  onClick={handleNextTopic}
+                >
+                  {topicState.current_topic_index === 2
+                    ? 'Finish Topics'
+                    : 'Next Topic'}
+
+                  <span className="icon">
+                    <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                  </span>
+                </button>
+              )}
+
               {started && (
                 <div
                   className={`scene-loading-overlay ${
-                    showSceneLoading ? 'scene-loading-overlay-visible' : ''
+                    showSceneLoading ||
+                    responseStatus === 'Preparing next topic'
+                      ? 'scene-loading-overlay-visible'
+                      : ''
                   }`}
                 >
                   <div className="response-status">
@@ -1273,7 +1296,11 @@ export default function MainInteraction() {
                       <span>.</span>
                       <span>.</span>
                     </span>
-                    <span>Getting ready</span>
+                    <span>
+                      {responseStatus === 'Preparing next topic'
+                        ? 'Preparing next topic'
+                        : 'Getting ready'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -1309,17 +1336,6 @@ export default function MainInteraction() {
                 showTopics={showTopics}
                 highlightCurrentTopic={highlightCurrentTopic}
               />
-
-              {responseStatus && (
-                <div className="response-status">
-                  <span className="response-status-dots" aria-hidden="true">
-                    <span>.</span>
-                    <span>.</span>
-                    <span>.</span>
-                  </span>
-                  <span>{responseStatus}</span>
-                </div>
-              )}
 
               {(condition === CONDITION_SINGLE_COMBINED ||
                 condition === CONDITION_MULTIPLE) && (
