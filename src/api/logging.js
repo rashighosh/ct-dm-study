@@ -37,7 +37,6 @@ const CONDITION_NAMES = {
 }
 
 export async function logSession(participantId, condition) {
-  console.log('IN LOG SESSION')
   if (!participantId) return
 
   const conditionName =

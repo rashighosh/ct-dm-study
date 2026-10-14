@@ -16,9 +16,9 @@ import {
   faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons'
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const CONDITION_NAMES = {
   1: 'Single Info Only',

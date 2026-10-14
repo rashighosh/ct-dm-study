@@ -11,6 +11,8 @@ import {
   faExpand,
   faArrowRight,
   faCheck,
+  faClipboardList,
+  faChevronRight,
 } from '@fortawesome/free-solid-svg-icons'
 import { faCircleCheck } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -23,9 +25,9 @@ import {
 import '../css/Adaptive.css'
 import introSequences from '../data/introSequences.json'
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const CONDITION_SINGLE_INFO = 1
 const CONDITION_SINGLE_COMBINED = 2
@@ -96,6 +98,7 @@ export default function MainInteraction() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
   const [showHistory, setShowHistory] = useState(false)
+  const [showQuestions, setShowQuestions] = useState(false)
   const [topicState, setTopicState] = useState(null)
   const [startChecks, setStartChecks] = useState({
     volume: false,
@@ -155,8 +158,6 @@ export default function MainInteraction() {
 
         const data = await response.json()
 
-        console.log('Topic state:', data)
-
         setTopicState(data)
       } catch (error) {
         console.error('Could not load topic state:', error)
@@ -165,6 +166,24 @@ export default function MainInteraction() {
 
     loadTopicState()
   }, [started, participantId])
+
+  async function refreshSavedQuestions() {
+    try {
+      const response = await fetch(`${BASE_URL}/jordan/state/${participantId}`)
+
+      if (!response.ok) {
+        throw new Error(`Could not refresh questions: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setTopicState(data)
+
+      // Open the panel so the participant sees the newly saved question
+      setShowQuestions(true)
+    } catch (error) {
+      console.error('Could not refresh saved questions:', error)
+    }
+  }
 
   // save conversation transcript
   useEffect(() => {
@@ -407,8 +426,6 @@ export default function MainInteraction() {
 
         const data = await response.json()
 
-        console.log('Conversation started:', data)
-
         const newTopicState = {
           current_topic_index: data.current_topic_index,
           conversation_complete: data.conversation_complete,
@@ -539,6 +556,7 @@ export default function MainInteraction() {
 
     try {
       // 1. Send user message to Jordan
+      console.log('Sending users message ...')
       const response = await fetch(`${BASE_URL}/jordan/turn`, {
         method: 'POST',
         headers: {
@@ -557,8 +575,15 @@ export default function MainInteraction() {
       }
 
       const data = await response.json()
+      console.log('Captured question from Jordan turn:', {
+        question: data.question_saved,
+        type: data.question_type,
+      })
 
-      console.log('Conversation response:', data)
+      // Refresh the question list whenever Jordan saves a new question
+      if (data.question_saved) {
+        await refreshSavedQuestions()
+      }
 
       if (data.topic_advanced) {
         const newTopicState = {
@@ -750,8 +775,6 @@ export default function MainInteraction() {
 
         const alexData = await alexResponse.json()
 
-        console.log('Alex response:', alexData)
-
         // Add Alex's response to chat
         setMessages((previous) => [
           ...previous,
@@ -809,8 +832,15 @@ export default function MainInteraction() {
           }
 
           const jordanAfterAlexData = await jordanAfterAlexResponse.json()
+          console.log('Captured question after Alex:', {
+            question: jordanAfterAlexData.question_saved,
+            type: jordanAfterAlexData.question_type,
+          })
 
-          console.log('Jordan after Alex:', jordanAfterAlexData)
+          // Refresh the list when Jordan saves a question after Alex responds
+          if (jordanAfterAlexData.question_saved) {
+            await refreshSavedQuestions()
+          }
 
           setMessages((previous) => [
             ...previous,
@@ -1274,6 +1304,80 @@ export default function MainInteraction() {
                     <span>.</span>
                   </span>
                   <span>{responseStatus}</span>
+                </div>
+              )}
+
+              {(condition === CONDITION_SINGLE_COMBINED ||
+                condition === CONDITION_MULTIPLE) && (
+                <div
+                  className={`questions-drawer ${
+                    showQuestions ? 'questions-drawer-open' : ''
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="questions-tab"
+                    onClick={() => setShowQuestions((previous) => !previous)}
+                    aria-label={
+                      showQuestions
+                        ? 'Close my questions and concerns'
+                        : 'Open my questions and concerns'
+                    }
+                    aria-expanded={showQuestions}
+                    title="My Questions & Concerns"
+                  >
+                    <FontAwesomeIcon icon={faClipboardList} />
+                    Open Jordan's Question List
+                  </button>
+
+                  <div className="questions-panel">
+                    <div className="questions-panel-header">
+                      <div>
+                        <FontAwesomeIcon icon={faClipboardList} />
+                        <h2>Jordan's Question List</h2>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="questions-panel-close"
+                        onClick={() => setShowQuestions(false)}
+                        aria-label="Close questions panel"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    <div className="questions-panel-body">
+                      {topicState?.topics?.some(
+                        (topic) =>
+                          topic.personally_situated_questions?.length > 0,
+                      ) ? (
+                        topicState.topics.map((topic, index) => {
+                          const questions =
+                            topic.personally_situated_questions || []
+
+                          if (questions.length === 0) return null
+
+                          return (
+                            <section className="questions-topic" key={index}>
+                              <h3>{topic.topic}</h3>
+
+                              <ul>
+                                {questions.map((item, questionIndex) => (
+                                  <li key={questionIndex}>{item.question}</li>
+                                ))}
+                              </ul>
+                            </section>
+                          )
+                        })
+                      ) : (
+                        <p className="questions-empty">
+                          No questions or concerns saved yet. As you chat, we'll
+                          keep track of things you may want to revisit later.
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

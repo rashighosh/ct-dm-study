@@ -5,36 +5,17 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowRight } from '@fortawesome/free-solid-svg-icons'
 import { useNavigate, useSearchParams } from 'react-router'
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const TOPICS = [
-  'What is a placebo?',
-  'Will I have side effects on a clinical trial?',
-  'What is standard treatment?',
-  'Will I have to receive my care at a different clinic if I am on a clinical trial?',
-  'Is there a clinical trial for everyone?',
-  'Where can I find information about clinical trials?',
-  'Will my own doctor know what happens to me when I am on a clinical trial?',
-  'Will taking part in a clinical trial help me?',
   'Who pays for the cost of a clinical trial?',
-  'Should I ask my doctor about clinical trials?',
-  'Are clinical trials only used as a last resort?',
+  'Will taking part in a clinical trial help me?',
   'Are there ways to deal with transportation and financial issues?',
-  'What is randomization?',
-  "Is it safe to try new treatments that haven't been around for long?",
-  'What will pharmaceutical or drug companies gain from a clinical trial?',
-  'Can I trust the medical establishment?',
-  'How would clinical trials affect my family?',
+  'Will my own doctor know what happens to me when I am on a clinical trial?',
+  'Will I have side effects on a clinical trial?',
   'Will I get good care if I take part in a clinical trial?',
-  'How long do I need to stay in a clinical trial?',
-  'Are clinical trials appropriate for cancer patients?',
-  'How is my privacy protected on a clinical trial?',
-  'Will a clinical trial take up a lot of my time?',
-  'Will I be able to handle being in a clinical trial?',
-  'What will my doctor gain from this clinical trial research?',
-  'Is taking part in a clinical trial voluntary?',
 ]
 
 const MAX_TOPICS = 3

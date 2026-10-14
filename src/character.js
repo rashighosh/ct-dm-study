@@ -5,9 +5,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 // Config
 // ============================================================
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 // ============================================================
 // Module state
@@ -205,13 +205,11 @@ export async function shrug() {
 }
 
 export async function thinking() {
-  console.log('STARTING THINKING GESTURE')
   head1?.stopGesture(1500)
   head1?.playGesture('think', Infinity, false, 1500)
 }
 
 export async function thinkingTurn() {
-  console.log('STARTING THINKING GESTURE')
   head1?.stopGesture(1500)
   head1?.playGesture('thinkTurn', Infinity, false, 3000)
 }
@@ -279,7 +277,6 @@ export async function sourcesGesture() {
 }
 
 export async function leftGesture() {
-  console.log('IN LEFT GESTURE')
   head1?.playGesture('leftGesture', Infinity, true, 1500)
 }
 
@@ -297,7 +294,6 @@ export async function stopAlexGesture() {
 }
 
 export async function stopCompanionGesture() {
-  console.log('STOPPING COMPANION GESTURE')
   head1?.stopGesture(3000)
 }
 
@@ -340,7 +336,6 @@ export function stopSwiping() {
 }
 
 export async function startWriting() {
-  console.log('IN START WRITING')
   if (isWriting) return
   isWriting = true
 
@@ -366,7 +361,6 @@ export async function startWriting() {
 }
 
 export async function stopWriting() {
-  console.log('IN STOP WRITING')
   if (!isWriting) return
   isWriting = false
 
