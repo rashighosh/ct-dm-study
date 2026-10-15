@@ -476,6 +476,15 @@
   height: 100%;
 
   overflow: visible;
+  transition: 0.3s ease-in-out;
+}
+
+.mi-character-zone.character-dimmed {
+  filter: brightness(0.75);
+}
+
+.mi-character-zone.character-speaking {
+  filter: brightness(1);
 }
 
 .mi-character-zone-alex {
@@ -630,6 +639,27 @@
 /* -------------------------------------------------------------------------- */
 /* Chat input                                                                 */
 /* -------------------------------------------------------------------------- */
+
+.mi-bottom-panel {
+  height: 160px;
+  flex: 0 0 160px;
+  min-height: 0;
+  overflow: hidden;
+
+  background: #fbfaf8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mi-bottom-panel > .full-input-area {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-y: auto;
+  justify-content: center;
+}
 
 .full-input-area {
   position: relative;
@@ -1500,6 +1530,123 @@
 
   100% {
     box-shadow: 0 0 0 20px rgba(0, 0, 0, 0);
+  }
+}
+
+.resource-choice-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 16px 0;
+}
+
+.resource-choice-buttons .cssbuttons-io-button {
+  background: #238b45;
+  background-image: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  border: none;
+  border-radius: 15px;
+  padding: 5px 15px;
+  margin: 0;
+  text-align: center;
+  justify-content: center;
+  transition: 0.2s ease-in-out;
+}
+
+.resource-choice-buttons .cssbuttons-io-button:hover {
+  background: #1b7137;
+  background-image: none;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.22);
+}
+
+.resource-choice-buttons .cssbuttons-io-button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+.suggested-resources {
+  width: 85%;
+  padding: 15px;
+  align-self: center;
+}
+
+.suggested-resources h3 {
+  font-size: 18px;
+  margin: 0 0 14px;
+  text-align: center;
+}
+
+.suggested-resources-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.suggested-resource-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #dce8df;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #25372a;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.suggested-resource-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.14);
+}
+
+.suggested-resource-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.suggested-resource-card span {
+  margin-top: auto;
+  color: #238b45;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .suggested-resources-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Smooth transitions for the conversation input area */
+.mi-chat-card > .full-input-area {
+  animation: inputSlideIn 0.4s ease-out both;
+}
+
+@keyframes inputSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .mi-chat-card > .full-input-area {
+    animation: none;
   }
 }
 

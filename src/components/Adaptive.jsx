@@ -4,6 +4,7 @@ import logo from '../assets/logo-transparent.png'
 import alex from '../assets/alex.png'
 import jordan from '../assets/jordan.png'
 import stageBackground from '../assets/bg.jpg'
+import { RESOURCES } from '../data/resources.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faPaperPlane,
@@ -121,6 +122,11 @@ export default function MainInteraction() {
   const [starting, setStarting] = useState(false)
   const [showThinkingBubble, setShowThinkingBubble] = useState(false)
   const [finishing, setFinishing] = useState(false)
+  const [showResourceChoice, setShowResourceChoice] = useState(false)
+  const [resourceChoice, setResourceChoice] = useState(null)
+  const [showSurveyButton, setShowSurveyButton] = useState(false)
+  const [suggestedResources, setSuggestedResources] = useState([])
+  const [activeSpeaker, setActiveSpeaker] = useState(null)
 
   // Restore saved conversation history
   useEffect(() => {
@@ -137,6 +143,14 @@ export default function MainInteraction() {
       setMessages(restoredMessages)
       setTopicState(restoredTopicState)
       setIntroDone(session.introDone ?? false)
+      setShowResourceChoice(session.showResourceChoice ?? false)
+      setResourceChoice(session.resourceChoice ?? null)
+      setShowSurveyButton(session.showSurveyButton ?? false)
+      setSuggestedResources(
+        (session.suggestedResourceIds ?? [])
+          .map((id) => RESOURCES.find((resource) => resource.id === id))
+          .filter(Boolean),
+      )
 
       // If intro already completed, show topics and current-topic highlight
       setShowTopics(session.introDone ?? false)
@@ -236,10 +250,25 @@ export default function MainInteraction() {
       messages,
       topicState,
       introDone,
+      showResourceChoice,
+      resourceChoice,
+      showSurveyButton,
+      suggestedResourceIds: suggestedResources.map((resource) => resource.id),
     }
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
-  }, [SESSION_KEY, participantId, condition, messages, topicState, introDone])
+  }, [
+    SESSION_KEY,
+    participantId,
+    condition,
+    messages,
+    topicState,
+    introDone,
+    showResourceChoice,
+    resourceChoice,
+    showSurveyButton,
+    suggestedResources,
+  ])
 
   // Initialize both virtual characters after Begin is clicked
   useEffect(() => {
@@ -308,6 +337,18 @@ export default function MainInteraction() {
     })
   }, [showHistory])
 
+  async function speakWithHighlight(text, character, setSubtitle) {
+    const speaker = character === 'doctor' ? 'Alex' : 'Jordan'
+
+    setActiveSpeaker(speaker)
+
+    try {
+      await speakWithLipsync(text, character, null, null, setSubtitle)
+    } finally {
+      setActiveSpeaker(null)
+    }
+  }
+
   async function playCharacterIntro() {
     const introSequence = introSequences[condition]
 
@@ -353,13 +394,19 @@ export default function MainInteraction() {
       const setSubtitle =
         intro.character === 'doctor' ? setAlexSubtitle : setJordanSubtitle
 
-      await speakWithLipsyncStatic(
-        intro.audio,
-        intro.timestamps,
-        intro.character,
-        true,
-        setSubtitle,
-      )
+      setActiveSpeaker(intro.character === 'doctor' ? 'Alex' : 'Jordan')
+
+      try {
+        await speakWithLipsyncStatic(
+          intro.audio,
+          intro.timestamps,
+          intro.character,
+          true,
+          setSubtitle,
+        )
+      } finally {
+        setActiveSpeaker(null)
+      }
 
       setSubtitle('')
     }
@@ -476,13 +523,7 @@ export default function MainInteraction() {
           playGesture('jordanLookAtAlex')
         }
 
-        await speakWithLipsync(
-          data.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
+        await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
 
         setAlexSubtitle('')
 
@@ -497,11 +538,9 @@ export default function MainInteraction() {
           ])
 
           if (condition === CONDITION_SINGLE_COMBINED) {
-            await speakWithLipsync(
+            await speakWithHighlight(
               data.jordan_reply,
               'doctor',
-              null,
-              null,
               setAlexSubtitle,
             )
 
@@ -509,11 +548,9 @@ export default function MainInteraction() {
           } else {
             playGesture('alexLookAtJordan')
 
-            await speakWithLipsync(
+            await speakWithHighlight(
               data.jordan_reply,
               'companion',
-              null,
-              null,
               setJordanSubtitle,
             )
 
@@ -562,6 +599,11 @@ export default function MainInteraction() {
 
     setIsResponding(true)
     setShowQuestions(false)
+    setResponseStatus(
+      topicState.current_topic_index === 2
+        ? 'Finishing topics'
+        : 'Preparing next topic',
+    )
 
     try {
       const response = await fetch(`${BASE_URL}/jordan/advance-topic`, {
@@ -605,100 +647,125 @@ export default function MainInteraction() {
       })
 
       // Introduce the next topic
-      if (data.prepare_next_topic) {
-        setResponseStatus('Preparing next topic')
+      setResponseStatus('Preparing next topic')
 
-        const nextTopicResponse = await fetch(
-          `${BASE_URL}/jordan/prepare-next-topic`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              participant_id: participantId,
-              conversation_history: messages,
-              condition,
-            }),
+      const nextTopicResponse = await fetch(
+        `${BASE_URL}/jordan/prepare-next-topic`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            participant_id: participantId,
+            conversation_history: messages,
+            condition,
+          }),
+        },
+      )
+
+      if (!nextTopicResponse.ok) {
+        throw new Error(
+          `Preparing next topic failed: ${nextTopicResponse.status}`,
         )
+      }
 
-        if (!nextTopicResponse.ok) {
-          throw new Error(
-            `Preparing next topic failed: ${nextTopicResponse.status}`,
-          )
-        }
+      const nextTopicData = await nextTopicResponse.json()
+      setResponseStatus('')
 
-        const nextTopicData = await nextTopicResponse.json()
-        setResponseStatus('')
+      // Alex introduces the new topic
+      setMessages((previous) => [
+        ...previous,
+        { from: 'Alex', text: nextTopicData.alex_reply },
+      ])
 
-        // Alex introduces the new topic
+      await speakWithHighlight(
+        nextTopicData.alex_reply,
+        'doctor',
+        setAlexSubtitle,
+      )
+
+      setAlexSubtitle('')
+
+      // Conversational follow-up in conditions 2 and 3
+      if (condition !== CONDITION_SINGLE_INFO && nextTopicData.jordan_reply) {
         setMessages((previous) => [
           ...previous,
-          { from: 'Alex', text: nextTopicData.alex_reply },
+          { from: conversationalSpeaker, text: nextTopicData.jordan_reply },
         ])
 
-        await speakWithLipsync(
-          nextTopicData.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
+        await speakWithHighlight(
+          nextTopicData.jordan_reply,
+          condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
+          condition === CONDITION_SINGLE_COMBINED
+            ? setAlexSubtitle
+            : setJordanSubtitle,
         )
 
         setAlexSubtitle('')
-
-        // Conversational follow-up in conditions 2 and 3
-        if (condition !== CONDITION_SINGLE_INFO && nextTopicData.jordan_reply) {
-          setMessages((previous) => [
-            ...previous,
-            { from: conversationalSpeaker, text: nextTopicData.jordan_reply },
-          ])
-
-          await speakWithLipsync(
-            nextTopicData.jordan_reply,
-            condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
-            null,
-            null,
-            condition === CONDITION_SINGLE_COMBINED
-              ? setAlexSubtitle
-              : setJordanSubtitle,
-          )
-
-          setAlexSubtitle('')
-          setJordanSubtitle('')
-        }
+        setJordanSubtitle('')
       }
 
       // After the final topic, play the wrap-up
-      if (data.conversation_complete) {
-        const wrapupText = data.alex_reply || data.jordan_reply
 
-        if (wrapupText) {
-          const speaker = condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
+      // After the final topic, play the closing dialogue
+      if (data.conversation_complete) {
+        // Alex closes in all three conditions
+        if (data.alex_reply) {
+          setMessages((previous) => [
+            ...previous,
+            { from: 'Alex', text: data.alex_reply },
+          ])
+
+          await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
+
+          setAlexSubtitle('')
+        }
+
+        // Conversational conditions: Jordan (or Alex) invites resources
+        if (data.jordan_reply) {
+          const speaker =
+            condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
 
           const character =
-            condition === CONDITION_MULTIPLE ? 'companion' : 'doctor'
+            condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion'
 
           const setSubtitle =
-            condition === CONDITION_MULTIPLE
-              ? setJordanSubtitle
-              : setAlexSubtitle
+            condition === CONDITION_SINGLE_COMBINED
+              ? setAlexSubtitle
+              : setJordanSubtitle
+
+          if (condition === CONDITION_MULTIPLE) {
+            playGesture('alexLookAtJordan')
+          }
 
           setMessages((previous) => [
             ...previous,
-            { from: speaker, text: wrapupText },
+            { from: speaker, text: data.jordan_reply },
           ])
 
-          await speakWithLipsync(wrapupText, character, null, null, setSubtitle)
+          await speakWithHighlight(data.jordan_reply, character, setSubtitle)
 
           setSubtitle('')
+        }
+
+        playGesture('stopAlexGesture')
+
+        if (!isSingleAgent) {
+          playGesture('stopCompanionGesture')
+        }
+
+        if (condition === CONDITION_SINGLE_INFO) {
+          setShowSurveyButton(true)
+        } else {
+          setShowResourceChoice(true)
         }
       }
     } catch (error) {
       console.error('Could not advance topic:', error)
     } finally {
       setIsResponding(false)
+      setResponseStatus('')
     }
   }
 
@@ -784,13 +851,7 @@ export default function MainInteraction() {
 
         setShowThinkingBubble(false)
 
-        await speakWithLipsync(
-          data.alex_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
+        await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
 
         setAlexSubtitle('')
         playGesture('stopAlexGesture')
@@ -856,13 +917,7 @@ export default function MainInteraction() {
         setShowThinkingBubble(false)
 
         // Alex speaks
-        await speakWithLipsync(
-          alexData.answer,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
+        await speakWithHighlight(alexData.answer, 'doctor', setAlexSubtitle)
 
         setAlexSubtitle('')
 
@@ -897,11 +952,9 @@ export default function MainInteraction() {
 
           if (condition === CONDITION_SINGLE_COMBINED) {
             setShowThinkingBubble(false)
-            await speakWithLipsync(
+            await speakWithHighlight(
               jordanAfterAlexData.jordan_reply,
               'doctor',
-              null,
-              null,
               setAlexSubtitle,
             )
 
@@ -910,11 +963,9 @@ export default function MainInteraction() {
             playGesture('alexLookAtJordan')
 
             setShowThinkingBubble(false)
-            await speakWithLipsync(
+            await speakWithHighlight(
               jordanAfterAlexData.jordan_reply,
               'companion',
-              null,
-              null,
               setJordanSubtitle,
             )
 
@@ -941,24 +992,16 @@ export default function MainInteraction() {
 
       if (condition === CONDITION_SINGLE_COMBINED) {
         setShowThinkingBubble(false)
-        await speakWithLipsync(
-          data.jordan_reply,
-          'doctor',
-          null,
-          null,
-          setAlexSubtitle,
-        )
+        await speakWithHighlight(data.jordan_reply, 'doctor', setAlexSubtitle)
 
         setAlexSubtitle('')
       } else {
         playGesture('alexLookAtJordan')
 
         setShowThinkingBubble(false)
-        await speakWithLipsync(
+        await speakWithHighlight(
           data.jordan_reply,
           'companion',
-          null,
-          null,
           setJordanSubtitle,
         )
 
@@ -1016,6 +1059,102 @@ export default function MainInteraction() {
     } catch (error) {
       console.error('Could not log conversation start:', error)
       setStarting(false)
+    }
+  }
+
+  async function handleResourceChoice(choice) {
+    setResourceChoice(choice)
+    setShowResourceChoice(false)
+
+    if (choice === 'no') {
+      const reply =
+        'No problem! You can click the Continue to Post-Survey button whenever you’re ready.'
+
+      const speaker =
+        condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+
+      const character =
+        condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion'
+
+      const setSubtitle =
+        condition === CONDITION_SINGLE_COMBINED
+          ? setAlexSubtitle
+          : setJordanSubtitle
+
+      setIsResponding(true)
+
+      try {
+        setMessages((previous) => [...previous, { from: speaker, text: reply }])
+
+        await speakWithHighlight(reply, character, setSubtitle)
+        setSubtitle('')
+        setShowSurveyButton(true)
+      } catch (error) {
+        console.error('Could not play resource decline response:', error)
+        setShowSurveyButton(true)
+      } finally {
+        setIsResponding(false)
+      }
+    } else {
+      setIsResponding(true)
+      setResponseStatus('Preparing suggested resources')
+
+      try {
+        const response = await fetch(`${BASE_URL}/jordan/suggest-resources`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(
+            `Resource suggestion request failed: ${response.status}`,
+          )
+        }
+
+        const data = await response.json()
+
+        const resources = data.resource_ids
+          .map((id) => RESOURCES.find((resource) => resource.id === id))
+          .filter(Boolean)
+
+        setSuggestedResources(resources)
+
+        const speaker =
+          condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+
+        const character =
+          condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion'
+
+        const setSubtitle =
+          condition === CONDITION_SINGLE_COMBINED
+            ? setAlexSubtitle
+            : setJordanSubtitle
+
+        setResponseStatus('')
+
+        setMessages((previous) => [
+          ...previous,
+          { from: speaker, text: data.explanation },
+        ])
+
+        await speakWithHighlight(data.explanation, character, setSubtitle)
+
+        setSubtitle('')
+        setShowSurveyButton(true)
+      } catch (error) {
+        console.error('Could not get suggested resources:', error)
+
+        // Restore the choice buttons so the participant can try again.
+        setShowResourceChoice(true)
+      } finally {
+        setIsResponding(false)
+        setResponseStatus('')
+      }
     }
   }
 
@@ -1253,29 +1392,22 @@ export default function MainInteraction() {
         </button>
 
         {topicState?.phase === 'wrapup' && (
-          <button
-            type="button"
-            className="cssbuttons-io-button finish-button"
-            onClick={handleFinish}
-            disabled={finishing || isResponding}
-          >
-            {finishing ? (
-              <span className="button-loading">
-                Saving
-                <span className="button-loading-dots" aria-hidden="true">
-                  <span>.</span>
-                  <span>.</span>
-                  <span>.</span>
-                </span>
-              </span>
-            ) : (
-              'Finish Conversation'
-            )}
+          <>
+            {showSurveyButton && (
+              <button
+                type="button"
+                className="cssbuttons-io-button finish-button"
+                onClick={handleFinish}
+                disabled={finishing || isResponding}
+              >
+                {finishing ? 'Saving...' : 'Continue to Post-Survey'}
 
-            <span className="icon">
-              <FontAwesomeIcon icon={faArrowRight} size="xs" />
-            </span>
-          </button>
+                <span className="icon">
+                  <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                </span>
+              </button>
+            )}
+          </>
         )}
 
         <main className="mi-main">
@@ -1327,7 +1459,9 @@ export default function MainInteraction() {
                 <div
                   className={`scene-loading-overlay ${
                     showSceneLoading ||
-                    responseStatus === 'Preparing next topic'
+                    responseStatus === 'Preparing next topic' ||
+                    responseStatus === 'Finishing topics' ||
+                    responseStatus === 'Preparing suggested resources'
                       ? 'scene-loading-overlay-visible'
                       : ''
                   }`}
@@ -1338,16 +1472,16 @@ export default function MainInteraction() {
                       <span>.</span>
                       <span>.</span>
                     </span>
-                    <span>
-                      {responseStatus === 'Preparing next topic'
-                        ? 'Preparing next topic'
-                        : 'Getting ready'}
-                    </span>
+                    <span>{responseStatus || 'Getting ready'}</span>
                   </div>
                 </div>
               )}
 
-              <div className="mi-character-zone mi-character-zone-alex">
+              <div
+                className={`mi-character-zone mi-character-zone-alex ${
+                  activeSpeaker === 'Jordan' ? 'character-dimmed' : ''
+                } ${activeSpeaker === 'Alex' ? 'character-speaking' : ''}`}
+              >
                 <div className="mi-character-content">
                   <div
                     className="virtual-doctor"
@@ -1454,7 +1588,11 @@ export default function MainInteraction() {
               )}
 
               {!isSingleAgent && (
-                <div className="mi-character-zone mi-character-zone-jordan">
+                <div
+                  className={`mi-character-zone mi-character-zone-jordan ${
+                    activeSpeaker === 'Alex' ? 'character-dimmed' : ''
+                  } ${activeSpeaker === 'Jordan' ? 'character-speaking' : ''}`}
+                >
                   <div className="mi-character-content">
                     <div
                       className="virtual-companion"
@@ -1483,15 +1621,63 @@ export default function MainInteraction() {
               )}
             </div>
 
-            <ChatInput
-              input={input}
-              textareaRef={textareaRef}
-              onChange={setInput}
-              onSubmit={handleSend}
-              onHandleKeyDown={handleKeyDown}
-              sentMessageAnimation={sentMessageAnimation}
-              isResponding={isResponding}
-            />
+            {suggestedResources.length > 0 ? (
+              <div className="full-input-area">
+                <div className="suggested-resources">
+                  <h3>Suggested Resources for You</h3>
+
+                  <div className="suggested-resources-list">
+                    {suggestedResources.map((resource) => (
+                      <a
+                        key={resource.id}
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="suggested-resource-card"
+                      >
+                        <strong>{resource.title}</strong>
+                        <p>{resource.description}</p>
+                        <span>Explore resource ↗</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : showResourceChoice ? (
+              <div className="full-input-area">
+                <div className="resource-choice-buttons">
+                  <button
+                    type="button"
+                    className="cssbuttons-io-button"
+                    disabled={isResponding}
+                    onClick={() => handleResourceChoice('yes')}
+                  >
+                    Yes, show me
+                  </button>
+
+                  <button
+                    type="button"
+                    className="cssbuttons-io-button"
+                    disabled={isResponding}
+                    onClick={() => handleResourceChoice('no')}
+                  >
+                    No, thanks
+                  </button>
+                </div>
+              </div>
+            ) : topicState?.phase === 'wrapup' ? (
+              <div className="full-input-area" />
+            ) : (
+              <ChatInput
+                input={input}
+                textareaRef={textareaRef}
+                onChange={setInput}
+                onSubmit={handleSend}
+                onHandleKeyDown={handleKeyDown}
+                sentMessageAnimation={sentMessageAnimation}
+                isResponding={isResponding}
+              />
+            )}
           </section>
         </main>
         {showHistory && (
