@@ -9,27 +9,19 @@
     },
     {
       "from": "Alex",
-      "text": "We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_SINGLE_INFO.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_SINGLE_INFO.json",
-      "character": "doctor"
-    },
-    {
-      "from": "Alex",
-      "text": "Before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
+      "text": "Now, before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE.json",
       "character": "doctor"
     },
     {
       "from": "Alex",
-      "text": "Alright, with that, let’s get started!",
+      "text": "Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button next to me. Let's try it now! Click the button to get started with your first topic.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
       "character": "doctor"
     }
   ],
-
   "2": [
     {
       "from": "Alex",
@@ -40,27 +32,33 @@
     },
     {
       "from": "Alex",
-      "text": "I'll also help you talk through what you think and feel about each topic. This helps me understand what’s important to you so that I can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let me know by saying something like, ‘Let’s move on’ or ‘Continue.’",
+      "text": "I'll also help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_SINGLE_COMBINED.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_SINGLE_COMBINED.json",
       "character": "doctor"
     },
     {
       "from": "Alex",
-      "text": "Before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
+      "text": "Now, before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE.json",
       "character": "doctor"
     },
     {
       "from": "Alex",
-      "text": "Alright, with that, let’s get started!",
+      "text": "If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after we've covered your three topics, I'll also suggest some useful next steps for you based on what you share during our conversation.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE_COMBINED.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE_COMBINED.json",
+      "character": "doctor"
+    },
+    {
+      "from": "Alex",
+      "text": "Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button next to me. Let's try it now! Click the button to get started with your first topic.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
       "character": "doctor"
     }
   ],
-
   "3": [
     {
       "from": "Alex",
@@ -72,7 +70,7 @@
     },
     {
       "from": "Jordan",
-      "text": "And my role is to help you talk through what you think and feel about each topic. This helps us understand what’s important to you so Alex can share information based on what matters to you. We can spend as much time as you’d like on each topic, and when you’re ready to move on, just let us know by saying something like, ‘Let’s move on’ or ‘Continue.’",
+      "text": "And my role is to help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me.",
       "audio": "/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE.mp3",
       "timestamps": "/intro-voices/companion-timestamps-JORDAN_INTRO_1_MULTIPLE.json",
       "character": "companion",
@@ -80,7 +78,7 @@
     },
     {
       "from": "Alex",
-      "text": "Before we get started, please remember that we don’t have access to specific clinical trials, so we can’t search for or answer questions about specific trials or treatments. We also can’t provide medical advice.",
+      "text": "Thanks, Jordan. Now, before we get started, please remember that we don’t have access to specific clinical trials, so we can’t search for or answer questions about specific trials or treatments. We also can’t provide medical advice.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_MULTIPLE.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_MULTIPLE.json",
       "character": "doctor",
@@ -88,11 +86,19 @@
     },
     {
       "from": "Jordan",
-      "text": "Alright, with that, let’s get started!",
+      "text": "If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after you've covered your three topics with Alex, I'll also suggest some useful next steps for you based on what you share during your conversation.",
       "audio": "/intro-voices/companion-audio-JORDAN_INTRO_2_MULTIPLE.mp3",
       "timestamps": "/intro-voices/companion-timestamps-JORDAN_INTRO_2_MULTIPLE.json",
       "character": "companion",
       "beforeGesture": "alexLookAtJordan"
+    },
+    {
+      "from": "Alex",
+      "text": "Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button next to me. Let's try it now! Click the button to get started with your first topic.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
+      "character": "doctor",
+      "beforeGesture": "jordanLookAtAlex"
     }
   ]
 }

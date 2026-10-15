@@ -1,32 +1,177 @@
 [
   {
-    "word": "Alright,",
+    "word": "Finally,",
     "start": 0,
-    "end": 0.32
+    "end": 0.264
   },
   {
-    "word": "with",
-    "start": 0.32,
-    "end": 0.64
+    "word": "we",
+    "start": 0.264,
+    "end": 0.528
   },
   {
-    "word": "that,",
-    "start": 0.64,
-    "end": 0.96
+    "word": "can",
+    "start": 0.528,
+    "end": 0.792
+  },
+  {
+    "word": "spend",
+    "start": 0.792,
+    "end": 1.056
+  },
+  {
+    "word": "as",
+    "start": 1.056,
+    "end": 1.32
+  },
+  {
+    "word": "much",
+    "start": 1.32,
+    "end": 1.584
+  },
+  {
+    "word": "time",
+    "start": 1.584,
+    "end": 1.848
+  },
+  {
+    "word": "as",
+    "start": 1.848,
+    "end": 2.112
+  },
+  {
+    "word": "you'd",
+    "start": 2.112,
+    "end": 2.3760000000000003
+  },
+  {
+    "word": "like",
+    "start": 2.3760000000000003,
+    "end": 2.64
+  },
+  {
+    "word": "on",
+    "start": 2.64,
+    "end": 2.904
+  },
+  {
+    "word": "each",
+    "start": 2.904,
+    "end": 3.168
+  },
+  {
+    "word": "topic.",
+    "start": 3.168,
+    "end": 3.4320000000000004
+  },
+  {
+    "word": "Whenever",
+    "start": 3.4320000000000004,
+    "end": 3.696
+  },
+  {
+    "word": "you're",
+    "start": 3.696,
+    "end": 3.96
+  },
+  {
+    "word": "ready",
+    "start": 3.96,
+    "end": 4.224
+  },
+  {
+    "word": "to",
+    "start": 4.224,
+    "end": 4.488
+  },
+  {
+    "word": "move",
+    "start": 4.488,
+    "end": 4.752000000000001
+  },
+  {
+    "word": "on,",
+    "start": 4.752000000000001,
+    "end": 5.016
+  },
+  {
+    "word": "just",
+    "start": 5.016,
+    "end": 5.28
+  },
+  {
+    "word": "click",
+    "start": 5.28,
+    "end": 5.5440000000000005
+  },
+  {
+    "word": "the",
+    "start": 5.5440000000000005,
+    "end": 5.808
+  },
+  {
+    "word": "button",
+    "start": 5.808,
+    "end": 6.072
+  },
+  {
+    "word": "next",
+    "start": 6.072,
+    "end": 6.336
+  },
+  {
+    "word": "to",
+    "start": 6.336,
+    "end": 6.6000000000000005
+  },
+  {
+    "word": "me.",
+    "start": 6.6000000000000005,
+    "end": 6.864000000000001
+  },
+  {
+    "word": "For",
+    "start": 6.864000000000001,
+    "end": 7.128
+  },
+  {
+    "word": "now,",
+    "start": 7.128,
+    "end": 7.392
   },
   {
     "word": "let's",
-    "start": 0.96,
-    "end": 1.28
+    "start": 7.392,
+    "end": 7.656000000000001
   },
   {
     "word": "get",
-    "start": 1.28,
-    "end": 1.6
+    "start": 7.656000000000001,
+    "end": 7.92
   },
   {
-    "word": "started!",
-    "start": 1.6,
-    "end": 1.92
+    "word": "started",
+    "start": 7.92,
+    "end": 8.184000000000001
+  },
+  {
+    "word": "with",
+    "start": 8.184000000000001,
+    "end": 8.448
+  },
+  {
+    "word": "your",
+    "start": 8.448,
+    "end": 8.712
+  },
+  {
+    "word": "first",
+    "start": 8.712,
+    "end": 8.976
+  },
+  {
+    "word": "topic!",
+    "start": 8.976,
+    "end": 9.24
   }
 ]

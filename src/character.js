@@ -1112,6 +1112,13 @@ const STATIC_GESTURE_MAPS = {
   '/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3': [
     {
       engine: 'native',
+      word: 'just',
+      gesture: 'rightGesture',
+      dur: 1,
+      reset: false,
+    },
+    {
+      engine: 'native',
       word: "let's",
       gesture: 'talkopen',
       dur: 1.5,

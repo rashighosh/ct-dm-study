@@ -90,6 +90,7 @@ export default function MainInteraction() {
   const historyBodyRef = useRef(null)
   const conversationStartedRef = useRef(false)
   const introStartedRef = useRef(false)
+  const startFirstTopicResolverRef = useRef(null)
 
   const SESSION_KEY = `studySession-${participantId}-${condition}`
 
@@ -109,6 +110,7 @@ export default function MainInteraction() {
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const [sentMessageAnimation, setSentMessageAnimation] = useState('')
   const [introDone, setIntroDone] = useState(false)
+  const [waitingForFirstTopic, setWaitingForFirstTopic] = useState(false)
   const canStart = Object.values(startChecks).every(Boolean)
   const [showTopics, setShowTopics] = useState(false)
   const [isResponding, setIsResponding] = useState(false)
@@ -333,6 +335,13 @@ export default function MainInteraction() {
         setTimeout(() => setShowQuestionsTab(true), 14500)
       }
 
+      // Reveal Start First Topic button 5 seconds into the final intro.
+      if (intro.audio?.includes('ALEX_INTRO_4_SINGLE')) {
+        setTimeout(() => {
+          setWaitingForFirstTopic(true)
+        }, 5000)
+      }
+
       setMessages((previous) => [
         ...previous,
         {
@@ -360,8 +369,6 @@ export default function MainInteraction() {
     if (!isSingleAgent) {
       playGesture('stopCompanionGesture')
     }
-
-    setHighlightCurrentTopic(true)
   }
 
   useEffect(() => {
@@ -374,6 +381,11 @@ export default function MainInteraction() {
 
     async function startConversation() {
       setIsResponding(true)
+
+      // Register the click handler before the introductions begin.
+      const startFirstTopicPromise = new Promise((resolve) => {
+        startFirstTopicResolverRef.current = resolve
+      })
 
       // Brief pause after the scene finishes settling
       await new Promise((resolve) => setTimeout(resolve, 1500))
@@ -428,6 +440,11 @@ export default function MainInteraction() {
 
           setIntroDone(true)
         }
+
+        // Wait until both the introductions finish AND the participant clicks.
+        // An early click is remembered, but Topic 1 never interrupts Alex.
+        await startFirstTopicPromise
+
         const response = await conversationStartPromise
 
         // Then begin Topic 1
@@ -528,6 +545,17 @@ export default function MainInteraction() {
     messages.length,
     introDone,
   ])
+
+  function handleStartFirstTopic() {
+    if (!waitingForFirstTopic || !startFirstTopicResolverRef.current) return
+
+    setWaitingForFirstTopic(false)
+    setHighlightCurrentTopic(true)
+
+    const resolve = startFirstTopicResolverRef.current
+    startFirstTopicResolverRef.current = null
+    resolve()
+  }
 
   async function handleNextTopic() {
     if (isResponding || !topicState || topicState.conversation_complete) return
@@ -1264,21 +1292,35 @@ export default function MainInteraction() {
                 }}
               />
 
-              {topicState?.phase === 'topics' && introDone && (
+              {waitingForFirstTopic ? (
                 <button
                   type="button"
                   className="cssbuttons-io-button next-topic-button"
-                  disabled={isResponding}
-                  onClick={handleNextTopic}
+                  onClick={handleStartFirstTopic}
                 >
-                  {topicState.current_topic_index === 2
-                    ? 'Finish Topics'
-                    : 'Next Topic'}
-
+                  Start First Topic
                   <span className="icon">
                     <FontAwesomeIcon icon={faArrowRight} size="xs" />
                   </span>
                 </button>
+              ) : (
+                topicState?.phase === 'topics' &&
+                introDone && (
+                  <button
+                    type="button"
+                    className="cssbuttons-io-button next-topic-button"
+                    disabled={isResponding}
+                    onClick={handleNextTopic}
+                  >
+                    {topicState.current_topic_index === 2
+                      ? 'Finish Topics'
+                      : 'Next Topic'}
+
+                    <span className="icon">
+                      <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                    </span>
+                  </button>
+                )
               )}
 
               {started && (
