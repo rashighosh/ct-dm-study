@@ -155,6 +155,10 @@ export default function MainInteraction() {
       // If intro already completed, show topics and current-topic highlight
       setShowTopics(session.introDone ?? false)
       setHighlightCurrentTopic(session.introDone ?? false)
+      // Keep the question list tab visible after refreshing
+      setShowQuestionsTab(
+        condition !== CONDITION_SINGLE_INFO && (session.introDone ?? false),
+      )
     } catch (error) {
       console.error('Could not restore session:', error)
     }
@@ -194,9 +198,6 @@ export default function MainInteraction() {
 
       const data = await response.json()
       setTopicState(data)
-
-      // Open the panel so the participant sees the newly saved question
-      setShowQuestions(true)
     } catch (error) {
       console.error('Could not refresh saved questions:', error)
     }
@@ -646,70 +647,70 @@ export default function MainInteraction() {
         console.error('Could not log topic completion:', error)
       })
 
-      // Introduce the next topic
-      setResponseStatus('Preparing next topic')
-
-      const nextTopicResponse = await fetch(
-        `${BASE_URL}/jordan/prepare-next-topic`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+      // Introduce the next topic only if one remains
+      if (data.prepare_next_topic) {
+        const nextTopicResponse = await fetch(
+          `${BASE_URL}/jordan/prepare-next-topic`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              conversation_history: messages,
+              condition,
+            }),
           },
-          body: JSON.stringify({
-            participant_id: participantId,
-            conversation_history: messages,
-            condition,
-          }),
-        },
-      )
-
-      if (!nextTopicResponse.ok) {
-        throw new Error(
-          `Preparing next topic failed: ${nextTopicResponse.status}`,
         )
-      }
 
-      const nextTopicData = await nextTopicResponse.json()
-      setResponseStatus('')
+        if (!nextTopicResponse.ok) {
+          throw new Error(
+            `Preparing next topic failed: ${nextTopicResponse.status}`,
+          )
+        }
 
-      // Alex introduces the new topic
-      setMessages((previous) => [
-        ...previous,
-        { from: 'Alex', text: nextTopicData.alex_reply },
-      ])
+        const nextTopicData = await nextTopicResponse.json()
+        setResponseStatus('')
 
-      await speakWithHighlight(
-        nextTopicData.alex_reply,
-        'doctor',
-        setAlexSubtitle,
-      )
-
-      setAlexSubtitle('')
-
-      // Conversational follow-up in conditions 2 and 3
-      if (condition !== CONDITION_SINGLE_INFO && nextTopicData.jordan_reply) {
+        // Alex introduces the new topic
         setMessages((previous) => [
           ...previous,
-          { from: conversationalSpeaker, text: nextTopicData.jordan_reply },
+          { from: 'Alex', text: nextTopicData.alex_reply },
         ])
 
         await speakWithHighlight(
-          nextTopicData.jordan_reply,
-          condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
-          condition === CONDITION_SINGLE_COMBINED
-            ? setAlexSubtitle
-            : setJordanSubtitle,
+          nextTopicData.alex_reply,
+          'doctor',
+          setAlexSubtitle,
         )
 
         setAlexSubtitle('')
-        setJordanSubtitle('')
-      }
 
-      // After the final topic, play the wrap-up
+        // Conversational follow-up in conditions 2 and 3
+        if (condition !== CONDITION_SINGLE_INFO && nextTopicData.jordan_reply) {
+          setMessages((previous) => [
+            ...previous,
+            { from: conversationalSpeaker, text: nextTopicData.jordan_reply },
+          ])
+
+          await speakWithHighlight(
+            nextTopicData.jordan_reply,
+            condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
+            condition === CONDITION_SINGLE_COMBINED
+              ? setAlexSubtitle
+              : setJordanSubtitle,
+          )
+
+          setAlexSubtitle('')
+          setJordanSubtitle('')
+        }
+      }
 
       // After the final topic, play the closing dialogue
       if (data.conversation_complete) {
+        // Hide the finishing overlay before the characters speak
+        setResponseStatus('')
         // Alex closes in all three conditions
         if (data.alex_reply) {
           setMessages((previous) => [
@@ -808,6 +809,8 @@ export default function MainInteraction() {
     setIsResponding(true)
     setShowThinkingBubble(true)
 
+    let questionAdded = false
+
     try {
       // 1. Send user message to Jordan
       console.log('Sending users message ...')
@@ -837,6 +840,7 @@ export default function MainInteraction() {
       // Refresh the question list whenever Jordan saves a new question
       if (data.question_saved) {
         await refreshSavedQuestions()
+        questionAdded = true
       }
 
       // 2. If Alex sent a direct reply, let Alex respond
@@ -940,6 +944,7 @@ export default function MainInteraction() {
           // Refresh the list when Jordan saves a question after Alex responds
           if (jordanAfterAlexData.question_saved) {
             await refreshSavedQuestions()
+            questionAdded = true
           }
 
           setMessages((previous) => [
@@ -1018,6 +1023,10 @@ export default function MainInteraction() {
       setShowThinkingBubble(false)
       setIsResponding(false)
       setResponseStatus('')
+
+      if (questionAdded) {
+        setShowQuestions(true)
+      }
     }
   }
 
@@ -1137,15 +1146,15 @@ export default function MainInteraction() {
 
         setResponseStatus('')
 
-        setMessages((previous) => [
-          ...previous,
-          { from: speaker, text: data.explanation },
-        ])
+        const reply = `${data.explanation.trim()} You can click on any of these resources to explore them. When you're ready to finish the study, click the green Continue to Post-Survey button in the top-right corner.`
 
-        await speakWithHighlight(data.explanation, character, setSubtitle)
+        setMessages((previous) => [...previous, { from: speaker, text: reply }])
+
+        await speakWithHighlight(reply, character, setSubtitle)
 
         setSubtitle('')
         setShowSurveyButton(true)
+        setShowQuestions(true)
       } catch (error) {
         console.error('Could not get suggested resources:', error)
 
@@ -1479,7 +1488,10 @@ export default function MainInteraction() {
 
               <div
                 className={`mi-character-zone mi-character-zone-alex ${
-                  activeSpeaker === 'Jordan' ? 'character-dimmed' : ''
+                  activeSpeaker === 'Jordan' ||
+                  (condition === CONDITION_MULTIPLE && showQuestions)
+                    ? 'character-dimmed'
+                    : ''
                 } ${activeSpeaker === 'Alex' ? 'character-speaking' : ''}`}
               >
                 <div className="mi-character-content">
@@ -1533,14 +1545,14 @@ export default function MainInteraction() {
                     title="My Questions & Concerns"
                   >
                     <FontAwesomeIcon icon={faClipboardList} />
-                    Open Jordan's Question List
+                    Open Tailored Question List
                   </button>
 
                   <div className="questions-panel">
                     <div className="questions-panel-header">
                       <div>
                         <FontAwesomeIcon icon={faClipboardList} />
-                        <h2>Jordan's Question List</h2>
+                        <h2>Tailored Question List</h2>
                       </div>
 
                       <button
@@ -1590,7 +1602,11 @@ export default function MainInteraction() {
               {!isSingleAgent && (
                 <div
                   className={`mi-character-zone mi-character-zone-jordan ${
-                    activeSpeaker === 'Alex' ? 'character-dimmed' : ''
+                    condition === CONDITION_MULTIPLE && showQuestions
+                      ? 'character-speaking'
+                      : activeSpeaker === 'Alex'
+                        ? 'character-dimmed'
+                        : ''
                   } ${activeSpeaker === 'Jordan' ? 'character-speaking' : ''}`}
                 >
                   <div className="mi-character-content">
@@ -1621,63 +1637,62 @@ export default function MainInteraction() {
               )}
             </div>
 
-            {suggestedResources.length > 0 ? (
-              <div className="full-input-area">
-                <div className="suggested-resources">
-                  <h3>Suggested Resources for You</h3>
-
-                  <div className="suggested-resources-list">
-                    {suggestedResources.map((resource) => (
-                      <a
-                        key={resource.id}
-                        href={resource.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="suggested-resource-card"
-                      >
-                        <strong>{resource.title}</strong>
-                        <p>{resource.description}</p>
-                        <span>Explore resource ↗</span>
-                      </a>
-                    ))}
+            <div className="mi-bottom-panel">
+              {suggestedResources.length > 0 ? (
+                <div className="full-input-area">
+                  <div className="suggested-resources">
+                    <div className="suggested-resources-list">
+                      {suggestedResources.map((resource) => (
+                        <a
+                          key={resource.id}
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="suggested-resource-card"
+                        >
+                          <strong>{resource.title}</strong>
+                          <p>{resource.description}</p>
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : showResourceChoice ? (
-              <div className="full-input-area">
-                <div className="resource-choice-buttons">
-                  <button
-                    type="button"
-                    className="cssbuttons-io-button"
-                    disabled={isResponding}
-                    onClick={() => handleResourceChoice('yes')}
-                  >
-                    Yes, show me
-                  </button>
+              ) : showResourceChoice ? (
+                <div className="full-input-area">
+                  <div className="resource-choice-buttons">
+                    <button
+                      type="button"
+                      className="cssbuttons-io-button"
+                      disabled={isResponding}
+                      onClick={() => handleResourceChoice('yes')}
+                    >
+                      Yes, show me
+                    </button>
 
-                  <button
-                    type="button"
-                    className="cssbuttons-io-button"
-                    disabled={isResponding}
-                    onClick={() => handleResourceChoice('no')}
-                  >
-                    No, thanks
-                  </button>
+                    <button
+                      type="button"
+                      className="cssbuttons-io-button"
+                      disabled={isResponding}
+                      onClick={() => handleResourceChoice('no')}
+                    >
+                      No, thanks
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : topicState?.phase === 'wrapup' ? (
-              <div className="full-input-area" />
-            ) : (
-              <ChatInput
-                input={input}
-                textareaRef={textareaRef}
-                onChange={setInput}
-                onSubmit={handleSend}
-                onHandleKeyDown={handleKeyDown}
-                sentMessageAnimation={sentMessageAnimation}
-                isResponding={isResponding}
-              />
-            )}
+              ) : topicState?.phase === 'wrapup' ? (
+                <div className="full-input-area" />
+              ) : (
+                <ChatInput
+                  input={input}
+                  textareaRef={textareaRef}
+                  onChange={setInput}
+                  onSubmit={handleSend}
+                  onHandleKeyDown={handleKeyDown}
+                  sentMessageAnimation={sentMessageAnimation}
+                  isResponding={isResponding}
+                />
+              )}
+            </div>
           </section>
         </main>
         {showHistory && (

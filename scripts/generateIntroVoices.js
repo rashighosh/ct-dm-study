@@ -15,16 +15,16 @@ const ALEX_INTRO_2_SINGLE_COMBINED =
   "I'll also help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me."
 
 const ALEX_INTRO_2_MULTIPLE =
-  'Thanks, Jordan. Now, before we get started, please remember that we don’t have access to specific clinical trials, so we can’t search for or answer questions about specific trials or treatments. We also can’t provide medical advice.'
+  'Thanks, Jordan. Now, please remember that we don’t have access to specific clinical trials, so we can’t search for or answer questions about specific trials or treatments. We also can’t provide medical advice.'
 
 const ALEX_INTRO_3_SINGLE =
-  'Now, before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.'
+  'Now, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.'
 
 const JORDAN_INTRO_2_MULTIPLE = `If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after you've covered your three topics with Alex, I'll also suggest some useful next steps for you based on what you share during your conversation.`
 
 const ALEX_INTRO_3_SINGLE_COMBINED = `If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after we've covered your three topics, I'll also suggest some useful next steps for you based on what you share during our conversation.`
 
-const ALEX_INTRO_4_SINGLE = `Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button next to me. For now, let's get started with your first topic!`
+const ALEX_INTRO_4_SINGLE = `Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button below next to me. When you're ready, click that button to start the first topic!`
 
 // --------------------------------------------------------------------------
 // Generate one intro function

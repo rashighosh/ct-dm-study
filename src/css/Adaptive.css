@@ -641,10 +641,12 @@
 /* -------------------------------------------------------------------------- */
 
 .mi-bottom-panel {
+  position: relative;
+  z-index: 110;
   height: 160px;
   flex: 0 0 160px;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 
   background: #fbfaf8;
   display: flex;
@@ -657,7 +659,7 @@
   height: 100%;
   min-height: 0;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow: visible;
   justify-content: center;
 }
 
@@ -777,7 +779,7 @@
   box-shadow: 0 5px 18px rgba(0, 0, 0, 0.15);
 
   pointer-events: none;
-  z-index: 20;
+  z-index: 999999;
 
   animation: message-sent-float 3500ms ease-out forwards;
 }
@@ -1569,8 +1571,7 @@
 }
 
 .suggested-resources {
-  width: 85%;
-  padding: 15px;
+  width: 100%;
   align-self: center;
 }
 
@@ -1589,7 +1590,7 @@
 .suggested-resource-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0px;
   padding: 16px;
   background: #fff;
   border: 1px solid #dce8df;
@@ -1627,7 +1628,7 @@
 }
 
 /* Smooth transitions for the conversation input area */
-.mi-chat-card > .full-input-area {
+.mi-bottom-panel > .full-input-area {
   animation: inputSlideIn 0.4s ease-out both;
 }
 
