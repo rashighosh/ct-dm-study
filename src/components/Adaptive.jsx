@@ -156,6 +156,7 @@ export default function MainInteraction() {
   const [openedResources, setOpenedResources] = useState([])
   const openedResourcesRef = useRef([])
   const resourceLoggingQueueRef = useRef(Promise.resolve())
+  const transcriptLoggingQueueRef = useRef(Promise.resolve())
   const [previewResource, setPreviewResource] = useState(null)
   const [activeSpeaker, setActiveSpeaker] = useState(null)
   const [showSwipingCards, setShowSwipingCards] = useState(false)
@@ -300,7 +301,9 @@ export default function MainInteraction() {
       }
     }
 
-    saveConversationTranscript()
+    transcriptLoggingQueueRef.current = transcriptLoggingQueueRef.current
+      .catch(() => {})
+      .then(() => saveConversationTranscript())
   }, [messages, participantId])
 
   // Save basic session information
@@ -663,13 +666,7 @@ export default function MainInteraction() {
   }
 
   async function handleNextTopic() {
-    if (
-      isResponding ||
-      !topicState ||
-      topicState.conversation_complete ||
-      !hasEngagedCurrentTopic
-    )
-      return
+    if (isResponding || !topicState || topicState.conversation_complete) return
 
     const conversationMessages = messages.filter(
       (message) => message.from !== 'system',
@@ -1457,6 +1454,9 @@ export default function MainInteraction() {
     try {
       setFinishing(true)
 
+      // Wait for any pending transcript saves to finish
+      await transcriptLoggingQueueRef.current
+
       // 2. Save final transcript
       const transcriptResponse = await fetch(
         `${BASE_URL}/logs/log-conversation-transcript`,
@@ -1783,8 +1783,7 @@ export default function MainInteraction() {
                 </button>
               ) : (
                 topicState?.phase === 'topics' &&
-                introDone &&
-                hasEngagedCurrentTopic && (
+                introDone && (
                   <button
                     type="button"
                     className="cssbuttons-io-button next-topic-button"
