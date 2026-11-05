@@ -1617,23 +1617,25 @@ export default function MainInteraction() {
                 )}
               </div>
               <p>
-                {!isSingleAgent ? (
-                  <strong>
-                    After the virtual characters walk you through the 3 topics,
-                    a Finish Button will appear in the top right corner of your
-                    screen.
-                  </strong>
-                ) : (
-                  <strong>
-                    After the virtual character walks you through the 3 topics,
-                    a Finish Button will appear in the top right corner of your
-                    screen.
-                  </strong>
-                )}{' '}
-                You may continue asking as many or as few questions as you'd
-                like until you feel you've experienced how the website can help
-                someone learn about clinical trial participation.
+                Your task is to to ask questions and share your thoughts or
+                concerns as the{' '}
+                {!isSingleAgent ? 'virtual character' : 'virtual characters'}{' '}
+                walk you through the 3 topics you chose earlier. Feel free to
+                think about your own experiences with cancer and what you would
+                want to understand about clinical trials! You can draw on
+                questions you've had in the past, questions you have now, or
+                things you might want to discuss with others in the future.
               </p>
+
+              <div className="mi-privacy-reminder">
+                <strong>Friendly Privacy Reminder</strong>
+                <p>
+                  Please avoid sharing personally identifying information, such
+                  as your full name, address, phone number, or medical record
+                  numbers. You can discuss your questions and concerns without
+                  providing these details.
+                </p>
+              </div>
             </div>
 
             <div className="mi-start-instructions">

@@ -194,9 +194,10 @@ export default function SelectTopics() {
         <header className="select-topics-header">
           <p>
             Please select <b>{MAX_TOPICS} topics</b> from the options below that
-            you would like to discuss with{' '}
-            {isSingleAgent ? 'the virtual character' : 'the virtual characters'}
-            . <br />
+            you'd like to discuss. Think about your own experiences with cancer
+            and what you would like to understand about clinical trials.
+            <br />
+            <br />
             Then, click the <b>Continue</b> button at the bottom.
           </p>
         </header>
