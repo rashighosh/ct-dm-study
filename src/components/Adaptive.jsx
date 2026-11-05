@@ -80,6 +80,17 @@ function waitForCharacterRender(container, timeout = 10000) {
   })
 }
 
+function shuffleArray(array) {
+  const shuffled = [...array]
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+
+  return shuffled
+}
+
 export default function MainInteraction() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -153,6 +164,16 @@ export default function MainInteraction() {
   const [resourceChoice, setResourceChoice] = useState(null)
   const [showSurveyButton, setShowSurveyButton] = useState(false)
   const [suggestedResources, setSuggestedResources] = useState([])
+  const [shuffledResources] = useState(() => shuffleArray(RESOURCES))
+  const displayedResources =
+    condition === CONDITION_SINGLE_INFO
+      ? shuffledResources
+      : [
+          ...suggestedResources,
+          ...shuffledResources.filter(
+            (resource) => !suggestedResources.some((r) => r.id === resource.id),
+          ),
+        ]
   const [openedResources, setOpenedResources] = useState([])
   const openedResourcesRef = useRef([])
   const resourceLoggingQueueRef = useRef(Promise.resolve())
@@ -1617,9 +1638,9 @@ export default function MainInteraction() {
                 )}
               </div>
               <p>
-                Your task is to to ask questions and share your thoughts or
+                Your task is to ask questions and share your thoughts or
                 concerns as the{' '}
-                {!isSingleAgent ? 'virtual character' : 'virtual characters'}{' '}
+                {!isSingleAgent ? 'virtual characters' : 'virtual character'}{' '}
                 walk you through the 3 topics you chose earlier. Feel free to
                 think about your own experiences with cancer and what you would
                 want to understand about clinical trials! You can draw on
@@ -1990,58 +2011,45 @@ export default function MainInteraction() {
                 <div className="full-input-area">
                   <div className="suggested-resources">
                     <div className="suggested-resources-list">
-                      {[...RESOURCES]
-                        .sort((a, b) => {
-                          if (condition === CONDITION_SINGLE_INFO) return 0
+                      {displayedResources.map((resource) => {
+                        const isRecommended =
+                          condition !== CONDITION_SINGLE_INFO &&
+                          suggestedResources.some((r) => r.id === resource.id)
 
-                          const aRecommended = suggestedResources.some(
-                            (r) => r.id === a.id,
-                          )
-                          const bRecommended = suggestedResources.some(
-                            (r) => r.id === b.id,
-                          )
+                        const isRequested = openedResources.includes(
+                          resource.id,
+                        )
 
-                          return Number(bRecommended) - Number(aRecommended)
-                        })
-                        .map((resource) => {
-                          const isRecommended =
-                            condition !== CONDITION_SINGLE_INFO &&
-                            suggestedResources.some((r) => r.id === resource.id)
+                        return (
+                          <button
+                            key={resource.id}
+                            type="button"
+                            disabled={isResponding}
+                            className={`suggested-resource-card ${
+                              isRecommended ? 'resource-recommended' : ''
+                            }`}
+                            onClick={() => handleResourcePreview(resource)}
+                          >
+                            <FontAwesomeIcon icon={resource.icon} />
 
-                          const isRequested = openedResources.includes(
-                            resource.id,
-                          )
+                            <div className="suggested-resource-info">
+                              <strong>{resource.title}</strong>
 
-                          return (
-                            <button
-                              key={resource.id}
-                              type="button"
-                              disabled={isResponding}
-                              className={`suggested-resource-card ${
-                                isRecommended ? 'resource-recommended' : ''
-                              }`}
-                              onClick={() => handleResourcePreview(resource)}
-                            >
-                              <FontAwesomeIcon icon={resource.icon} />
+                              {isRecommended && (
+                                <div className="resource-recommended-label">
+                                  Recommended
+                                </div>
+                              )}
 
-                              <div className="suggested-resource-info">
-                                <strong>{resource.title}</strong>
-
-                                {isRecommended && (
-                                  <div className="resource-recommended-label">
-                                    Recommended
-                                  </div>
-                                )}
-
-                                {isRequested && (
-                                  <span className="resource-opened-label">
-                                    Requested
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-                          )
-                        })}
+                              {isRequested && (
+                                <span className="resource-opened-label">
+                                  Requested
+                                </span>
+                              )}
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
