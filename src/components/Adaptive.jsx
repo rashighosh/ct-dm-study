@@ -22,9 +22,12 @@ import {
   speakWithLipsync,
   speakWithLipsyncStatic,
   playGesture,
+  startSwiping,
+  stopSwiping,
 } from '../character.js'
 import '../css/Adaptive.css'
 import introSequences from '../data/introSequences.json'
+import SwipingCards from './SwipingCards'
 
 const BASE_URL = 'http://127.0.0.1:8000'
 // const BASE_URL =
@@ -94,6 +97,15 @@ export default function MainInteraction() {
   const startFirstTopicResolverRef = useRef(null)
 
   const SESSION_KEY = `studySession-${participantId}-${condition}`
+  const ENGAGEMENT_KEY = `${SESSION_KEY}-engaged-topics`
+
+  const [engagedTopics, setEngagedTopics] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem(ENGAGEMENT_KEY) || '[]')
+    } catch {
+      return []
+    }
+  })
 
   const [started, setStarted] = useState(false)
   const [charactersReady, setCharactersReady] = useState(false)
@@ -103,6 +115,9 @@ export default function MainInteraction() {
   const [showQuestions, setShowQuestions] = useState(false)
   const [showQuestionsTab, setShowQuestionsTab] = useState(false)
   const [topicState, setTopicState] = useState(null)
+  const hasEngagedCurrentTopic = engagedTopics.includes(
+    topicState?.current_topic_index,
+  )
   const [startChecks, setStartChecks] = useState({
     volume: false,
     browser: false,
@@ -127,6 +142,7 @@ export default function MainInteraction() {
   const [showSurveyButton, setShowSurveyButton] = useState(false)
   const [suggestedResources, setSuggestedResources] = useState([])
   const [activeSpeaker, setActiveSpeaker] = useState(null)
+  const [showSwipingCards, setShowSwipingCards] = useState(false)
 
   // Restore saved conversation history
   useEffect(() => {
@@ -596,7 +612,13 @@ export default function MainInteraction() {
   }
 
   async function handleNextTopic() {
-    if (isResponding || !topicState || topicState.conversation_complete) return
+    if (
+      isResponding ||
+      !topicState ||
+      topicState.conversation_complete ||
+      !hasEngagedCurrentTopic
+    )
+      return
 
     setIsResponding(true)
     setShowQuestions(false)
@@ -832,6 +854,18 @@ export default function MainInteraction() {
       }
 
       const data = await response.json()
+      // Count engagement once the backend accepts the user's message.
+      if (topicState?.phase === 'topics') {
+        const topicIndex = topicState.current_topic_index
+
+        setEngagedTopics((previous) => {
+          if (previous.includes(topicIndex)) return previous
+
+          const updated = [...previous, topicIndex]
+          sessionStorage.setItem(ENGAGEMENT_KEY, JSON.stringify(updated))
+          return updated
+        })
+      }
       console.log('Captured question from Jordan turn:', {
         question: data.question_saved,
         type: data.question_type,
@@ -865,6 +899,10 @@ export default function MainInteraction() {
 
       // 2. If Alex is needed, let Alex respond directly
       if (data.alex_info_needed) {
+        playGesture('stopAlexGesture')
+        setShowThinkingBubble(false)
+        setShowSwipingCards(true)
+        startSwiping()
         const alexResponse = await fetch(`${BASE_URL}/alex/conversation-alex`, {
           method: 'POST',
           headers: {
@@ -919,6 +957,8 @@ export default function MainInteraction() {
         }
 
         setShowThinkingBubble(false)
+        stopSwiping()
+        setShowSwipingCards(false)
 
         // Alex speaks
         await speakWithHighlight(alexData.answer, 'doctor', setAlexSubtitle)
@@ -1020,6 +1060,8 @@ export default function MainInteraction() {
     } catch (error) {
       console.error('Conversation error:', error)
     } finally {
+      await stopSwiping()
+      setShowSwipingCards(false)
       setShowThinkingBubble(false)
       setIsResponding(false)
       setResponseStatus('')
@@ -1146,7 +1188,15 @@ export default function MainInteraction() {
 
         setResponseStatus('')
 
-        const reply = `${data.explanation.trim()} You can click on any of these resources to explore them. When you're ready to finish the study, click the green Continue to Post-Survey button in the top-right corner.`
+        const resourceExplanations = data.resource_explanations
+          .map((resource) => resource.explanation.trim())
+          .join(' ')
+
+        const reply = [
+          data.explanation.trim(),
+          resourceExplanations,
+          'You can open any that interest you, or click Continue to Post-Survey when you’re ready to finish.',
+        ].join(' ')
 
         setMessages((previous) => [...previous, { from: speaker, text: reply }])
 
@@ -1446,7 +1496,8 @@ export default function MainInteraction() {
                 </button>
               ) : (
                 topicState?.phase === 'topics' &&
-                introDone && (
+                introDone &&
+                hasEngagedCurrentTopic && (
                   <button
                     type="button"
                     className="cssbuttons-io-button next-topic-button"
@@ -1500,6 +1551,7 @@ export default function MainInteraction() {
                     id="virtualdoctor"
                     ref={doctorRef}
                   />
+                  {showSwipingCards && <SwipingCards />}
                   {showThinkingBubble && (
                     <div className="character-thinking character-thinking-alex">
                       <div className="character-thinking-bubble">

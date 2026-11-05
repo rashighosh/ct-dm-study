@@ -1815,3 +1815,36 @@
     padding: 1.5rem;
   }
 }
+
+.swipe-cards {
+  position: absolute;
+  left: 50%;
+  bottom: 35%;
+  transform: translateX(-50%);
+  width: 230px;
+  height: 85px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.swipe-card {
+  position: absolute;
+  inset: 0;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid #d5e2ec;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #243746;
+  text-align: center;
+}
+
+.swipe-card__title {
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.swipe-card__subtitle {
+  font-size: 12px;
+}
