@@ -14,6 +14,7 @@ import {
   faCheck,
   faClipboardList,
   faChevronRight,
+  faStar,
 } from '@fortawesome/free-solid-svg-icons'
 import { faCircleCheck } from '@fortawesome/free-regular-svg-icons'
 import {
@@ -36,6 +37,17 @@ const BASE_URL = 'http://127.0.0.1:8000'
 const CONDITION_SINGLE_INFO = 1
 const CONDITION_SINGLE_COMBINED = 2
 const CONDITION_MULTIPLE = 3
+
+const RESOURCE_PREVIEWS = {
+  'featured-trials': '/resource-previews/featured-trials.pdf',
+  'personal-stories': '/resource-previews/personal-stories.pdf',
+  'sample-consent': '/resource-previews/sample-consent.pdf',
+  'questions-to-ask': '/resource-previews/questions-to-ask.pdf',
+  'details-checklist': '/resource-previews/details-checklist.pdf',
+  'finding-guide': '/resource-previews/finding-guide.pdf',
+  'nci-specialist': '/resource-previews/nci-specialist.pdf',
+  'trial-search': '/resource-previews/trial-search.pdf',
+}
 
 function waitForCharacterRender(container, timeout = 10000) {
   return new Promise((resolve, reject) => {
@@ -84,7 +96,7 @@ export default function MainInteraction() {
     condition === CONDITION_SINGLE_COMBINED
 
   const conversationalSpeaker =
-    condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+    condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
 
   const introMessageCount = introSequences[condition]?.length ?? 0
 
@@ -141,6 +153,10 @@ export default function MainInteraction() {
   const [resourceChoice, setResourceChoice] = useState(null)
   const [showSurveyButton, setShowSurveyButton] = useState(false)
   const [suggestedResources, setSuggestedResources] = useState([])
+  const [openedResources, setOpenedResources] = useState([])
+  const openedResourcesRef = useRef([])
+  const resourceLoggingQueueRef = useRef(Promise.resolve())
+  const [previewResource, setPreviewResource] = useState(null)
   const [activeSpeaker, setActiveSpeaker] = useState(null)
   const [showSwipingCards, setShowSwipingCards] = useState(false)
 
@@ -167,6 +183,10 @@ export default function MainInteraction() {
           .map((id) => RESOURCES.find((resource) => resource.id === id))
           .filter(Boolean),
       )
+
+      const restoredOpened = session.openedResourceIds ?? []
+      openedResourcesRef.current = restoredOpened
+      setOpenedResources(restoredOpened)
 
       // If intro already completed, show topics and current-topic highlight
       setShowTopics(session.introDone ?? false)
@@ -217,6 +237,35 @@ export default function MainInteraction() {
     } catch (error) {
       console.error('Could not refresh saved questions:', error)
     }
+  }
+
+  function logQuestionAdded(question, type, sourceText) {
+    setMessages((previous) => [
+      ...previous,
+      {
+        from: 'system',
+        event: 'question_added',
+        question,
+        type,
+        topic_index: topicState?.current_topic_index,
+        source_message: sourceText,
+        timestamp: new Date().toISOString(),
+      },
+    ])
+  }
+
+  function logQuestionListInteraction(action) {
+    setMessages((previous) => [
+      ...previous,
+      {
+        from: 'system',
+        event: 'question_list_interaction',
+        action,
+        source: 'manual',
+        topic_index: topicState?.current_topic_index,
+        timestamp: new Date().toISOString(),
+      },
+    ])
   }
 
   // save conversation transcript
@@ -271,6 +320,7 @@ export default function MainInteraction() {
       resourceChoice,
       showSurveyButton,
       suggestedResourceIds: suggestedResources.map((resource) => resource.id),
+      openedResourceIds: openedResources,
     }
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
@@ -285,6 +335,7 @@ export default function MainInteraction() {
     resourceChoice,
     showSurveyButton,
     suggestedResources,
+    openedResources,
   ])
 
   // Initialize both virtual characters after Begin is clicked
@@ -620,6 +671,10 @@ export default function MainInteraction() {
     )
       return
 
+    const conversationMessages = messages.filter(
+      (message) => message.from !== 'system',
+    )
+
     setIsResponding(true)
     setShowQuestions(false)
     setResponseStatus(
@@ -636,7 +691,7 @@ export default function MainInteraction() {
         },
         body: JSON.stringify({
           participant_id: participantId,
-          conversation_history: messages,
+          conversation_history: conversationMessages,
         }),
       })
 
@@ -680,7 +735,7 @@ export default function MainInteraction() {
             },
             body: JSON.stringify({
               participant_id: participantId,
-              conversation_history: messages,
+              conversation_history: conversationMessages,
               condition,
             }),
           },
@@ -694,6 +749,36 @@ export default function MainInteraction() {
 
         const nextTopicData = await nextTopicResponse.json()
         setResponseStatus('')
+
+        // Generate the conversational follow-up while Alex speaks.
+        const followUpPromise =
+          condition !== CONDITION_SINGLE_INFO
+            ? fetch(`${BASE_URL}/jordan/after-alex`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  participant_id: participantId,
+                  conversation_history: [
+                    { from: 'Alex', text: nextTopicData.alex_reply },
+                  ],
+                  after_topic_intro: true,
+                }),
+              })
+                .then(async (response) => {
+                  if (!response.ok) {
+                    throw new Error(
+                      `Topic follow-up failed: ${response.status}`,
+                    )
+                  }
+                  return response.json()
+                })
+                .then(
+                  (data) => ({ data, error: null }),
+                  (error) => ({ data: null, error }),
+                )
+            : null
 
         // Alex introduces the new topic
         setMessages((previous) => [
@@ -709,23 +794,30 @@ export default function MainInteraction() {
 
         setAlexSubtitle('')
 
-        // Conversational follow-up in conditions 2 and 3
-        if (condition !== CONDITION_SINGLE_INFO && nextTopicData.jordan_reply) {
-          setMessages((previous) => [
-            ...previous,
-            { from: conversationalSpeaker, text: nextTopicData.jordan_reply },
-          ])
+        // Speak the follow-up once Alex has finished.
+        if (followUpPromise) {
+          const { data: followUpData, error: followUpError } =
+            await followUpPromise
 
-          await speakWithHighlight(
-            nextTopicData.jordan_reply,
-            condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
-            condition === CONDITION_SINGLE_COMBINED
-              ? setAlexSubtitle
-              : setJordanSubtitle,
-          )
+          if (followUpError) throw followUpError
 
-          setAlexSubtitle('')
-          setJordanSubtitle('')
+          if (followUpData.jordan_reply) {
+            setMessages((previous) => [
+              ...previous,
+              { from: conversationalSpeaker, text: followUpData.jordan_reply },
+            ])
+
+            await speakWithHighlight(
+              followUpData.jordan_reply,
+              condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
+              condition === CONDITION_SINGLE_COMBINED
+                ? setAlexSubtitle
+                : setJordanSubtitle,
+            )
+
+            setAlexSubtitle('')
+            setJordanSubtitle('')
+          }
         }
       }
 
@@ -747,16 +839,15 @@ export default function MainInteraction() {
 
         // Conversational conditions: Jordan (or Alex) invites resources
         if (data.jordan_reply) {
-          const speaker =
-            condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+          const speaker = condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
 
           const character =
-            condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion'
+            condition === CONDITION_MULTIPLE ? 'companion' : 'doctor'
 
           const setSubtitle =
-            condition === CONDITION_SINGLE_COMBINED
-              ? setAlexSubtitle
-              : setJordanSubtitle
+            condition === CONDITION_MULTIPLE
+              ? setJordanSubtitle
+              : setAlexSubtitle
 
           if (condition === CONDITION_MULTIPLE) {
             playGesture('alexLookAtJordan')
@@ -767,7 +858,11 @@ export default function MainInteraction() {
             { from: speaker, text: data.jordan_reply },
           ])
 
-          await speakWithHighlight(data.jordan_reply, character, setSubtitle)
+          await speakWithHighlight(
+            data.jordan_reply,
+            condition === CONDITION_MULTIPLE ? 'companion' : 'doctor',
+            setSubtitle,
+          )
 
           setSubtitle('')
         }
@@ -778,11 +873,7 @@ export default function MainInteraction() {
           playGesture('stopCompanionGesture')
         }
 
-        if (condition === CONDITION_SINGLE_INFO) {
-          setShowSurveyButton(true)
-        } else {
-          setShowResourceChoice(true)
-        }
+        setShowResourceChoice(true)
       }
     } catch (error) {
       console.error('Could not advance topic:', error)
@@ -796,6 +887,10 @@ export default function MainInteraction() {
     event.preventDefault()
 
     const trimmed = input.trim()
+
+    const conversationMessages = messages.filter(
+      (message) => message.from !== 'system',
+    )
 
     if (!trimmed || isResponding) return
 
@@ -844,7 +939,7 @@ export default function MainInteraction() {
         body: JSON.stringify({
           participant_id: participantId,
           user_message: trimmed,
-          conversation_history: messages,
+          conversation_history: conversationMessages,
           condition,
         }),
       })
@@ -871,8 +966,10 @@ export default function MainInteraction() {
         type: data.question_type,
       })
 
-      // Refresh the question list whenever Jordan saves a new question
+      // Refresh the question list and log the captured question
       if (data.question_saved) {
+        logQuestionAdded(data.question_saved, data.question_type, trimmed)
+
         await refreshSavedQuestions()
         questionAdded = true
       }
@@ -981,8 +1078,14 @@ export default function MainInteraction() {
             type: jordanAfterAlexData.question_type,
           })
 
-          // Refresh the list when Jordan saves a question after Alex responds
+          // Refresh the list and log the captured question
           if (jordanAfterAlexData.question_saved) {
+            logQuestionAdded(
+              jordanAfterAlexData.question_saved,
+              jordanAfterAlexData.question_type,
+              trimmed,
+            )
+
             await refreshSavedQuestions()
             questionAdded = true
           }
@@ -1121,16 +1224,13 @@ export default function MainInteraction() {
       const reply =
         'No problem! You can click the Continue to Post-Survey button whenever you’re ready.'
 
-      const speaker =
-        condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+      const speaker = condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
 
       const character =
-        condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion'
+        condition === CONDITION_MULTIPLE ? 'companion' : 'doctor'
 
       const setSubtitle =
-        condition === CONDITION_SINGLE_COMBINED
-          ? setAlexSubtitle
-          : setJordanSubtitle
+        condition === CONDITION_MULTIPLE ? setJordanSubtitle : setAlexSubtitle
 
       setIsResponding(true)
 
@@ -1169,34 +1269,78 @@ export default function MainInteraction() {
 
         const data = await response.json()
 
+        // Log recommended resources and their explanations
+        try {
+          const logResponse = await fetch(
+            `${BASE_URL}/logs/log-recommended-resources`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                participant_id: participantId,
+                recommended_resources:
+                  condition === CONDITION_SINGLE_INFO
+                    ? [{ status: 'viewed_resources' }]
+                    : (data.resource_explanations ?? []),
+              }),
+            },
+          )
+
+          if (!logResponse.ok) {
+            throw new Error(
+              `Recommendation logging failed: ${logResponse.status}`,
+            )
+          }
+        } catch (error) {
+          console.error('Could not log recommended resources:', error)
+        }
+
         const resources = data.resource_ids
           .map((id) => RESOURCES.find((resource) => resource.id === id))
           .filter(Boolean)
 
         setSuggestedResources(resources)
 
-        const speaker =
-          condition === CONDITION_SINGLE_COMBINED ? 'Alex' : 'Jordan'
+        const speaker = condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
 
         const character =
-          condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion'
+          condition === CONDITION_MULTIPLE ? 'companion' : 'doctor'
 
         const setSubtitle =
-          condition === CONDITION_SINGLE_COMBINED
-            ? setAlexSubtitle
-            : setJordanSubtitle
+          condition === CONDITION_MULTIPLE ? setJordanSubtitle : setAlexSubtitle
 
         setResponseStatus('')
 
-        const resourceExplanations = data.resource_explanations
+        const resourceInstructions =
+          'Here are some resources you might be interested in exploring further. ' +
+          "Click any resource to preview it. If you'd like the link to a resource, " +
+          'you will be able to request a link to be sent to you on Prolific after the study.'
+
+        const resourceExplanations = (data.resource_explanations ?? [])
           .map((resource) => resource.explanation.trim())
           .join(' ')
 
-        const reply = [
-          data.explanation.trim(),
-          resourceExplanations,
-          'You can open any that interest you, or click Continue to Post-Survey when you’re ready to finish.',
-        ].join(' ')
+        const tailoredIntroduction =
+          'Based on what you brought up during our conversation, ' +
+          "I've highlighted a few resources that might be especially useful to you."
+
+        const closingInstructions =
+          "When you're done, click the green button in the top right corner " +
+          'to continue to the post-survey.'
+
+        const reply =
+          condition === CONDITION_SINGLE_INFO
+            ? [resourceInstructions, closingInstructions].join(' ')
+            : [
+                resourceInstructions,
+                tailoredIntroduction,
+                resourceExplanations,
+                closingInstructions,
+              ]
+                .filter(Boolean)
+                .join(' ')
 
         setMessages((previous) => [...previous, { from: speaker, text: reply }])
 
@@ -1204,7 +1348,10 @@ export default function MainInteraction() {
 
         setSubtitle('')
         setShowSurveyButton(true)
-        setShowQuestions(true)
+
+        if (condition !== CONDITION_SINGLE_INFO) {
+          setShowQuestions(true)
+        }
       } catch (error) {
         console.error('Could not get suggested resources:', error)
 
@@ -1215,6 +1362,94 @@ export default function MainInteraction() {
         setResponseStatus('')
       }
     }
+  }
+
+  async function handleResourcePreview(resource) {
+    setPreviewResource(resource)
+
+    try {
+      const response = await fetch(`${BASE_URL}/logs/log-resource-preview`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          resource_id: resource.id,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Resource preview logging failed: ${response.status}`)
+      }
+    } catch (error) {
+      console.error('Could not log resource preview:', error)
+    }
+  }
+
+  function handleResourceOpen(resourceId) {
+    // Toggle the resource on/off
+    const updated = openedResourcesRef.current.includes(resourceId)
+      ? openedResourcesRef.current.filter((id) => id !== resourceId)
+      : [...openedResourcesRef.current, resourceId]
+
+    openedResourcesRef.current = updated
+    setOpenedResources(updated)
+
+    // Log whether the participant requested or canceled the resource
+    const event = updated.includes(resourceId) ? 'requested' : 'unrequested'
+
+    resourceLoggingQueueRef.current = resourceLoggingQueueRef.current
+      .then(async () => {
+        const response = await fetch(
+          `${BASE_URL}/logs/log-resource-request-event`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              resource_id: resourceId,
+              event,
+            }),
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `Resource request event logging failed: ${response.status}`,
+          )
+        }
+      })
+      .catch((error) => {
+        console.error('Could not log resource request event:', error)
+      })
+
+    // Save updated selections sequentially
+    resourceLoggingQueueRef.current = resourceLoggingQueueRef.current
+      .then(async () => {
+        const response = await fetch(
+          `${BASE_URL}/logs/log-selected-resources`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              selected_resources: updated,
+            }),
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(`Resource logging failed: ${response.status}`)
+        }
+      })
+      .catch((error) => {
+        console.error('Could not log resource request:', error)
+      })
   }
 
   async function handleFinish() {
@@ -1266,7 +1501,59 @@ export default function MainInteraction() {
       const finishData = await finishResponse.json()
       console.log('Conversation finished logged:', finishData)
 
-      navigate(`/resources?${searchParams.toString()}`)
+      // Wait for any pending resource-click logging to finish
+      await resourceLoggingQueueRef.current
+
+      // Save final list of opened resources
+      const resourcesResponse = await fetch(
+        `${BASE_URL}/logs/log-selected-resources`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            selected_resources: openedResourcesRef.current,
+          }),
+        },
+      )
+
+      if (!resourcesResponse.ok) {
+        throw new Error(
+          `Final resource logging failed: ${resourcesResponse.status}`,
+        )
+      }
+
+      // Log overall website completion
+      const websiteFinishResponse = await fetch(
+        `${BASE_URL}/logs/log-finished`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+          }),
+        },
+      )
+
+      if (!websiteFinishResponse.ok) {
+        throw new Error(
+          `Website completion logging failed: ${websiteFinishResponse.status}`,
+        )
+      }
+
+      // Redirect directly to the Qualtrics post-survey
+      const postSurveyUrl = new URL(
+        'https://ufl.qualtrics.com/jfe/form/SV_cDaUHMgdTcPpzoy',
+      )
+
+      postSurveyUrl.searchParams.set('id', participantId)
+      postSurveyUrl.searchParams.set('c', String(condition))
+
+      window.location.href = postSurveyUrl.toString()
     } catch (error) {
       console.error('Could not finish conversation:', error)
       setFinishing(false)
@@ -1587,7 +1874,12 @@ export default function MainInteraction() {
                   <button
                     type="button"
                     className="questions-tab"
-                    onClick={() => setShowQuestions((previous) => !previous)}
+                    onClick={() => {
+                      logQuestionListInteraction(
+                        showQuestions ? 'closed' : 'opened',
+                      )
+                      setShowQuestions((previous) => !previous)
+                    }}
                     aria-label={
                       showQuestions
                         ? 'Close my questions and concerns'
@@ -1610,7 +1902,10 @@ export default function MainInteraction() {
                       <button
                         type="button"
                         className="questions-panel-close"
-                        onClick={() => setShowQuestions(false)}
+                        onClick={() => {
+                          logQuestionListInteraction('closed')
+                          setShowQuestions(false)
+                        }}
                         aria-label="Close questions panel"
                       >
                         ×
@@ -1690,22 +1985,62 @@ export default function MainInteraction() {
             </div>
 
             <div className="mi-bottom-panel">
-              {suggestedResources.length > 0 ? (
+              {resourceChoice === 'yes' ? (
                 <div className="full-input-area">
                   <div className="suggested-resources">
                     <div className="suggested-resources-list">
-                      {suggestedResources.map((resource) => (
-                        <a
-                          key={resource.id}
-                          href={resource.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="suggested-resource-card"
-                        >
-                          <strong>{resource.title}</strong>
-                          <p>{resource.description}</p>
-                        </a>
-                      ))}
+                      {[...RESOURCES]
+                        .sort((a, b) => {
+                          if (condition === CONDITION_SINGLE_INFO) return 0
+
+                          const aRecommended = suggestedResources.some(
+                            (r) => r.id === a.id,
+                          )
+                          const bRecommended = suggestedResources.some(
+                            (r) => r.id === b.id,
+                          )
+
+                          return Number(bRecommended) - Number(aRecommended)
+                        })
+                        .map((resource) => {
+                          const isRecommended =
+                            condition !== CONDITION_SINGLE_INFO &&
+                            suggestedResources.some((r) => r.id === resource.id)
+
+                          const isRequested = openedResources.includes(
+                            resource.id,
+                          )
+
+                          return (
+                            <button
+                              key={resource.id}
+                              type="button"
+                              disabled={isResponding}
+                              className={`suggested-resource-card ${
+                                isRecommended ? 'resource-recommended' : ''
+                              }`}
+                              onClick={() => handleResourcePreview(resource)}
+                            >
+                              <FontAwesomeIcon icon={resource.icon} />
+
+                              <div className="suggested-resource-info">
+                                <strong>{resource.title}</strong>
+
+                                {isRecommended && (
+                                  <div className="resource-recommended-label">
+                                    Recommended
+                                  </div>
+                                )}
+
+                                {isRequested && (
+                                  <span className="resource-opened-label">
+                                    Requested
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          )
+                        })}
                     </div>
                   </div>
                 </div>
@@ -1753,6 +2088,70 @@ export default function MainInteraction() {
             onClose={() => setShowHistory(false)}
             historyBodyRef={historyBodyRef}
           />
+        )}
+        {previewResource && (
+          <div
+            className="resource-preview-overlay"
+            onClick={() => setPreviewResource(null)}
+          >
+            <div
+              className="resource-preview-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Preview: ${previewResource.title}`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="resource-preview-header">
+                <h2>[Preview] {previewResource.title}</h2>
+
+                <button
+                  type="button"
+                  className="resource-preview-close"
+                  onClick={() => setPreviewResource(null)}
+                  aria-label="Close resource preview"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="resource-preview-content">
+                {RESOURCE_PREVIEWS[previewResource.id]?.endsWith('.pdf') ? (
+                  <iframe
+                    title={previewResource.title}
+                    src={RESOURCE_PREVIEWS[previewResource.id]}
+                  />
+                ) : (
+                  <img
+                    src={RESOURCE_PREVIEWS[previewResource.id]}
+                    alt={previewResource.title}
+                  />
+                )}
+              </div>
+
+              <div className="resource-preview-footer">
+                <p>
+                  Interested in keeping this resource? You can click the button
+                  to request this link to be messaged to you on Prolific after
+                  the study.
+                </p>
+
+                <button
+                  type="button"
+                  className={`resource-request-button ${
+                    openedResources.includes(previewResource.id)
+                      ? 'resource-requested'
+                      : ''
+                  }`}
+                  aria-pressed={openedResources.includes(previewResource.id)}
+                  onClick={() => handleResourceOpen(previewResource.id)}
+                >
+                  {openedResources.includes(previewResource.id)
+                    ? '☑ Requested — click to undo'
+                    : 'Request link after study'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </>
@@ -1876,23 +2275,25 @@ function HistoryModal({ messages, onClose, historyBodyRef }) {
           {messages.length === 0 ? (
             <p>No messages yet.</p>
           ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`history-message ${
-                  message.from === 'user'
-                    ? 'history-message-user'
-                    : message.from === 'Alex'
-                      ? 'history-message-alex'
-                      : 'history-message-jordan'
-                }`}
-              >
-                <strong>
-                  {message.from === 'user' ? 'You' : message.from}
-                </strong>
-                <p>{message.text}</p>
-              </div>
-            ))
+            messages
+              .filter((message) => message.from !== 'system')
+              .map((message, index) => (
+                <div
+                  key={index}
+                  className={`history-message ${
+                    message.from === 'user'
+                      ? 'history-message-user'
+                      : message.from === 'Alex'
+                        ? 'history-message-alex'
+                        : 'history-message-jordan'
+                  }`}
+                >
+                  <strong>
+                    {message.from === 'user' ? 'You' : message.from}
+                  </strong>
+                  <p>{message.text}</p>
+                </div>
+              ))
           )}
         </div>
       </div>
