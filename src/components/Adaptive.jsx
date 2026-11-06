@@ -1875,6 +1875,9 @@ export default function MainInteraction() {
                   )}
                   {alexSubtitle && (
                     <div className="character-subtitle character-subtitle-alex">
+                      <div className="subtitle-name-pill subtitle-name-pill-alex">
+                        Alex
+                      </div>
                       {alexSubtitle}
                     </div>
                   )}
@@ -1998,6 +2001,9 @@ export default function MainInteraction() {
                     )}
                     {jordanSubtitle && (
                       <div className="character-subtitle character-subtitle-jordan">
+                        <div className="subtitle-name-pill subtitle-name-pill-jordan">
+                          Jordan
+                        </div>
                         {jordanSubtitle}
                       </div>
                     )}
