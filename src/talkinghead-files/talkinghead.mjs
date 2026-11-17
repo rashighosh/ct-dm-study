@@ -7848,12 +7848,23 @@ class TalkingHead {
     }
 
     // Stop hand gesture, if any
+
     if (this.gesture) {
       const gs = Object.entries(this.gesture)
       this.gesture = null
+
       for (const [p, val] of gs) {
         if (this.poseTarget.props.hasOwnProperty(p)) {
-          this.poseTarget.props[p].copy(this.getPoseTemplateProp(p))
+          // Prefer the current seated pose.
+          // Fall back to the avatar's original pose for missing joints.
+          const original = this.getPoseTemplateProp(p) ?? this.poseBase.props[p]
+
+          if (!original) {
+            console.warn(`No reset pose found for ${p}`)
+            continue
+          }
+
+          this.poseTarget.props[p].copy(original)
           this.poseTarget.props[p].t = this.animClock
           this.poseTarget.props[p].d = ms
         }

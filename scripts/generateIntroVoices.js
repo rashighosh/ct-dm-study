@@ -1,30 +1,23 @@
-// scripts/generateJordanIntro.js
+// node scripts/generateIntroVoices.js
 import fs from 'fs'
 
 const BASE_URL = 'http://127.0.0.1:8000'
 
-const ALEX_INTRO_1_MULTIPLE =
-  'Hi there, I’m Alex, and this is Jordan. We are AI-powered virtual characters here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.'
+const ALEX_INTRO_1_MULTIPLE_1 = `Hi there, I am Doctor Alex, and this is Jordan. We are AI-powered virtual characters here to help you understand clinical trial participation so you can evaluate whether participating in one might be right for you.`
 
-const ALEX_INTRO_1_SINGLE =
-  'Hi there, I’m Alex. I am an AI-powered virtual character here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.'
+const ALEX_INTRO_1_MULTIPLE_2 = `When considering a clinical trial, having accurate, reliable information is essential. However, there is a great deal of information available, and it can be challenging to know where to look or how to make sense of it all.`
 
-const JORDAN_INTRO_1_MULTIPLE = `And my role is to help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me.`
+const ALEX_INTRO_1_MULTIPLE_3 = `My role is to help you navigate that information. I draw on a large collection of trusted medical resources curated by human health communication experts, such as the National Cancer Institute. I identify relevant information to provide clear, evidence-based answers to your questions.`
 
-const ALEX_INTRO_2_SINGLE_COMBINED =
-  "I'll also help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me."
+const JORDAN_INTRO_1_MULTIPLE_1 = `But even the most reliable information is most useful when it addresses what's important to you! Everyone has different experiences, needs, and concerns, so what matters most can be different for each person. We want to make sure the information you get matches your individual needs.`
 
-const ALEX_INTRO_2_MULTIPLE =
-  'Thanks, Jordan. Now, please remember that we don’t have access to specific clinical trials, so we can’t search for or answer questions about specific trials or treatments. We also can’t provide medical advice.'
+const JORDAN_INTRO_1_MULTIPLE_2 = `That's where I come in! My role is to support you in expressing your own needs and concerns. Throughout the conversation, I'll invite you to share your perspectives and help you think through what's important to you, so your voice can guide the information Dr. Alex finds and shares with you.`
 
-const ALEX_INTRO_3_SINGLE =
-  'Now, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.'
+const JORDAN_INTRO_1_MULTIPLE_3 = `So, let’s start by learning a little bit about what matters to you so Doctor Alex can help suggest some topics to explore.`
 
-const JORDAN_INTRO_2_MULTIPLE = `If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after you've covered your three topics with Alex, I'll also suggest some useful next steps for you based on what you share during your conversation.`
+const JORDAN_INTRO_1_MULTIPLE_4 = `Before looking into any particular study, what are the top three things you'd want to understand better or think through to decide whether clinical trials are something you'd want to explore further?`
 
-const ALEX_INTRO_3_SINGLE_COMBINED = `If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after we've covered your three topics, I'll also suggest some useful next steps for you based on what you share during our conversation.`
-
-const ALEX_INTRO_4_SINGLE = `Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button below next to me. When you're ready, click that button to start the first topic!`
+const JORDAN_INTRO_1_MULTIPLE_5 = `Feel free to share your concerns or anything that would be important to you personally.`
 
 // --------------------------------------------------------------------------
 // Generate one intro function
@@ -48,7 +41,13 @@ async function generateOneIntro(name, text, character) {
 
   const { audio, timestamps } = await res.json()
 
+  if (!audio || timestamps == null) {
+    throw new Error(`Missing audio or timestamps for ${name}`)
+  }
+
   const prefix = character === 'doctor' ? 'doctor' : 'companion'
+
+  fs.mkdirSync('public/intro-voices', { recursive: true })
 
   fs.writeFileSync(
     `public/intro-voices/${prefix}-audio-${name}.mp3`,
@@ -70,49 +69,44 @@ async function generateOneIntro(name, text, character) {
 async function generateAllIntros() {
   const intros = [
     {
-      name: 'ALEX_INTRO_1_MULTIPLE',
-      text: ALEX_INTRO_1_MULTIPLE,
+      name: 'ALEX_INTRO_1_MULTIPLE_1',
+      text: ALEX_INTRO_1_MULTIPLE_1,
       character: 'doctor',
     },
     {
-      name: 'ALEX_INTRO_1_SINGLE',
-      text: ALEX_INTRO_1_SINGLE,
+      name: 'ALEX_INTRO_1_MULTIPLE_2',
+      text: ALEX_INTRO_1_MULTIPLE_2,
       character: 'doctor',
     },
     {
-      name: 'JORDAN_INTRO_1_MULTIPLE',
-      text: JORDAN_INTRO_1_MULTIPLE,
+      name: 'ALEX_INTRO_1_MULTIPLE_3',
+      text: ALEX_INTRO_1_MULTIPLE_3,
+      character: 'doctor',
+    },
+    {
+      name: 'JORDAN_INTRO_1_MULTIPLE_1',
+      text: JORDAN_INTRO_1_MULTIPLE_1,
       character: 'companion',
     },
     {
-      name: 'ALEX_INTRO_2_SINGLE_COMBINED',
-      text: ALEX_INTRO_2_SINGLE_COMBINED,
-      character: 'doctor',
-    },
-    {
-      name: 'ALEX_INTRO_3_SINGLE_COMBINED',
-      text: ALEX_INTRO_3_SINGLE_COMBINED,
-      character: 'doctor',
-    },
-    {
-      name: 'ALEX_INTRO_2_MULTIPLE',
-      text: ALEX_INTRO_2_MULTIPLE,
-      character: 'doctor',
-    },
-    {
-      name: 'ALEX_INTRO_3_SINGLE',
-      text: ALEX_INTRO_3_SINGLE,
-      character: 'doctor',
-    },
-    {
-      name: 'JORDAN_INTRO_2_MULTIPLE',
-      text: JORDAN_INTRO_2_MULTIPLE,
+      name: 'JORDAN_INTRO_1_MULTIPLE_2',
+      text: JORDAN_INTRO_1_MULTIPLE_2,
       character: 'companion',
     },
     {
-      name: 'ALEX_INTRO_4_SINGLE',
-      text: ALEX_INTRO_4_SINGLE,
-      character: 'doctor',
+      name: 'JORDAN_INTRO_1_MULTIPLE_3',
+      text: JORDAN_INTRO_1_MULTIPLE_3,
+      character: 'companion',
+    },
+    {
+      name: 'JORDAN_INTRO_1_MULTIPLE_4',
+      text: JORDAN_INTRO_1_MULTIPLE_4,
+      character: 'companion',
+    },
+    {
+      name: 'JORDAN_INTRO_1_MULTIPLE_5',
+      text: JORDAN_INTRO_1_MULTIPLE_5,
+      character: 'companion',
     },
   ]
 
@@ -120,22 +114,14 @@ async function generateAllIntros() {
     await generateOneIntro(intro.name, intro.text, intro.character)
   }
 
-  console.log('🎉 Done! All intro files saved!')
+  console.log('🎉 Done! All 8 intro audio and timestamp files saved!')
 }
 
 // --------------------------------------------------------------------------
 // Choose what to run
 // --------------------------------------------------------------------------
 
-generateAllIntros().catch(console.error)
-
-// generateOneIntro(
-//   'JORDAN_INTRO_1_MULTIPLE',
-//   JORDAN_INTRO_1_MULTIPLE,
-//   'companion',
-// )
-// generateOneIntro(
-//   'ALEX_INTRO_2_SINGLE_COMBINED',
-//   ALEX_INTRO_2_SINGLE_COMBINED,
-//   'doctor',
-// )
+generateAllIntros().catch((err) => {
+  console.error('❌ Intro generation failed:', err)
+  process.exitCode = 1
+})

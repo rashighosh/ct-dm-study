@@ -11,8 +11,8 @@ createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <Suspense fallback={null}>
       <Routes>
-        <Route path="/conversation" element={<Adaptive />} />
-        <Route path="/" element={<SelectTopics />} />
+        <Route path="/" element={<Adaptive />} />
+        <Route path="/topics" element={<SelectTopics />} />
         <Route path="/resources" element={<SelectResources />} />
       </Routes>
     </Suspense>

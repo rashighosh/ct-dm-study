@@ -1055,7 +1055,7 @@
   box-sizing: border-box;
 
   margin: 1.5rem 0;
-  padding: 1rem 1.5rem;
+  padding: 1.5rem 3rem;
 
   border-radius: 25px;
 
@@ -2074,4 +2074,279 @@
 
 .swipe-card__subtitle {
   font-size: 12px;
+}
+
+/* ==========================================
+   INTRO VISUAL CUES
+   ========================================== */
+
+.mi-character-content {
+  position: relative;
+}
+
+/* Overall visual cue container */
+.intro-visual-cue {
+  position: absolute;
+
+  /* Position in front of character */
+  left: 50%;
+  bottom: 30%;
+  z-index: 20;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  pointer-events: none;
+
+  /* Initial appearance */
+  animation: introVisualAppear 0.35s ease-out both;
+}
+
+/* Container for multiple icons */
+.intro-visual-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Individual icon cards */
+.intro-visual-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 85px;
+  height: 85px;
+
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.13);
+
+  font-size: 38px;
+  color: rgb(var(--primary-blue));
+}
+
+.intro-visual-cue-alex .intro-visual-icon {
+  color: rgb(var(--primary-orange));
+}
+
+/* Icons pop in individually, using staggered delays from JSX */
+.intro-visual-icons .intro-visual-icon {
+  opacity: 0;
+  animation: introIconPop 0.35s ease-out forwards;
+}
+
+/* Optional label beneath icons */
+.intro-visual-label {
+  padding: 7px 13px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 10px;
+
+  color: #263238;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+/* Entire group fades out together */
+.intro-visual-cue.intro-visual-fade-out {
+  animation: introVisualFadeOut 0.4s ease-in forwards;
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+
+/* Overall container appears */
+@keyframes introVisualAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* Each icon pops into place */
+@keyframes introIconPop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.7);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Entire group fades out */
+@keyframes introVisualFadeOut {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* ==========================================
+   ACCESSIBILITY
+   ========================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .intro-visual-cue,
+  .intro-visual-icons .intro-visual-icon {
+    animation: none;
+  }
+
+  .intro-visual-cue {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+
+  .intro-visual-icons .intro-visual-icon {
+    opacity: 1;
+  }
+
+  .intro-visual-cue.intro-visual-fade-out {
+    opacity: 0;
+  }
+}
+
+/* ==========================================
+   CHAT PANEL INTRO REVEAL
+   ========================================== */
+
+/* Normal visible panel */
+.mi-bottom-panel {
+  transition:
+    flex-basis 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Hidden during the introduction */
+.mi-bottom-panel.mi-bottom-panel-hidden {
+  flex: 0 0 0px;
+  height: 0;
+  min-height: 0;
+
+  opacity: 0;
+  transform: translateY(30px);
+
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* Keep hidden until the panel begins revealing */
+.mi-bottom-panel:not(.mi-bottom-panel-hidden) {
+  visibility: visible;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .mi-bottom-panel {
+    transition: none;
+  }
+}
+
+/* ==========================================
+   INTRO INSTRUCTION BANNER
+   ========================================== */
+
+.mi-intro-instruction {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 105;
+
+  width: max-content;
+  max-width: 75%;
+  box-sizing: border-box;
+
+  padding: 15px 24px;
+  font-style: italic;
+
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(60, 112, 128, 0.2);
+  border-radius: 16px;
+
+  color: #263238;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+
+  animation: miInstructionAppear 0.5s ease-out both;
+}
+
+@keyframes miInstructionAppear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mi-intro-instruction {
+    animation: none;
+    transform: translateX(-50%);
+  }
+}
+
+.mi-intro-instruction {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mi-intro-instruction-line {
+  opacity: 0;
+  animation: miInstructionLineAppear 0.5s ease-out forwards;
+}
+
+@keyframes miInstructionLineAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mi-intro-instruction-line {
+    opacity: 1;
+    animation: none;
+  }
 }

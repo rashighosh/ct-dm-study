@@ -29,6 +29,7 @@ import {
 import '../css/Adaptive.css'
 import introSequences from '../data/introSequences.json'
 import SwipingCards from './SwipingCards'
+import { INTRO_VISUAL_CUES } from '../data/introVisualCues'
 
 // const BASE_URL = 'http://127.0.0.1:8000'
 const BASE_URL =
@@ -37,6 +38,12 @@ const BASE_URL =
 const CONDITION_SINGLE_INFO = 1
 const CONDITION_SINGLE_COMBINED = 2
 const CONDITION_MULTIPLE = 3
+
+const CONDITION_NAMES = {
+  1: 'Single Info Only',
+  2: 'Single Combined',
+  3: 'Multiple',
+}
 
 const RESOURCE_PREVIEWS = {
   'featured-trials': '/resource-previews/featured-trials.pdf',
@@ -95,12 +102,9 @@ export default function MainInteraction() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const participantId =
-    searchParams.get('id') ||
-    searchParams.get('PROLIFIC_PID') ||
-    'test-participant'
+  const participantId = searchParams.get('id') || 'navi-test'
 
-  const condition = Number(searchParams.get('c') ?? 0)
+  const condition = Number(searchParams.get('c') ?? 3)
 
   const isSingleAgent =
     condition === CONDITION_SINGLE_INFO ||
@@ -130,6 +134,9 @@ export default function MainInteraction() {
     }
   })
 
+  const [entryLogged, setEntryLogged] = useState(false)
+  const [entryLogError, setEntryLogError] = useState(false)
+  const entryLoggingRef = useRef(false)
   const [started, setStarted] = useState(false)
   const [charactersReady, setCharactersReady] = useState(false)
   const [input, setInput] = useState('')
@@ -149,8 +156,12 @@ export default function MainInteraction() {
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const [sentMessageAnimation, setSentMessageAnimation] = useState('')
   const [introDone, setIntroDone] = useState(false)
+  const [showChatInput, setShowChatInput] = useState(
+    condition !== CONDITION_MULTIPLE,
+  )
+  const [introInstruction, setIntroInstruction] = useState([])
   const [waitingForFirstTopic, setWaitingForFirstTopic] = useState(false)
-  const canStart = Object.values(startChecks).every(Boolean)
+  const canStart = entryLogged && Object.values(startChecks).every(Boolean)
   const [showTopics, setShowTopics] = useState(false)
   const [isResponding, setIsResponding] = useState(false)
   const [highlightCurrentTopic, setHighlightCurrentTopic] = useState(false)
@@ -180,7 +191,65 @@ export default function MainInteraction() {
   const transcriptLoggingQueueRef = useRef(Promise.resolve())
   const [previewResource, setPreviewResource] = useState(null)
   const [activeSpeaker, setActiveSpeaker] = useState(null)
+  const [introVisuals, setIntroVisuals] = useState({
+    Alex: null,
+    Jordan: null,
+  })
+
+  const introVisualTimersRef = useRef([])
   const [showSwipingCards, setShowSwipingCards] = useState(false)
+
+  // Log participant entry before allowing the interaction to begin
+  async function logConversationEntered() {
+    if (entryLoggingRef.current || entryLogged) return
+
+    entryLoggingRef.current = true
+    setEntryLogError(false)
+
+    try {
+      const response = await fetch(
+        `${BASE_URL}/logs/log-conversation-entered`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            c: condition,
+            condition_name: CONDITION_NAMES[condition],
+          }),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error(`Conversation entry logging failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      console.log('Conversation entered logged:', data)
+
+      setEntryLogged(true)
+    } catch (error) {
+      console.error('Could not log conversation entry:', error)
+      setEntryLogError(true)
+    } finally {
+      entryLoggingRef.current = false
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      introVisualTimersRef.current.forEach(clearTimeout)
+      introVisualTimersRef.current = []
+    }
+  }, [])
+
+  // Automatically log entry when Adaptive loads
+  useEffect(() => {
+    logConversationEntered()
+  }, [participantId, condition])
 
   // Restore saved conversation history
   useEffect(() => {
@@ -197,6 +266,9 @@ export default function MainInteraction() {
       setMessages(restoredMessages)
       setTopicState(restoredTopicState)
       setIntroDone(session.introDone ?? false)
+      setShowChatInput(
+        condition !== CONDITION_MULTIPLE || (session.introDone ?? false),
+      )
       setShowResourceChoice(session.showResourceChoice ?? false)
       setResourceChoice(session.resourceChoice ?? null)
       setShowSurveyButton(session.showSurveyButton ?? false)
@@ -210,13 +282,14 @@ export default function MainInteraction() {
       openedResourcesRef.current = restoredOpened
       setOpenedResources(restoredOpened)
 
-      // If intro already completed, show topics and current-topic highlight
-      setShowTopics(session.introDone ?? false)
-      setHighlightCurrentTopic(session.introDone ?? false)
-      // Keep the question list tab visible after refreshing
-      setShowQuestionsTab(
-        condition !== CONDITION_SINGLE_INFO && (session.introDone ?? false),
-      )
+      // Only reveal topic-related UI once the topic phase begins.
+      const topicsStarted = restoredTopicState?.phase === 'topics'
+
+      setShowTopics(topicsStarted)
+      setHighlightCurrentTopic(topicsStarted)
+
+      // Keep the question list hidden during needs elicitation.
+      setShowQuestionsTab(condition !== CONDITION_SINGLE_INFO && topicsStarted)
     } catch (error) {
       console.error('Could not restore session:', error)
     }
@@ -441,6 +514,75 @@ export default function MainInteraction() {
     }
   }
 
+  function clearIntroVisuals() {
+    // Cancel all pending visual timers
+    introVisualTimersRef.current.forEach(clearTimeout)
+    introVisualTimersRef.current = []
+
+    setIntroVisuals({
+      Alex: null,
+      Jordan: null,
+    })
+  }
+
+  function playIntroVisualCues(intro) {
+    clearIntroVisuals()
+
+    const cues = INTRO_VISUAL_CUES[intro.audio] || []
+    const speaker = intro.character === 'doctor' ? 'Alex' : 'Jordan'
+
+    cues.forEach((cue, index) => {
+      const cueId = `${intro.audio}-${index}`
+
+      // Show the cue
+      const showTimer = setTimeout(() => {
+        setIntroVisuals((previous) => ({
+          ...previous,
+          [speaker]: {
+            ...cue,
+            id: cueId,
+            fadingOut: false,
+          },
+        }))
+      }, cue.at * 1000)
+
+      // Start fading out after the duration
+      const fadeTimer = setTimeout(
+        () => {
+          setIntroVisuals((previous) => {
+            if (previous[speaker]?.id !== cueId) return previous
+
+            return {
+              ...previous,
+              [speaker]: {
+                ...previous[speaker],
+                fadingOut: true,
+              },
+            }
+          })
+        },
+        (cue.at + cue.duration) * 1000,
+      )
+
+      // Remove the cue after 0.4s fade
+      const removeTimer = setTimeout(
+        () => {
+          setIntroVisuals((previous) => {
+            if (previous[speaker]?.id !== cueId) return previous
+
+            return {
+              ...previous,
+              [speaker]: null,
+            }
+          })
+        },
+        (cue.at + cue.duration + 0.4) * 1000,
+      )
+
+      introVisualTimersRef.current.push(showTimer, fadeTimer, removeTimer)
+    })
+  }
+
   async function playCharacterIntro() {
     const introSequence = introSequences[condition]
 
@@ -448,33 +590,12 @@ export default function MainInteraction() {
       throw new Error(`No intro sequence configured for condition ${condition}`)
     }
 
-    // Reveal topics 8.7 seconds into the first intro
-    setTimeout(() => {
-      setShowTopics(true)
-    }, 8700)
-
     for (const intro of introSequence) {
       if (intro.beforeGesture) {
         playGesture(intro.beforeGesture)
       }
 
-      // Reveal the question list 14.5 seconds into Jordan's introduction
-      if (
-        (condition === CONDITION_MULTIPLE &&
-          intro.audio?.includes('JORDAN_INTRO_1_MULTIPLE')) ||
-        (condition === CONDITION_SINGLE_COMBINED &&
-          intro.audio?.includes('ALEX_INTRO_2_SINGLE_COMBINED'))
-      ) {
-        setTimeout(() => setShowQuestionsTab(true), 14500)
-      }
-
-      // Reveal Start First Topic button 5 seconds into the final intro.
-      if (intro.audio?.includes('ALEX_INTRO_4_SINGLE')) {
-        setTimeout(() => {
-          setWaitingForFirstTopic(true)
-        }, 5000)
-      }
-
+      // Add the introduction dialogue to the transcript
       setMessages((previous) => [
         ...previous,
         {
@@ -495,8 +616,55 @@ export default function MainInteraction() {
           intro.character,
           true,
           setSubtitle,
+          () => {
+            playIntroVisualCues(intro)
+
+            if (condition === CONDITION_MULTIPLE) {
+              if (
+                intro.audio ===
+                '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3'
+              ) {
+                setIntroInstruction([
+                  "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
+                ])
+              } else if (
+                intro.audio ===
+                '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_5.mp3'
+              ) {
+                setIntroInstruction((previous) => [
+                  ...previous,
+                  "Feel free to share what's on your mind! There are no right or wrong answers.",
+                ])
+              }
+            }
+
+            if (condition === CONDITION_MULTIPLE) {
+              const isJordanIntro4 =
+                intro.audio ===
+                '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3'
+
+              if (isJordanIntro4) {
+                // Both characters look forward
+                playGesture('stopAlexGesture')
+                playGesture('stopCompanionGesture')
+
+                // Slide up the chat panel
+                setShowChatInput(true)
+              } else if (!showChatInput) {
+                if (intro.character === 'doctor') {
+                  // Alex speaks, Jordan looks at Alex
+                  playGesture('jordanLookAtAlex')
+                } else {
+                  // Jordan speaks, Alex looks at Jordan
+                  playGesture('stopCompanionGesture')
+                  playGesture('alexLookAtJordan')
+                }
+              }
+            }
+          },
         )
       } finally {
+        clearIntroVisuals()
         setActiveSpeaker(null)
       }
 
@@ -513,6 +681,7 @@ export default function MainInteraction() {
   useEffect(() => {
     if (!started || !charactersReady || showStartOverlay || showSceneLoading)
       return
+
     if (conversationStartedRef.current) return
     if (messages.length > 0) return
 
@@ -521,37 +690,19 @@ export default function MainInteraction() {
     async function startConversation() {
       setIsResponding(true)
 
-      // Register the click handler before the introductions begin.
-      const startFirstTopicPromise = new Promise((resolve) => {
-        startFirstTopicResolverRef.current = resolve
-      })
-
-      // Brief pause after the scene finishes settling
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Start generating Topic 1 while the prerecorded intro plays
-      const conversationStartPromise = fetch(`${BASE_URL}/jordan/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          participant_id: participantId,
-          conversation_history: [],
-          topic_history_start: introMessageCount,
-          condition,
-        }),
-      })
       try {
-        // Play the prerecorded introduction while Topic 1 generates
+        // Brief pause after the scene finishes loading
+        await new Promise((resolve) => setTimeout(resolve, 1500))
+
+        // Play the prerecorded introduction for the assigned condition
         if (!introDone && !introStartedRef.current) {
           introStartedRef.current = true
 
           await playCharacterIntro()
 
-          // Log when the character intro actually finishes
+          // Log when the introduction finishes
           try {
-            const introResponse = await fetch(
+            const response = await fetch(
               `${BASE_URL}/logs/log-intro-finished`,
               {
                 method: 'POST',
@@ -564,15 +715,12 @@ export default function MainInteraction() {
               },
             )
 
-            if (!introResponse.ok) {
-              throw new Error(
-                `Intro finish logging failed: ${introResponse.status}`,
-              )
+            if (!response.ok) {
+              throw new Error(`Intro finish logging failed: ${response.status}`)
             }
 
-            const introData = await introResponse.json()
-
-            console.log('Intro finished logged:', introData)
+            const data = await response.json()
+            console.log('Intro finished logged:', data)
           } catch (error) {
             console.error('Could not log intro finish:', error)
           }
@@ -580,84 +728,11 @@ export default function MainInteraction() {
           setIntroDone(true)
         }
 
-        // Wait until both the introductions finish AND the participant clicks.
-        // An early click is remembered, but Topic 1 never interrupts Alex.
-        await startFirstTopicPromise
-
-        const response = await conversationStartPromise
-
-        // Then begin Topic 1
-        if (!response.ok) {
-          throw new Error(`Conversation start failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        const newTopicState = {
-          current_topic_index: data.current_topic_index,
-          conversation_complete: data.conversation_complete,
-          phase: data.phase,
-          topics: data.topics,
-        }
-
-        setTopicState(newTopicState)
-
-        // Alex introduces Topic 1
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: data.alex_reply,
-          },
-        ])
-
-        if (!isSingleAgent) {
-          playGesture('jordanLookAtAlex')
-        }
-
-        await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
-
-        setAlexSubtitle('')
-
-        // Conversational follow-up for c=2 and c=3
-        if (condition !== CONDITION_SINGLE_INFO) {
-          setMessages((previous) => [
-            ...previous,
-            {
-              from: conversationalSpeaker,
-              text: data.jordan_reply,
-            },
-          ])
-
-          if (condition === CONDITION_SINGLE_COMBINED) {
-            await speakWithHighlight(
-              data.jordan_reply,
-              'doctor',
-              setAlexSubtitle,
-            )
-
-            setAlexSubtitle('')
-          } else {
-            playGesture('alexLookAtJordan')
-
-            await speakWithHighlight(
-              data.jordan_reply,
-              'companion',
-              setJordanSubtitle,
-            )
-
-            setJordanSubtitle('')
-          }
-        }
-
-        playGesture('stopAlexGesture')
-
-        if (!isSingleAgent) {
-          playGesture('stopCompanionGesture')
-        }
+        // Introduction finished.
+        // Participant can now respond to the opening question.
       } catch (error) {
-        console.error('Could not start conversation:', error)
-
+        console.error('Could not start introduction:', error)
+        introStartedRef.current = false
         conversationStartedRef.current = false
       } finally {
         setIsResponding(false)
@@ -671,6 +746,7 @@ export default function MainInteraction() {
     showStartOverlay,
     showSceneLoading,
     participantId,
+    condition,
     messages.length,
     introDone,
   ])
@@ -911,6 +987,7 @@ export default function MainInteraction() {
     )
 
     if (!trimmed || isResponding) return
+    setIntroInstruction([])
 
     // Slide the question list closed when the user sends a message
     setShowQuestions(false)
@@ -1606,14 +1683,15 @@ export default function MainInteraction() {
             <div className="mi-start-information">
               {!isSingleAgent ? (
                 <p>
-                  You are about to talk about your 3 selected topics with two
-                  virtual characters: <strong>Alex</strong> and{' '}
-                  <strong>Jordan</strong>!
+                  You're about to have a conversation about cancer clinical
+                  trials with two AI-powered virtual characters:{' '}
+                  <strong>Alex</strong> and <strong>Jordan</strong>!
                 </p>
               ) : (
                 <p>
-                  You are about to talk about your 3 selected topics with a
-                  virtual character: <strong>Alex</strong>!
+                  You're about to have a conversation about cancer clinical
+                  trials with an AI-powered virtual character:{' '}
+                  <strong>Alex</strong>!
                 </p>
               )}
               <div className="character-images-row">
@@ -1638,14 +1716,11 @@ export default function MainInteraction() {
                 )}
               </div>
               <p>
-                Your task is to ask questions and share your thoughts or
-                concerns as the{' '}
-                {!isSingleAgent ? 'virtual characters' : 'virtual character'}{' '}
-                walk you through the 3 topics you chose earlier. Feel free to
-                think about your own experiences with cancer and what you would
-                want to understand about clinical trials! You can draw on
-                questions you've had in the past, questions you have now, or
-                things you might want to discuss with others in the future.
+                During the conversation, feel free to think about your own
+                experiences with cancer and what you would want to understand
+                about clinical trials! You can draw on questions you've had in
+                the past, questions you have now, or things you might want to
+                discuss with others in the future.
               </p>
 
               <div className="mi-privacy-reminder">
@@ -1663,6 +1738,19 @@ export default function MainInteraction() {
               Please complete this short checklist to make sure you have the
               best experience. Then, click begin.{' '}
             </div>
+
+            {entryLogError && !entryLogged && (
+              <div className="mi-start-log-error">
+                <p>
+                  We're having trouble connecting to the study server. Please
+                  try again.
+                </p>
+
+                <button type="button" onClick={logConversationEntered}>
+                  Retry Connection
+                </button>
+              </div>
+            )}
 
             <div className="mi-start-checks">
               <label className="mi-start-check">
@@ -1786,6 +1874,22 @@ export default function MainInteraction() {
                 charactersReady ? 'characters-ready' : 'characters-loading'
               } ${isSingleAgent ? 'single-agent' : ''}`}
             >
+              {introInstruction.length > 0 && (
+                <div className="mi-intro-instruction" role="note">
+                  {introInstruction.map((instruction, index) => (
+                    <div
+                      key={index}
+                      className="mi-intro-instruction-line"
+                      style={{
+                        animationDelay: `${index * 0.15}s`,
+                      }}
+                    >
+                      {instruction}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div
                 className="mi-shared-stage-background"
                 style={{
@@ -1860,6 +1964,35 @@ export default function MainInteraction() {
                     id="virtualdoctor"
                     ref={doctorRef}
                   />
+
+                  {introVisuals.Alex && (
+                    <div
+                      key={introVisuals.Alex.id}
+                      className={`intro-visual-cue intro-visual-cue-alex ${
+                        introVisuals.Alex.fadingOut
+                          ? 'intro-visual-fade-out'
+                          : ''
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <div className="intro-visual-icons">
+                        {(
+                          introVisuals.Alex.icons || [introVisuals.Alex.icon]
+                        ).map((icon, index) => (
+                          <div
+                            key={index}
+                            className="intro-visual-icon"
+                            style={{
+                              animationDelay: `${index * (introVisuals.Alex.stagger ?? 0.3)}s, ${index * (introVisuals.Alex.stagger ?? 0.3) + 0.35}s`,
+                            }}
+                          >
+                            <FontAwesomeIcon icon={icon} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {showSwipingCards && <SwipingCards />}
                   {showThinkingBubble && (
                     <div className="character-thinking character-thinking-alex">
@@ -1987,6 +2120,37 @@ export default function MainInteraction() {
                       id="virtualcompanion"
                       ref={companionRef}
                     />
+
+                    {introVisuals.Jordan && (
+                      <div
+                        key={introVisuals.Jordan.id}
+                        className={`intro-visual-cue intro-visual-cue-jordan ${
+                          introVisuals.Jordan.fadingOut
+                            ? 'intro-visual-fade-out'
+                            : ''
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <div className="intro-visual-icons">
+                          {(
+                            introVisuals.Jordan.icons || [
+                              introVisuals.Jordan.icon,
+                            ]
+                          ).map((icon, index) => (
+                            <div
+                              key={index}
+                              className="intro-visual-icon"
+                              style={{
+                                animationDelay: `${index * (introVisuals.Jordan.stagger ?? 0.3)}s, ${index * (introVisuals.Jordan.stagger ?? 0.3) + 0.35}s`,
+                              }}
+                            >
+                              <FontAwesomeIcon icon={icon} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {showThinkingBubble && (
                       <div className="character-thinking character-thinking-jordan">
                         <div className="character-thinking-bubble">
@@ -2012,7 +2176,11 @@ export default function MainInteraction() {
               )}
             </div>
 
-            <div className="mi-bottom-panel">
+            <div
+              className={`mi-bottom-panel ${
+                showChatInput ? '' : 'mi-bottom-panel-hidden'
+              }`}
+            >
               {resourceChoice === 'yes' ? (
                 <div className="full-input-area">
                   <div className="suggested-resources">
