@@ -1541,6 +1541,18 @@
   z-index: 101;
 }
 
+.continue-intro-button {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 101;
+}
+
+.continue-intro-button:not(:disabled):hover {
+  transform: translateX(-50%) scale(1.05);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Finish btn stuff                                                                 */
 /* -------------------------------------------------------------------------- */

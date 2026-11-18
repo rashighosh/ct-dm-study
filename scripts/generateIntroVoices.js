@@ -7,7 +7,7 @@ const ALEX_INTRO_1_MULTIPLE_1 = `Hi there, I am Doctor Alex, and this is Jordan.
 
 const ALEX_INTRO_1_MULTIPLE_2 = `When considering a clinical trial, having accurate, reliable information is essential. However, there is a great deal of information available, and it can be challenging to know where to look or how to make sense of it all.`
 
-const ALEX_INTRO_1_MULTIPLE_3 = `My role is to help you navigate that information. I draw on a large collection of trusted medical resources curated by human health communication experts, such as the National Cancer Institute. I identify relevant information to provide clear, evidence-based answers to your questions.`
+const ALEX_INTRO_1_MULTIPLE_3 = `My role is to help you navigate that information by drawing from a large collection of trusted medical sources, such as the National Health Institute. These sources were curated by real human health communication experts for this website. From these sources, I identify relevant information to provide clear, evidence-based answers to your questions.`
 
 const JORDAN_INTRO_1_MULTIPLE_1 = `But even the most reliable information is most useful when it addresses what's important to you! Everyone has different experiences, needs, and concerns, so what matters most can be different for each person. We want to make sure the information you get matches your individual needs.`
 
@@ -121,7 +121,16 @@ async function generateAllIntros() {
 // Choose what to run
 // --------------------------------------------------------------------------
 
-generateAllIntros().catch((err) => {
+// generateAllIntros().catch((err) => {
+//   console.error('❌ Intro generation failed:', err)
+//   process.exitCode = 1
+// })
+
+generateOneIntro(
+  'ALEX_INTRO_1_MULTIPLE_3',
+  ALEX_INTRO_1_MULTIPLE_3,
+  'doctor',
+).catch((err) => {
   console.error('❌ Intro generation failed:', err)
   process.exitCode = 1
 })

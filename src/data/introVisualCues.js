@@ -70,7 +70,7 @@ export const INTRO_VISUAL_CUES = {
       stagger: 0.5,
     },
     {
-      at: 12.5,
+      at: 15,
       duration: 4,
       icons: [faUser, faArrowRight, faFileCircleCheck],
       stagger: 0.3,

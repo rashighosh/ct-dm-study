@@ -78,7 +78,7 @@
     {
       "from": "Alex",
       "character": "doctor",
-      "text": "My role is to help you navigate that information. I draw on a large collection of trusted medical resources curated by human health communication experts, such as the National Cancer Institute. I identify relevant information to provide clear, evidence-based answers to your questions.",
+      "text": "My role is to help you navigate that information by drawing from a large collection of trusted medical sources, such as the National Health Institute. These sources were curated by real human health communication experts for this website. From these sources, I identify relevant information to provide clear, evidence-based answers to your questions.",
       "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_3.mp3",
       "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_MULTIPLE_3.json"
     },

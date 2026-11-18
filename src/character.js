@@ -813,7 +813,7 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 12.5,
+      at: 15,
       target: 'doctor',
       gesture: 'talkopen',
       dur: 3,

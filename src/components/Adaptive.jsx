@@ -31,9 +31,9 @@ import introSequences from '../data/introSequences.json'
 import SwipingCards from './SwipingCards'
 import { INTRO_VISUAL_CUES } from '../data/introVisualCues'
 
-// const BASE_URL = 'http://127.0.0.1:8000'
-const BASE_URL =
-  'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
+const BASE_URL = 'http://127.0.0.1:8000'
+// const BASE_URL =
+//   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
 const CONDITION_SINGLE_INFO = 1
 const CONDITION_SINGLE_COMBINED = 2
@@ -156,6 +156,9 @@ export default function MainInteraction() {
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const [sentMessageAnimation, setSentMessageAnimation] = useState('')
   const [introDone, setIntroDone] = useState(false)
+  const [openingResponseDone, setOpeningResponseDone] = useState(false)
+  const [openingComplete, setOpeningComplete] = useState(false)
+  const [availableTopics, setAvailableTopics] = useState([])
   const [showChatInput, setShowChatInput] = useState(
     condition !== CONDITION_MULTIPLE,
   )
@@ -266,6 +269,8 @@ export default function MainInteraction() {
       setMessages(restoredMessages)
       setTopicState(restoredTopicState)
       setIntroDone(session.introDone ?? false)
+      setOpeningResponseDone(session.openingResponseDone ?? false)
+      setOpeningComplete(session.openingComplete ?? false)
       setShowChatInput(
         condition !== CONDITION_MULTIPLE || (session.introDone ?? false),
       )
@@ -413,6 +418,8 @@ export default function MainInteraction() {
       messages,
       topicState,
       introDone,
+      openingResponseDone,
+      openingComplete,
       showResourceChoice,
       resourceChoice,
       showSurveyButton,
@@ -428,6 +435,8 @@ export default function MainInteraction() {
     messages,
     topicState,
     introDone,
+    openingResponseDone,
+    openingComplete,
     showResourceChoice,
     resourceChoice,
     showSurveyButton,
@@ -977,6 +986,91 @@ export default function MainInteraction() {
     }
   }
 
+  async function startTopicPreparation(conversationHistory) {
+    setIsResponding(true)
+    setResponseStatus('Preparing topics')
+
+    try {
+      const response = await fetch(`${BASE_URL}/study/prepare-topics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          condition,
+          history: conversationHistory,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Topic preparation failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      console.log('Topic preparation response:', data)
+
+      // Store the topics returned by the backend
+
+      if (data.spoken_summary) {
+        // Add Alex's summary to the conversation transcript
+        setMessages((previous) => [
+          ...previous,
+          {
+            from: 'Alex',
+            text: data.spoken_summary,
+          },
+        ])
+
+        // Hide the loading message before Alex speaks
+        setResponseStatus('')
+
+        // Alex speaks the personalized summary
+        await speakWithHighlight(data.spoken_summary, 'doctor', setAlexSubtitle)
+
+        setAlexSubtitle('')
+        playGesture('stopAlexGesture')
+      }
+
+      setAvailableTopics(data.selected_topics ?? [])
+    } catch (error) {
+      console.error('Could not prepare topics:', error)
+      setOpeningComplete(false)
+    } finally {
+      setIsResponding(false)
+      setResponseStatus('')
+    }
+  }
+
+  function handleOpeningContinue(additionalMessage = null) {
+    if (isResponding || openingComplete) return
+
+    const text = additionalMessage?.trim()
+
+    // Include any additional message in the conversation history
+    const updatedMessages = text
+      ? [...messages, { from: 'user', text }]
+      : messages
+
+    if (text) {
+      setMessages(updatedMessages)
+      setInput('')
+      setIntroInstruction([])
+    }
+
+    console.log('Opening elicitation completed', {
+      participantId,
+      condition,
+      additionalMessage,
+    })
+
+    setOpeningComplete(true)
+
+    // Move to the next stage with the full conversation history
+    startTopicPreparation(updatedMessages)
+  }
+
   async function handleSend(event) {
     event.preventDefault()
 
@@ -987,6 +1081,17 @@ export default function MainInteraction() {
     )
 
     if (!trimmed || isResponding) return
+
+    // After the opening response, another message moves to the next stage
+    if (
+      (condition === CONDITION_SINGLE_COMBINED ||
+        condition === CONDITION_MULTIPLE) &&
+      openingResponseDone
+    ) {
+      handleOpeningContinue(trimmed)
+      return
+    }
+
     setIntroInstruction([])
 
     // Slide the question list closed when the user sends a message
@@ -1024,8 +1129,76 @@ export default function MainInteraction() {
     let questionAdded = false
 
     try {
-      // 1. Send user message to Jordan
+      // Opening needs elicitation — only the first user message
+      if (
+        (condition === CONDITION_SINGLE_COMBINED ||
+          condition === CONDITION_MULTIPLE) &&
+        !openingResponseDone
+      ) {
+        const response = await fetch(`${BASE_URL}/study/opening-message`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            condition,
+            message: trimmed,
+            history: messages,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Study request failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        console.log('Study backend response:', data)
+
+        // Determine speaker based on condition
+        const isCombined = condition === CONDITION_SINGLE_COMBINED
+
+        const speaker = isCombined ? 'Alex' : 'Jordan'
+        const character = isCombined ? 'doctor' : 'companion'
+        const setSubtitle = isCombined ? setAlexSubtitle : setJordanSubtitle
+
+        // Display response
+        setMessages((previous) => [
+          ...previous,
+          {
+            from: speaker,
+            text: data.response,
+          },
+        ])
+
+        // Play response using the appropriate character
+        setShowThinkingBubble(false)
+
+        if (!isCombined) {
+          playGesture('alexLookAtJordan')
+        }
+
+        await speakWithHighlight(data.response, character, setSubtitle)
+
+        // Clean up subtitles and gestures
+        setSubtitle('')
+
+        if (isCombined) {
+          playGesture('stopAlexGesture')
+        } else {
+          playGesture('stopCompanionGesture')
+        }
+
+        // Opening response finished — allow participant to continue
+        setOpeningResponseDone(true)
+
+        return
+      }
+
+      // OLD BACKEND — Conditions 1 and 2
       console.log('Sending users message ...')
+
       const response = await fetch(`${BASE_URL}/jordan/turn`, {
         method: 'POST',
         headers: {
@@ -1896,6 +2069,24 @@ export default function MainInteraction() {
                   backgroundImage: `url(${stageBackground})`,
                 }}
               />
+
+              {openingResponseDone &&
+                !openingComplete &&
+                (condition === CONDITION_SINGLE_COMBINED ||
+                  condition === CONDITION_MULTIPLE) &&
+                !topicState?.conversation_complete && (
+                  <button
+                    type="button"
+                    className="cssbuttons-io-button continue-intro-button"
+                    disabled={isResponding}
+                    onClick={() => handleOpeningContinue()}
+                  >
+                    Continue
+                    <span className="icon">
+                      <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                    </span>
+                  </button>
+                )}
 
               {waitingForFirstTopic ? (
                 <button
