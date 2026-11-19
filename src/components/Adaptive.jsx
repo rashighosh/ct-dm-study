@@ -138,6 +138,7 @@ export default function MainInteraction() {
   const [entryLogError, setEntryLogError] = useState(false)
   const entryLoggingRef = useRef(false)
   const [started, setStarted] = useState(false)
+  const [sessionRestored, setSessionRestored] = useState(false)
   const [charactersReady, setCharactersReady] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([])
@@ -156,6 +157,7 @@ export default function MainInteraction() {
   const [jordanSubtitle, setJordanSubtitle] = useState('')
   const [sentMessageAnimation, setSentMessageAnimation] = useState('')
   const [introDone, setIntroDone] = useState(false)
+  const [introNextIndex, setIntroNextIndex] = useState(0)
   const [openingResponseDone, setOpeningResponseDone] = useState(false)
   const [openingComplete, setOpeningComplete] = useState(false)
   const [availableTopics, setAvailableTopics] = useState([])
@@ -249,10 +251,19 @@ export default function MainInteraction() {
     }
   }, [])
 
-  // Automatically log entry when Adaptive loads
+  // Log entry only for a new study session.
+  // Participants resuming an existing session have already been logged.
   useEffect(() => {
+    const savedSession = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '{}')
+
+    if (savedSession.started === true) {
+      console.log('Existing study session — skipping entry logging')
+      setEntryLogged(true)
+      return
+    }
+
     logConversationEntered()
-  }, [participantId, condition])
+  }, [SESSION_KEY, participantId, condition])
 
   // Restore saved conversation history
   useEffect(() => {
@@ -266,14 +277,60 @@ export default function MainInteraction() {
       const restoredMessages = session.messages ?? []
       const restoredTopicState = session.topicState ?? null
 
+      const restoredIntroIndex = session.introDone
+        ? introMessageCount
+        : Math.min(
+            Math.max(Number(session.introNextIndex) || 0, 0),
+            introMessageCount,
+          )
+
       setMessages(restoredMessages)
       setTopicState(restoredTopicState)
+
+      // Keep the start overlay visible until Begin is clicked again.
+      // The saved "started" value still tells us whether this is a resume.
+      setStarted(false)
       setIntroDone(session.introDone ?? false)
+      setIntroNextIndex(restoredIntroIndex)
+
       setOpeningResponseDone(session.openingResponseDone ?? false)
       setOpeningComplete(session.openingComplete ?? false)
+      setAvailableTopics(session.availableTopics ?? [])
+      // Restore the chat panel based on intro progress.
       setShowChatInput(
-        condition !== CONDITION_MULTIPLE || (session.introDone ?? false),
+        condition !== CONDITION_MULTIPLE ||
+          session.introDone === true ||
+          restoredIntroIndex >= 7,
       )
+
+      // Restore opening instructions only if the user hasn't responded.
+      const hasUserResponded = restoredMessages.some(
+        (message) => message.from === 'user',
+      )
+
+      if (
+        condition === CONDITION_MULTIPLE &&
+        !hasUserResponded &&
+        !session.openingComplete
+      ) {
+        const instructions = []
+
+        if (restoredIntroIndex >= 7) {
+          instructions.push(
+            "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
+          )
+        }
+
+        if (restoredIntroIndex >= 8 || session.introDone) {
+          instructions.push(
+            "Feel free to share what's on your mind! There are no right or wrong answers.",
+          )
+        }
+
+        setIntroInstruction(instructions)
+      } else {
+        setIntroInstruction([])
+      }
       setShowResourceChoice(session.showResourceChoice ?? false)
       setResourceChoice(session.resourceChoice ?? null)
       setShowSurveyButton(session.showSurveyButton ?? false)
@@ -297,6 +354,8 @@ export default function MainInteraction() {
       setShowQuestionsTab(condition !== CONDITION_SINGLE_INFO && topicsStarted)
     } catch (error) {
       console.error('Could not restore session:', error)
+    } finally {
+      setSessionRestored(true)
     }
   }, [SESSION_KEY])
 
@@ -407,6 +466,8 @@ export default function MainInteraction() {
 
   // Save basic session information
   useEffect(() => {
+    if (!sessionRestored) return
+
     const existingSession = JSON.parse(
       sessionStorage.getItem(SESSION_KEY) || '{}',
     )
@@ -415,11 +476,15 @@ export default function MainInteraction() {
       ...existingSession,
       participantId,
       condition,
+      // Once a participant begins, keep that status across refreshes.
+      started: existingSession.started === true || started,
       messages,
       topicState,
       introDone,
+      introNextIndex,
       openingResponseDone,
       openingComplete,
+      availableTopics,
       showResourceChoice,
       resourceChoice,
       showSurveyButton,
@@ -429,14 +494,18 @@ export default function MainInteraction() {
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session))
   }, [
+    sessionRestored,
     SESSION_KEY,
     participantId,
     condition,
+    started,
     messages,
     topicState,
     introDone,
+    introNextIndex,
     openingResponseDone,
     openingComplete,
+    availableTopics,
     showResourceChoice,
     resourceChoice,
     showSurveyButton,
@@ -444,9 +513,9 @@ export default function MainInteraction() {
     openedResources,
   ])
 
-  // Initialize both virtual characters after Begin is clicked
+  // Initialize characters after Begin or when resuming a session
   useEffect(() => {
-    if (!started) return
+    if (!sessionRestored || !started) return
 
     async function initCharacters() {
       try {
@@ -474,7 +543,7 @@ export default function MainInteraction() {
     }
 
     initCharacters()
-  }, [started, isSingleAgent])
+  }, [sessionRestored, started, isSingleAgent])
 
   useEffect(() => {
     if (!started || !charactersReady) return
@@ -592,26 +661,37 @@ export default function MainInteraction() {
     })
   }
 
-  async function playCharacterIntro() {
+  async function playCharacterIntro(startIndex = 0) {
     const introSequence = introSequences[condition]
 
     if (!introSequence) {
       throw new Error(`No intro sequence configured for condition ${condition}`)
     }
 
-    for (const intro of introSequence) {
+    for (let index = startIndex; index < introSequence.length; index++) {
+      const intro = introSequence[index]
       if (intro.beforeGesture) {
         playGesture(intro.beforeGesture)
       }
 
-      // Add the introduction dialogue to the transcript
-      setMessages((previous) => [
-        ...previous,
-        {
-          from: intro.from,
-          text: intro.text,
-        },
-      ])
+      // Add intro dialogue only if it isn't already in the transcript.
+      // This prevents duplicates when replaying an interrupted segment.
+      setMessages((previous) => {
+        const alreadyAdded = previous.some(
+          (message) =>
+            message.from === intro.from && message.text === intro.text,
+        )
+
+        if (alreadyAdded) return previous
+
+        return [
+          ...previous,
+          {
+            from: intro.from,
+            text: intro.text,
+          },
+        ]
+      })
 
       const setSubtitle =
         intro.character === 'doctor' ? setAlexSubtitle : setJordanSubtitle
@@ -640,10 +720,14 @@ export default function MainInteraction() {
                 intro.audio ===
                 '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_5.mp3'
               ) {
-                setIntroInstruction((previous) => [
-                  ...previous,
-                  "Feel free to share what's on your mind! There are no right or wrong answers.",
-                ])
+                setIntroInstruction((previous) => {
+                  const instruction =
+                    "Feel free to share what's on your mind! There are no right or wrong answers."
+
+                  return previous.includes(instruction)
+                    ? previous
+                    : [...previous, instruction]
+                })
               }
             }
 
@@ -659,7 +743,7 @@ export default function MainInteraction() {
 
                 // Slide up the chat panel
                 setShowChatInput(true)
-              } else if (!showChatInput) {
+              } else if (index < 6) {
                 if (intro.character === 'doctor') {
                   // Alex speaks, Jordan looks at Alex
                   playGesture('jordanLookAtAlex')
@@ -678,6 +762,10 @@ export default function MainInteraction() {
       }
 
       setSubtitle('')
+
+      // The segment finished successfully.
+      // Save the next segment as our resume checkpoint.
+      setIntroNextIndex(index + 1)
     }
 
     playGesture('stopAlexGesture')
@@ -688,11 +776,17 @@ export default function MainInteraction() {
   }
 
   useEffect(() => {
-    if (!started || !charactersReady || showStartOverlay || showSceneLoading)
+    if (
+      !sessionRestored ||
+      !started ||
+      !charactersReady ||
+      showStartOverlay ||
+      showSceneLoading
+    )
       return
 
     if (conversationStartedRef.current) return
-    if (messages.length > 0) return
+    if (introDone) return
 
     conversationStartedRef.current = true
 
@@ -707,7 +801,7 @@ export default function MainInteraction() {
         if (!introDone && !introStartedRef.current) {
           introStartedRef.current = true
 
-          await playCharacterIntro()
+          await playCharacterIntro(introNextIndex)
 
           // Log when the introduction finishes
           try {
@@ -750,13 +844,14 @@ export default function MainInteraction() {
 
     startConversation()
   }, [
+    sessionRestored,
     started,
     charactersReady,
     showStartOverlay,
     showSceneLoading,
     participantId,
     condition,
-    messages.length,
+    introNextIndex,
     introDone,
   ])
 
@@ -1011,7 +1106,9 @@ export default function MainInteraction() {
 
       console.log('Topic preparation response:', data)
 
-      // Store the topics returned by the backend
+      // Save the selected topics immediately after receiving them.
+      // Do not wait for Alex's spoken summary to finish.
+      setAvailableTopics(data.selected_topics ?? [])
 
       if (data.spoken_summary) {
         // Add Alex's summary to the conversation transcript
@@ -1032,8 +1129,6 @@ export default function MainInteraction() {
         setAlexSubtitle('')
         playGesture('stopAlexGesture')
       }
-
-      setAvailableTopics(data.selected_topics ?? [])
     } catch (error) {
       console.error('Could not prepare topics:', error)
       setOpeningComplete(false)
@@ -1456,30 +1551,40 @@ export default function MainInteraction() {
     try {
       setStarting(true)
 
-      const response = await fetch(
-        `${BASE_URL}/logs/log-conversation-started`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            participant_id: participantId,
-          }),
-        },
+      const savedSession = JSON.parse(
+        sessionStorage.getItem(SESSION_KEY) || '{}',
       )
 
-      if (!response.ok) {
-        throw new Error(`Conversation start logging failed: ${response.status}`)
+      // Only log the start for a brand-new session.
+      if (!savedSession.started) {
+        const response = await fetch(
+          `${BASE_URL}/logs/log-conversation-started`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+            }),
+          },
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `Conversation start logging failed: ${response.status}`,
+          )
+        }
+
+        const data = await response.json()
+        console.log('Conversation started logged:', data)
+      } else {
+        console.log('Resuming existing study session')
       }
-
-      const data = await response.json()
-
-      console.log('Conversation started logged:', data)
 
       setStarted(true)
     } catch (error) {
-      console.error('Could not log conversation start:', error)
+      console.error('Could not begin or resume conversation:', error)
       setStarting(false)
     }
   }
