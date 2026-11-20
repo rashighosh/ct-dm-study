@@ -19,6 +19,16 @@ const JORDAN_INTRO_1_MULTIPLE_4 = `Before looking into any particular study, wha
 
 const JORDAN_INTRO_1_MULTIPLE_5 = `Feel free to share your concerns or anything that would be important to you personally.`
 
+const JORDAN_OPENING_FILLER =
+  "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you."
+
+const ALEX_TOPIC_FILLER =
+  "I'll review the information available to me and identify a few topics that may be most relevant to your concerns."
+
+const ALEX_TOPIC_SELECTION_INSTRUCTIONS =
+  'You can keep these suggestions or change any of them using the options above. ' +
+  "Once you're satisfied with your selections, click Continue to begin."
+
 // --------------------------------------------------------------------------
 // Generate one intro function
 // --------------------------------------------------------------------------
@@ -127,9 +137,9 @@ async function generateAllIntros() {
 // })
 
 generateOneIntro(
-  'ALEX_INTRO_1_MULTIPLE_3',
-  ALEX_INTRO_1_MULTIPLE_3,
-  'doctor',
+  'JORDAN_OPENING_FILLER',
+  JORDAN_OPENING_FILLER,
+  'companion',
 ).catch((err) => {
   console.error('❌ Intro generation failed:', err)
   process.exitCode = 1

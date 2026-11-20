@@ -22,6 +22,8 @@ import {
   initDoctorCharacter,
   speakWithLipsync,
   speakWithLipsyncStatic,
+  prepareSpeech,
+  playPreparedSpeech,
   playGesture,
   startSwiping,
   stopSwiping,
@@ -46,7 +48,7 @@ const CONDITION_NAMES = {
 }
 
 const JORDAN_OPENING_FILLER =
-  "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you --"
+  "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you."
 
 const ALEX_TOPIC_FILLER =
   "I'll review the information available to me and identify a few topics that may be most relevant to your concerns."
@@ -54,6 +56,22 @@ const ALEX_TOPIC_FILLER =
 const ALEX_TOPIC_SELECTION_INSTRUCTIONS =
   'You can keep these suggestions or change any of them using the options above. ' +
   "Once you're satisfied with your selections, click Continue to begin."
+
+const STUDY_FILLER_AUDIO = {
+  jordanOpening: {
+    audio: '/intro-voices/companion-audio-JORDAN_OPENING_FILLER.mp3',
+    timestamps: '/intro-voices/companion-timestamps-JORDAN_OPENING_FILLER.json',
+  },
+  alexTopic: {
+    audio: '/intro-voices/doctor-audio-ALEX_TOPIC_FILLER.mp3',
+    timestamps: '/intro-voices/doctor-timestamps-ALEX_TOPIC_FILLER.json',
+  },
+  alexInstructions: {
+    audio: '/intro-voices/doctor-audio-ALEX_TOPIC_SELECTION_INSTRUCTIONS.mp3',
+    timestamps:
+      '/intro-voices/doctor-timestamps-ALEX_TOPIC_SELECTION_INSTRUCTIONS.json',
+  },
+}
 
 const STUDY_TOPICS = [
   { id: 'cost', name: 'Costs of Participating' },
@@ -774,10 +792,11 @@ export default function MainInteraction() {
                 setShowChatInput(true)
               } else if (index < 6) {
                 if (intro.character === 'doctor') {
-                  // Alex speaks, Jordan looks at Alex
+                  // Alex faces forward while Jordan looks at Alex
+                  playGesture('stopAlexGesture')
                   playGesture('jordanLookAtAlex')
                 } else {
-                  // Jordan speaks, Alex looks at Jordan
+                  // Jordan faces forward while Alex looks at Jordan
                   playGesture('stopCompanionGesture')
                   playGesture('alexLookAtJordan')
                 }
@@ -1225,25 +1244,60 @@ export default function MainInteraction() {
           condition,
           history: topicPreparationHistory,
         }),
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`Topic preparation failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        const prepared = data.spoken_summary
+          ? await prepareSpeech(data.spoken_summary, 'doctor')
+          : null
+
+        return { data, prepared }
       })
 
       setResponseStatus('')
 
-      // Alex explains what he's about to do.
-      await speakWithHighlight(ALEX_TOPIC_FILLER, 'doctor', setAlexSubtitle)
+      // Pause for 5 seconds before Alex starts speaking.
+      // The backend continues preparing topics during this pause.
+      await new Promise((resolve) => setTimeout(resolve, 3000))
 
-      setAlexSubtitle('')
+      // Alex faces forward while Jordan looks at him.
+      if (condition === CONDITION_MULTIPLE) {
+        playGesture('stopAlexGesture')
+        playGesture('jordanLookAtAlex')
+      }
 
+      // Alex explains what he's about to do using prerecorded audio.
+      setActiveSpeaker('Alex')
+
+      try {
+        await speakWithLipsyncStatic(
+          STUDY_FILLER_AUDIO.alexTopic.audio,
+          STUDY_FILLER_AUDIO.alexTopic.timestamps,
+          'doctor',
+          true,
+          setAlexSubtitle,
+        )
+      } finally {
+        setActiveSpeaker(null)
+        setAlexSubtitle('')
+      }
       // Wait for the topic-selection result if needed.
       setResponseStatus('Preparing topics')
 
-      const response = await responsePromise
+      const alexWaitStart = performance.now()
 
-      if (!response.ok) {
-        throw new Error(`Topic preparation failed: ${response.status}`)
-      }
+      // Wait for both topic recommendations and prepared audio.
+      const { data, prepared } = await responsePromise
 
-      const data = await response.json()
+      console.log(
+        'Alex wait for prepared audio after filler:',
+        ((performance.now() - alexWaitStart) / 1000).toFixed(2),
+        'seconds',
+      )
 
       console.log('Topic preparation response:', data)
 
@@ -1287,10 +1341,29 @@ export default function MainInteraction() {
         }
 
         try {
-          await speakWithHighlight(
-            data.spoken_summary,
-            'doctor',
-            handleAlexSubtitle,
+          // Alex faces forward while Jordan listens.
+          if (condition === CONDITION_MULTIPLE) {
+            playGesture('stopAlexGesture')
+            playGesture('jordanLookAtAlex')
+          }
+
+          const alexSpeechStart = performance.now()
+
+          setActiveSpeaker('Alex')
+
+          try {
+            await playPreparedSpeech({
+              prepared,
+              onSubtitle: handleAlexSubtitle,
+            })
+          } finally {
+            setActiveSpeaker(null)
+          }
+
+          console.log(
+            'Alex prepared speech playback:',
+            ((performance.now() - alexSpeechStart) / 1000).toFixed(2),
+            'seconds',
           )
         } finally {
           // Clear any remaining timer.
@@ -1314,14 +1387,33 @@ export default function MainInteraction() {
         },
       ])
 
-      await speakWithHighlight(
-        ALEX_TOPIC_SELECTION_INSTRUCTIONS,
-        'doctor',
-        setAlexSubtitle,
-      )
+      // Alex faces forward while Jordan looks at him.
+      if (condition === CONDITION_MULTIPLE) {
+        playGesture('stopAlexGesture')
+        playGesture('jordanLookAtAlex')
+      }
 
-      setAlexSubtitle('')
-      playGesture('stopAlexGesture')
+      setActiveSpeaker('Alex')
+
+      try {
+        await speakWithLipsyncStatic(
+          STUDY_FILLER_AUDIO.alexInstructions.audio,
+          STUDY_FILLER_AUDIO.alexInstructions.timestamps,
+          'doctor',
+          true,
+          setAlexSubtitle,
+        )
+      } finally {
+        setActiveSpeaker(null)
+        setAlexSubtitle('')
+
+        // Both characters return to facing the participant.
+        playGesture('stopAlexGesture')
+
+        if (condition === CONDITION_MULTIPLE) {
+          playGesture('stopCompanionGesture')
+        }
+      }
     } catch (error) {
       console.error('Could not prepare topics:', error)
       setOpeningComplete(false)
@@ -1439,7 +1531,7 @@ export default function MainInteraction() {
           { from: 'user', text: trimmed },
           fillerMessage,
         ]
-        // Begin generating the LLM response immediately.
+        // Generate the LLM response, then prepare its audio in the background.
         const responsePromise = fetch(`${BASE_URL}/study/opening-message`, {
           method: 'POST',
           headers: {
@@ -1451,6 +1543,19 @@ export default function MainInteraction() {
             message: trimmed,
             history: openingHistory,
           }),
+        }).then(async (response) => {
+          if (!response.ok) {
+            throw new Error(`Study request failed: ${response.status}`)
+          }
+
+          const data = await response.json()
+
+          const prepared = await prepareSpeech(
+            data.response,
+            isCombined ? 'doctor' : 'companion',
+          )
+
+          return { data, prepared }
         })
 
         const fillerSpeaker = isCombined ? 'doctor' : 'companion'
@@ -1458,22 +1563,51 @@ export default function MainInteraction() {
 
         setShowThinkingBubble(false)
 
-        await speakWithHighlight(
-          JORDAN_OPENING_FILLER,
-          fillerSpeaker,
-          fillerSubtitle,
-        )
+        playGesture('thinking')
+
+        // Give the participant a moment before responding.
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+
+        if (isCombined) {
+          // In the single-agent condition, Alex speaks the filler.
+          await speakWithHighlight(
+            JORDAN_OPENING_FILLER,
+            fillerSpeaker,
+            fillerSubtitle,
+          )
+        } else {
+          // Jordan faces forward while Alex looks at Jordan.
+          playGesture('stopCompanionGesture')
+          playGesture('alexLookAtJordan')
+
+          // Jordan uses prerecorded audio.
+          setActiveSpeaker('Jordan')
+
+          try {
+            await speakWithLipsyncStatic(
+              STUDY_FILLER_AUDIO.jordanOpening.audio,
+              STUDY_FILLER_AUDIO.jordanOpening.timestamps,
+              'companion',
+              true,
+              setJordanSubtitle,
+            )
+          } finally {
+            setActiveSpeaker(null)
+          }
+        }
 
         fillerSubtitle('')
 
-        // Get the LLM response after the filler finishes.
-        const response = await responsePromise
+        const jordanWaitStart = performance.now()
 
-        if (!response.ok) {
-          throw new Error(`Study request failed: ${response.status}`)
-        }
+        // Wait for the LLM response and prepared audio, if needed.
+        const { data, prepared } = await responsePromise
 
-        const data = await response.json()
+        console.log(
+          'Jordan wait for prepared audio after filler:',
+          ((performance.now() - jordanWaitStart) / 1000).toFixed(2),
+          'seconds',
+        )
 
         console.log('Study backend response:', data)
 
@@ -1497,8 +1631,24 @@ export default function MainInteraction() {
           playGesture('alexLookAtJordan')
         }
 
-        await speakWithHighlight(data.response, character, setSubtitle)
+        const jordanSpeechStart = performance.now()
 
+        setActiveSpeaker(speaker)
+
+        try {
+          await playPreparedSpeech({
+            prepared,
+            onSubtitle: setSubtitle,
+          })
+        } finally {
+          setActiveSpeaker(null)
+        }
+
+        console.log(
+          'Jordan prepared speech playback:',
+          ((performance.now() - jordanSpeechStart) / 1000).toFixed(2),
+          'seconds',
+        )
         // Clean up subtitles and gestures
         setSubtitle('')
 
@@ -2441,6 +2591,7 @@ export default function MainInteraction() {
                   </span>
                 </button>
               ) : (
+                false &&
                 topicState?.phase === 'topics' &&
                 introDone && (
                   <button
@@ -2548,60 +2699,7 @@ export default function MainInteraction() {
                   )}
                 </div>
               </div>
-              {showTopicSelection ? (
-                <div className="topic-selection">
-                  <h3>Your Conversation Topics</h3>
-                  <p>
-                    Alex suggested these three topics. You can keep them or
-                    change any of them.
-                  </p>
-
-                  <div className="topic-selection-cards">
-                    {selectedTopics.map((topicId, index) => (
-                      <div className="topic-selection-card" key={index}>
-                        <label htmlFor={`topic-choice-${index}`}>
-                          Topic {index + 1}
-                        </label>
-
-                        <select
-                          id={`topic-choice-${index}`}
-                          value={topicId}
-                          disabled={isResponding}
-                          onChange={(event) =>
-                            handleTopicChange(index, event.target.value)
-                          }
-                        >
-                          {STUDY_TOPICS.map((topic) => (
-                            <option
-                              key={topic.id}
-                              value={topic.id}
-                              disabled={
-                                selectedTopics.includes(topic.id) &&
-                                topic.id !== topicId
-                              }
-                            >
-                              {topic.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="cssbuttons-io-button"
-                    disabled={isResponding || selectedTopics.length !== 3}
-                    onClick={handleConfirmTopics}
-                    style={{ margin: '18px auto 0' }}
-                  >
-                    Continue with These Topics
-                    <span className="icon">
-                      <FontAwesomeIcon icon={faArrowRight} size="xs" />
-                    </span>
-                  </button>
-                </div>
-              ) : (
+              {!showTopicSelection && (
                 <TopicProgress
                   topicState={topicState}
                   availableTopics={selectedTopics
@@ -2611,7 +2709,6 @@ export default function MainInteraction() {
                   highlightCurrentTopic={highlightCurrentTopic}
                 />
               )}
-
               {(condition === CONDITION_SINGLE_COMBINED ||
                 condition === CONDITION_MULTIPLE) && (
                 <div
@@ -2769,7 +2866,7 @@ export default function MainInteraction() {
             <div
               className={`mi-bottom-panel ${
                 showChatInput ? '' : 'mi-bottom-panel-hidden'
-              }`}
+              } ${showTopicSelection ? 'mi-bottom-panel-topic-selection' : ''}`}
             >
               {resourceChoice === 'yes' ? (
                 <div className="full-input-area">
@@ -2836,6 +2933,61 @@ export default function MainInteraction() {
                       onClick={() => handleResourceChoice('no')}
                     >
                       No, thanks
+                    </button>
+                  </div>
+                </div>
+              ) : showTopicSelection ? (
+                <div className="full-input-area">
+                  <div className="topic-selection">
+                    <h3>Confirm Your Topics</h3>
+                    <p>
+                      Alex suggested these three topics. You can keep them or
+                      change any of them.
+                    </p>
+
+                    <div className="topic-selection-cards">
+                      {selectedTopics.map((topicId, index) => (
+                        <div className="topic-selection-card" key={index}>
+                          <label htmlFor={`topic-choice-${index}`}>
+                            Topic {index + 1}
+                          </label>
+
+                          <select
+                            id={`topic-choice-${index}`}
+                            value={topicId}
+                            disabled={isResponding}
+                            onChange={(event) =>
+                              handleTopicChange(index, event.target.value)
+                            }
+                          >
+                            {STUDY_TOPICS.map((topic) => (
+                              <option
+                                key={topic.id}
+                                value={topic.id}
+                                disabled={
+                                  selectedTopics.includes(topic.id) &&
+                                  topic.id !== topicId
+                                }
+                              >
+                                {topic.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="cssbuttons-io-button"
+                      disabled={isResponding || selectedTopics.length !== 3}
+                      onClick={handleConfirmTopics}
+                      style={{ margin: '18px auto 0' }}
+                    >
+                      Start!
+                      <span className="icon">
+                        <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -2939,15 +3091,22 @@ function TopicProgress({
 }) {
   const isPreview = topicState?.phase !== 'topics'
 
-  const displayState = isPreview
-    ? {
-        current_topic_index: 0,
-        topics: availableTopics.map((topic) => ({
-          topic: topic.name,
-          status: 'upcoming',
-        })),
-      }
-    : topicState
+  const displayState = {
+    current_topic_index: isPreview ? 0 : (topicState.current_topic_index ?? 0),
+
+    topics: (isPreview ? availableTopics : topicState.topics).map(
+      (topic, index) => ({
+        topic: topic.name || topic.topic,
+        status: isPreview
+          ? 'upcoming'
+          : index < topicState.current_topic_index
+            ? 'completed'
+            : index === topicState.current_topic_index
+              ? 'active'
+              : 'upcoming',
+      }),
+    ),
+  }
 
   if (!displayState?.topics?.length) return null
 

@@ -1,0 +1,82 @@
+[
+  {
+    "word": "Gotcha!",
+    "start": 0,
+    "end": 0.2475
+  },
+  {
+    "word": "Let",
+    "start": 0.2475,
+    "end": 0.495
+  },
+  {
+    "word": "me",
+    "start": 0.495,
+    "end": 0.7424999999999999
+  },
+  {
+    "word": "make",
+    "start": 0.7424999999999999,
+    "end": 0.99
+  },
+  {
+    "word": "sure",
+    "start": 0.99,
+    "end": 1.2375
+  },
+  {
+    "word": "I'm",
+    "start": 1.2375,
+    "end": 1.4849999999999999
+  },
+  {
+    "word": "getting",
+    "start": 1.4849999999999999,
+    "end": 1.7325
+  },
+  {
+    "word": "this",
+    "start": 1.7325,
+    "end": 1.98
+  },
+  {
+    "word": "right",
+    "start": 1.98,
+    "end": 2.2275
+  },
+  {
+    "word": "by",
+    "start": 2.2275,
+    "end": 2.475
+  },
+  {
+    "word": "quickly",
+    "start": 2.475,
+    "end": 2.7225
+  },
+  {
+    "word": "repeating",
+    "start": 2.7225,
+    "end": 2.9699999999999998
+  },
+  {
+    "word": "that",
+    "start": 2.9699999999999998,
+    "end": 3.2175
+  },
+  {
+    "word": "back",
+    "start": 3.2175,
+    "end": 3.465
+  },
+  {
+    "word": "to",
+    "start": 3.465,
+    "end": 3.7125
+  },
+  {
+    "word": "you.",
+    "start": 3.7125,
+    "end": 3.96
+  }
+]

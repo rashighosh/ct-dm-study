@@ -585,9 +585,33 @@
   background: rgb(var(--primary-orange));
 }
 
+.subtitle-name-pill-alex::after {
+  content: 'Information';
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: black;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .subtitle-name-pill-jordan {
   left: 19%;
   background: rgb(var(--primary-blue));
+}
+
+.subtitle-name-pill-jordan::after {
+  content: 'Support';
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: black;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .character-subtitle {
@@ -2371,55 +2395,54 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 20;
-  width: 90%;
-  max-width: 850px;
-
   text-align: center;
 }
 
 .topic-selection h3 {
   font-size: 18px;
   font-weight: 700;
-  margin: 0 0 5px;
+  margin: 0px;
 }
 
 .topic-selection p {
   font-size: 13px;
-  margin: 0 0 14px;
+  margin: 0 0 15px 0;
+  line-height: normal;
 }
 
 .topic-selection-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
 }
 
 .topic-selection-card {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #d5dce5;
-  border-radius: 12px;
-  padding: 13px;
+  flex: 1;
+  width: 0;
   min-width: 0;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  background: rgb(var(--primary-orange) / 15%);
+  border-radius: 15px;
+  padding: 13px;
+  box-sizing: border-box;
 }
 
 .topic-selection-card label {
   display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
+  font-size: 15px;
+  font-weight: 300;
   margin-bottom: 8px;
 }
 
 .topic-selection-card select {
   width: 100%;
-  padding: 9px 6px;
-  border: 1px solid #d5dce5;
+  padding: 9px 15px;
+  border: none;
   border-radius: 7px;
   background: white;
-  font-size: 13px;
+  font-size: 15px;
   color: #1e293b;
   cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 .topic-selection-card select:focus {
@@ -2431,4 +2454,25 @@
   .topic-selection-cards {
     grid-template-columns: 1fr;
   }
+}
+
+/* Expand chat panel during topic selection */
+
+.mi-bottom-panel.mi-bottom-panel-topic-selection {
+  height: 265px;
+  flex: 0 0 265px;
+  overflow: visible;
+}
+
+.mi-bottom-panel-topic-selection .full-input-area {
+  padding: 15px 24px;
+}
+
+.mi-bottom-panel-topic-selection .topic-selection {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  margin: 0 auto;
 }
