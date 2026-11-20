@@ -45,6 +45,25 @@ const CONDITION_NAMES = {
   3: 'Multiple',
 }
 
+const JORDAN_OPENING_FILLER =
+  "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you --"
+
+const ALEX_TOPIC_FILLER =
+  "I'll review the information available to me and identify a few topics that may be most relevant to your concerns."
+
+const ALEX_TOPIC_SELECTION_INSTRUCTIONS =
+  'You can keep these suggestions or change any of them using the options above. ' +
+  "Once you're satisfied with your selections, click Continue to begin."
+
+const STUDY_TOPICS = [
+  { id: 'cost', name: 'Costs of Participating' },
+  { id: 'support', name: 'Getting Help with Participation' },
+  { id: 'logistics', name: 'Transportation and Financial Support' },
+  { id: 'doctor', name: 'Keeping My Doctor Informed' },
+  { id: 'side_effects', name: 'Side Effects' },
+  { id: 'quality', name: 'Quality of Care' },
+]
+
 const RESOURCE_PREVIEWS = {
   'featured-trials': '/resource-previews/featured-trials.pdf',
   'personal-stories': '/resource-previews/personal-stories.pdf',
@@ -161,6 +180,8 @@ export default function MainInteraction() {
   const [openingResponseDone, setOpeningResponseDone] = useState(false)
   const [openingComplete, setOpeningComplete] = useState(false)
   const [availableTopics, setAvailableTopics] = useState([])
+  const [selectedTopics, setSelectedTopics] = useState([])
+  const [showTopicSelection, setShowTopicSelection] = useState(false)
   const [showChatInput, setShowChatInput] = useState(
     condition !== CONDITION_MULTIPLE,
   )
@@ -296,6 +317,8 @@ export default function MainInteraction() {
       setOpeningResponseDone(session.openingResponseDone ?? false)
       setOpeningComplete(session.openingComplete ?? false)
       setAvailableTopics(session.availableTopics ?? [])
+      setSelectedTopics(session.selectedTopics ?? [])
+      setShowTopicSelection(session.showTopicSelection ?? false)
       // Restore the chat panel based on intro progress.
       setShowChatInput(
         condition !== CONDITION_MULTIPLE ||
@@ -347,7 +370,9 @@ export default function MainInteraction() {
       // Only reveal topic-related UI once the topic phase begins.
       const topicsStarted = restoredTopicState?.phase === 'topics'
 
-      setShowTopics(topicsStarted)
+      const hasSelectedTopics = (session.availableTopics ?? []).length === 3
+
+      setShowTopics(topicsStarted || hasSelectedTopics)
       setHighlightCurrentTopic(topicsStarted)
 
       // Keep the question list hidden during needs elicitation.
@@ -360,7 +385,7 @@ export default function MainInteraction() {
   }, [SESSION_KEY])
 
   useEffect(() => {
-    if (!started) return
+    if (!started || !topicState) return
 
     async function loadTopicState() {
       try {
@@ -485,6 +510,8 @@ export default function MainInteraction() {
       openingResponseDone,
       openingComplete,
       availableTopics,
+      selectedTopics,
+      showTopicSelection,
       showResourceChoice,
       resourceChoice,
       showSurveyButton,
@@ -506,6 +533,8 @@ export default function MainInteraction() {
     openingResponseDone,
     openingComplete,
     availableTopics,
+    selectedTopics,
+    showTopicSelection,
     showResourceChoice,
     resourceChoice,
     showSurveyButton,
@@ -855,6 +884,91 @@ export default function MainInteraction() {
     introDone,
   ])
 
+  function handleTopicChange(index, newTopicId) {
+    setSelectedTopics((previous) =>
+      previous.map((topicId, i) => (i === index ? newTopicId : topicId)),
+    )
+  }
+
+  async function handleConfirmTopics() {
+    if (
+      isResponding ||
+      selectedTopics.length !== 3 ||
+      new Set(selectedTopics).size !== 3
+    ) {
+      return
+    }
+
+    setIsResponding(true)
+    setResponseStatus('Starting conversation')
+
+    try {
+      // Initialize the confirmed topics in the backend.
+      const response = await fetch(`${BASE_URL}/study/confirm-topics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          condition,
+          selected_topics: selectedTopics,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Topic confirmation failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      console.log('Topics initialized:', data)
+
+      // Save the original recommendations and final selections.
+      const originalTopicIds = availableTopics.map((topic) => topic.id)
+
+      const changed = selectedTopics.some(
+        (id, index) => id !== originalTopicIds[index],
+      )
+
+      setMessages((previous) => [
+        ...previous,
+        {
+          from: 'system',
+          event: 'topics_confirmed',
+          original_topics: originalTopicIds,
+          selected_topics: [...selectedTopics],
+          changed,
+          timestamp: new Date().toISOString(),
+        },
+      ])
+
+      // Update the frontend's active topic state.
+      setTopicState({
+        current_topic_index: data.current_topic_index,
+        conversation_complete: data.conversation_complete,
+        phase: data.phase,
+        topics: data.topics,
+      })
+
+      // Switch from editable cards to the progress bar.
+      setShowTopicSelection(false)
+      setShowTopics(true)
+      setHighlightCurrentTopic(true)
+
+      // Make the question-list tab available during the topic phase.
+      setShowQuestionsTab(condition !== CONDITION_SINGLE_INFO)
+    } catch (error) {
+      console.error('Could not confirm topics:', error)
+
+      // Leave the topic cards visible so participants can retry.
+      alert('Could not start the conversation. Please try again.')
+    } finally {
+      setIsResponding(false)
+      setResponseStatus('')
+    }
+  }
+
   function handleStartFirstTopic() {
     if (!waitingForFirstTopic || !startFirstTopicResolverRef.current) return
 
@@ -1086,7 +1200,22 @@ export default function MainInteraction() {
     setResponseStatus('Preparing topics')
 
     try {
-      const response = await fetch(`${BASE_URL}/study/prepare-topics`, {
+      const alexFillerMessage = {
+        from: 'Alex',
+        text: ALEX_TOPIC_FILLER,
+      }
+
+      // Add Alex's scripted statement to the transcript.
+      setMessages((previous) => [...previous, alexFillerMessage])
+
+      // Include it in the history supplied to the backend.
+      const topicPreparationHistory = [
+        ...conversationHistory,
+        alexFillerMessage,
+      ]
+      // Start selecting the three topics in the background
+      // while Alex delivers his scripted transition.
+      const responsePromise = fetch(`${BASE_URL}/study/prepare-topics`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1094,9 +1223,21 @@ export default function MainInteraction() {
         body: JSON.stringify({
           participant_id: participantId,
           condition,
-          history: conversationHistory,
+          history: topicPreparationHistory,
         }),
       })
+
+      setResponseStatus('')
+
+      // Alex explains what he's about to do.
+      await speakWithHighlight(ALEX_TOPIC_FILLER, 'doctor', setAlexSubtitle)
+
+      setAlexSubtitle('')
+
+      // Wait for the topic-selection result if needed.
+      setResponseStatus('Preparing topics')
+
+      const response = await responsePromise
 
       if (!response.ok) {
         throw new Error(`Topic preparation failed: ${response.status}`)
@@ -1106,12 +1247,19 @@ export default function MainInteraction() {
 
       console.log('Topic preparation response:', data)
 
-      // Save the selected topics immediately after receiving them.
-      // Do not wait for Alex's spoken summary to finish.
+      // Save Alex's original recommendations.
       setAvailableTopics(data.selected_topics ?? [])
 
+      // Initialize the participant's editable selections.
+      setSelectedTopics((data.selected_topics ?? []).map((topic) => topic.id))
+
+      // Hide the regular progress bar during topic selection.
+      setShowTopics(false)
+      setHighlightCurrentTopic(false)
+      setShowTopicSelection(false)
+
       if (data.spoken_summary) {
-        // Add Alex's summary to the conversation transcript
+        // Add Alex's summary to the transcript.
         setMessages((previous) => [
           ...previous,
           {
@@ -1120,15 +1268,60 @@ export default function MainInteraction() {
           },
         ])
 
-        // Hide the loading message before Alex speaks
         setResponseStatus('')
 
-        // Alex speaks the personalized summary
-        await speakWithHighlight(data.spoken_summary, 'doctor', setAlexSubtitle)
+        let revealTimer = null
+        let speechStarted = false
 
-        setAlexSubtitle('')
-        playGesture('stopAlexGesture')
+        // Reveal the cards 5 seconds after Alex begins speaking.
+        const handleAlexSubtitle = (subtitle) => {
+          setAlexSubtitle(subtitle)
+
+          if (!speechStarted && subtitle) {
+            speechStarted = true
+
+            revealTimer = setTimeout(() => {
+              setShowTopicSelection(true)
+            }, 5000)
+          }
+        }
+
+        try {
+          await speakWithHighlight(
+            data.spoken_summary,
+            'doctor',
+            handleAlexSubtitle,
+          )
+        } finally {
+          // Clear any remaining timer.
+          if (revealTimer) clearTimeout(revealTimer)
+
+          // Ensure the cards appear even if Alex finishes early.
+          setShowTopicSelection(true)
+          setAlexSubtitle('')
+          playGesture('stopAlexGesture')
+        }
+      } else {
+        setShowTopicSelection(true)
       }
+
+      // Explain that participants can change the suggested topics.
+      setMessages((previous) => [
+        ...previous,
+        {
+          from: 'Alex',
+          text: ALEX_TOPIC_SELECTION_INSTRUCTIONS,
+        },
+      ])
+
+      await speakWithHighlight(
+        ALEX_TOPIC_SELECTION_INSTRUCTIONS,
+        'doctor',
+        setAlexSubtitle,
+      )
+
+      setAlexSubtitle('')
+      playGesture('stopAlexGesture')
     } catch (error) {
       console.error('Could not prepare topics:', error)
       setOpeningComplete(false)
@@ -1230,7 +1423,24 @@ export default function MainInteraction() {
           condition === CONDITION_MULTIPLE) &&
         !openingResponseDone
       ) {
-        const response = await fetch(`${BASE_URL}/study/opening-message`, {
+        const isCombined = condition === CONDITION_SINGLE_COMBINED
+
+        const fillerMessage = {
+          from: isCombined ? 'Alex' : 'Jordan',
+          text: JORDAN_OPENING_FILLER,
+        }
+
+        // Record the scripted dialogue in the transcript.
+        setMessages((previous) => [...previous, fillerMessage])
+
+        // Include it in the history sent to the LLM.
+        const openingHistory = [
+          ...messages,
+          { from: 'user', text: trimmed },
+          fillerMessage,
+        ]
+        // Begin generating the LLM response immediately.
+        const responsePromise = fetch(`${BASE_URL}/study/opening-message`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1239,9 +1449,25 @@ export default function MainInteraction() {
             participant_id: participantId,
             condition,
             message: trimmed,
-            history: messages,
+            history: openingHistory,
           }),
         })
+
+        const fillerSpeaker = isCombined ? 'doctor' : 'companion'
+        const fillerSubtitle = isCombined ? setAlexSubtitle : setJordanSubtitle
+
+        setShowThinkingBubble(false)
+
+        await speakWithHighlight(
+          JORDAN_OPENING_FILLER,
+          fillerSpeaker,
+          fillerSubtitle,
+        )
+
+        fillerSubtitle('')
+
+        // Get the LLM response after the filler finishes.
+        const response = await responsePromise
 
         if (!response.ok) {
           throw new Error(`Study request failed: ${response.status}`)
@@ -1250,9 +1476,6 @@ export default function MainInteraction() {
         const data = await response.json()
 
         console.log('Study backend response:', data)
-
-        // Determine speaker based on condition
-        const isCombined = condition === CONDITION_SINGLE_COMBINED
 
         const speaker = isCombined ? 'Alex' : 'Jordan'
         const character = isCombined ? 'doctor' : 'companion'
@@ -1277,6 +1500,19 @@ export default function MainInteraction() {
         await speakWithHighlight(data.response, character, setSubtitle)
 
         // Clean up subtitles and gestures
+        setSubtitle('')
+
+        // Scripted follow-up
+        const followUp =
+          'Did I get that right? If that pretty much covers it, you can hit Continue! Or feel free to add anything else.'
+
+        setMessages((previous) => [
+          ...previous,
+          { from: speaker, text: followUp },
+        ])
+
+        await speakWithHighlight(followUp, character, setSubtitle)
+
         setSubtitle('')
 
         if (isCombined) {
@@ -2312,11 +2548,69 @@ export default function MainInteraction() {
                   )}
                 </div>
               </div>
-              <TopicProgress
-                topicState={topicState}
-                showTopics={showTopics}
-                highlightCurrentTopic={highlightCurrentTopic}
-              />
+              {showTopicSelection ? (
+                <div className="topic-selection">
+                  <h3>Your Conversation Topics</h3>
+                  <p>
+                    Alex suggested these three topics. You can keep them or
+                    change any of them.
+                  </p>
+
+                  <div className="topic-selection-cards">
+                    {selectedTopics.map((topicId, index) => (
+                      <div className="topic-selection-card" key={index}>
+                        <label htmlFor={`topic-choice-${index}`}>
+                          Topic {index + 1}
+                        </label>
+
+                        <select
+                          id={`topic-choice-${index}`}
+                          value={topicId}
+                          disabled={isResponding}
+                          onChange={(event) =>
+                            handleTopicChange(index, event.target.value)
+                          }
+                        >
+                          {STUDY_TOPICS.map((topic) => (
+                            <option
+                              key={topic.id}
+                              value={topic.id}
+                              disabled={
+                                selectedTopics.includes(topic.id) &&
+                                topic.id !== topicId
+                              }
+                            >
+                              {topic.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="cssbuttons-io-button"
+                    disabled={isResponding || selectedTopics.length !== 3}
+                    onClick={handleConfirmTopics}
+                    style={{ margin: '18px auto 0' }}
+                  >
+                    Continue with These Topics
+                    <span className="icon">
+                      <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                    </span>
+                  </button>
+                </div>
+              ) : (
+                <TopicProgress
+                  topicState={topicState}
+                  availableTopics={selectedTopics
+                    .map((id) => STUDY_TOPICS.find((topic) => topic.id === id))
+                    .filter(Boolean)}
+                  showTopics={showTopics}
+                  highlightCurrentTopic={highlightCurrentTopic}
+                />
+              )}
 
               {(condition === CONDITION_SINGLE_COMBINED ||
                 condition === CONDITION_MULTIPLE) && (
@@ -2637,10 +2931,27 @@ export default function MainInteraction() {
   )
 }
 
-function TopicProgress({ topicState, showTopics, highlightCurrentTopic }) {
-  if (!topicState) return null
+function TopicProgress({
+  topicState,
+  availableTopics,
+  showTopics,
+  highlightCurrentTopic,
+}) {
+  const isPreview = topicState?.phase !== 'topics'
 
-  const currentTopicIndex = topicState.current_topic_index
+  const displayState = isPreview
+    ? {
+        current_topic_index: 0,
+        topics: availableTopics.map((topic) => ({
+          topic: topic.name,
+          status: 'upcoming',
+        })),
+      }
+    : topicState
+
+  if (!displayState?.topics?.length) return null
+
+  const currentTopicIndex = displayState.current_topic_index
 
   return (
     <div
@@ -2651,17 +2962,17 @@ function TopicProgress({ topicState, showTopics, highlightCurrentTopic }) {
       <div
         className="topic-progress-list"
         style={{
-          '--topic-count': topicState.topics.length,
+          '--topic-count': displayState.topics.length,
           '--progress':
-            topicState.topics.length > 1
-              ? currentTopicIndex / (topicState.topics.length - 1)
+            displayState.topics.length > 1
+              ? currentTopicIndex / (displayState.topics.length - 1)
               : 0,
         }}
       >
         <div className="topic-progress-line" />
         <div className="topic-progress-line-fill" />
 
-        {topicState.topics.map((topic, index) => {
+        {displayState.topics.map((topic, index) => {
           const statusClass =
             topic.status === 'active' && !highlightCurrentTopic
               ? ''
