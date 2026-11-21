@@ -27,6 +27,8 @@ import {
   playGesture,
   startSwiping,
   stopSwiping,
+  swivelAlexTowardJordan,
+  swivelJordanTowardAlex,
 } from '../character.js'
 import '../css/Adaptive.css'
 import introSequences from '../data/introSequences.json'
@@ -197,6 +199,8 @@ export default function MainInteraction() {
   const [introNextIndex, setIntroNextIndex] = useState(0)
   const [openingResponseDone, setOpeningResponseDone] = useState(false)
   const [openingComplete, setOpeningComplete] = useState(false)
+  const [awaitingTopicElaboration, setAwaitingTopicElaboration] =
+    useState(false)
   const [availableTopics, setAvailableTopics] = useState([])
   const [selectedTopics, setSelectedTopics] = useState([])
   const [showTopicSelection, setShowTopicSelection] = useState(false)
@@ -334,6 +338,7 @@ export default function MainInteraction() {
 
       setOpeningResponseDone(session.openingResponseDone ?? false)
       setOpeningComplete(session.openingComplete ?? false)
+      setAwaitingTopicElaboration(session.awaitingTopicElaboration ?? false)
       setAvailableTopics(session.availableTopics ?? [])
       setSelectedTopics(session.selectedTopics ?? [])
       setShowTopicSelection(session.showTopicSelection ?? false)
@@ -392,9 +397,6 @@ export default function MainInteraction() {
 
       setShowTopics(topicsStarted || hasSelectedTopics)
       setHighlightCurrentTopic(topicsStarted)
-
-      // Keep the question list hidden during needs elicitation.
-      setShowQuestionsTab(condition !== CONDITION_SINGLE_INFO && topicsStarted)
     } catch (error) {
       console.error('Could not restore session:', error)
     } finally {
@@ -527,6 +529,7 @@ export default function MainInteraction() {
       introNextIndex,
       openingResponseDone,
       openingComplete,
+      awaitingTopicElaboration,
       availableTopics,
       selectedTopics,
       showTopicSelection,
@@ -550,6 +553,7 @@ export default function MainInteraction() {
     introNextIndex,
     openingResponseDone,
     openingComplete,
+    awaitingTopicElaboration,
     availableTopics,
     selectedTopics,
     showTopicSelection,
@@ -632,9 +636,27 @@ export default function MainInteraction() {
 
     setActiveSpeaker(speaker)
 
+    if (condition === CONDITION_MULTIPLE) {
+      if (speaker === 'Jordan') {
+        playGesture('stopAlexGesture')
+        swivelAlexTowardJordan(true)
+      } else {
+        playGesture('stopCompanionGesture')
+        swivelJordanTowardAlex(true)
+      }
+    }
+
     try {
       await speakWithLipsync(text, character, null, null, setSubtitle)
     } finally {
+      if (condition === CONDITION_MULTIPLE) {
+        if (speaker === 'Jordan') {
+          swivelAlexTowardJordan(false)
+        } else {
+          swivelJordanTowardAlex(false)
+        }
+      }
+
       setActiveSpeaker(null)
     }
   }
@@ -745,6 +767,16 @@ export default function MainInteraction() {
 
       setActiveSpeaker(intro.character === 'doctor' ? 'Alex' : 'Jordan')
 
+      // Turn Alex toward Jordan during prerecorded Jordan dialogue.
+
+      if (condition === CONDITION_MULTIPLE) {
+        if (intro.character === 'companion') {
+          swivelAlexTowardJordan(true)
+        } else {
+          swivelJordanTowardAlex(true)
+        }
+      }
+
       try {
         await speakWithLipsyncStatic(
           intro.audio,
@@ -805,6 +837,14 @@ export default function MainInteraction() {
           },
         )
       } finally {
+        if (condition === CONDITION_MULTIPLE) {
+          if (intro.character === 'companion') {
+            swivelAlexTowardJordan(false)
+          } else {
+            swivelJordanTowardAlex(false)
+          }
+        }
+
         clearIntroVisuals()
         setActiveSpeaker(null)
       }
@@ -975,8 +1015,43 @@ export default function MainInteraction() {
       setShowTopics(true)
       setHighlightCurrentTopic(true)
 
-      // Make the question-list tab available during the topic phase.
-      setShowQuestionsTab(condition !== CONDITION_SINGLE_INFO)
+      // Jordan begins the first topic by referencing the
+      // participant's earlier concern.
+      if (condition === CONDITION_MULTIPLE) {
+        const openingResponse = await fetch(`${BASE_URL}/study/topic-opening`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+          }),
+        })
+
+        if (!openingResponse.ok) {
+          throw new Error(`Topic opening failed: ${openingResponse.status}`)
+        }
+
+        const openingData = await openingResponse.json()
+        console.log('Jordan topic opening:', openingData)
+
+        setMessages((previous) => [
+          ...previous,
+          { from: 'Jordan', text: openingData.jordan_reply },
+        ])
+
+        playGesture('alexLookAtJordan')
+
+        await speakWithHighlight(
+          openingData.jordan_reply,
+          'companion',
+          setJordanSubtitle,
+        )
+
+        setJordanSubtitle('')
+        playGesture('stopAlexGesture')
+        setAwaitingTopicElaboration(true)
+      }
     } catch (error) {
       console.error('Could not confirm topics:', error)
 
@@ -1273,6 +1348,10 @@ export default function MainInteraction() {
       // Alex explains what he's about to do using prerecorded audio.
       setActiveSpeaker('Alex')
 
+      if (condition === CONDITION_MULTIPLE) {
+        swivelJordanTowardAlex(true)
+      }
+
       try {
         await speakWithLipsyncStatic(
           STUDY_FILLER_AUDIO.alexTopic.audio,
@@ -1282,22 +1361,18 @@ export default function MainInteraction() {
           setAlexSubtitle,
         )
       } finally {
+        if (condition === CONDITION_MULTIPLE) {
+          swivelJordanTowardAlex(false)
+        }
+
         setActiveSpeaker(null)
         setAlexSubtitle('')
       }
       // Wait for the topic-selection result if needed.
       setResponseStatus('Preparing topics')
 
-      const alexWaitStart = performance.now()
-
       // Wait for both topic recommendations and prepared audio.
       const { data, prepared } = await responsePromise
-
-      console.log(
-        'Alex wait for prepared audio after filler:',
-        ((performance.now() - alexWaitStart) / 1000).toFixed(2),
-        'seconds',
-      )
 
       console.log('Topic preparation response:', data)
 
@@ -1347,9 +1422,11 @@ export default function MainInteraction() {
             playGesture('jordanLookAtAlex')
           }
 
-          const alexSpeechStart = performance.now()
-
           setActiveSpeaker('Alex')
+
+          if (condition === CONDITION_MULTIPLE) {
+            swivelJordanTowardAlex(true)
+          }
 
           try {
             await playPreparedSpeech({
@@ -1357,14 +1434,12 @@ export default function MainInteraction() {
               onSubtitle: handleAlexSubtitle,
             })
           } finally {
+            if (condition === CONDITION_MULTIPLE) {
+              swivelJordanTowardAlex(false)
+            }
+
             setActiveSpeaker(null)
           }
-
-          console.log(
-            'Alex prepared speech playback:',
-            ((performance.now() - alexSpeechStart) / 1000).toFixed(2),
-            'seconds',
-          )
         } finally {
           // Clear any remaining timer.
           if (revealTimer) clearTimeout(revealTimer)
@@ -1394,6 +1469,9 @@ export default function MainInteraction() {
       }
 
       setActiveSpeaker('Alex')
+      if (condition === CONDITION_MULTIPLE) {
+        swivelJordanTowardAlex(true)
+      }
 
       try {
         await speakWithLipsyncStatic(
@@ -1404,6 +1482,9 @@ export default function MainInteraction() {
           setAlexSubtitle,
         )
       } finally {
+        if (condition === CONDITION_MULTIPLE) {
+          swivelJordanTowardAlex(false)
+        }
         setActiveSpeaker(null)
         setAlexSubtitle('')
 
@@ -1466,7 +1547,8 @@ export default function MainInteraction() {
     if (
       (condition === CONDITION_SINGLE_COMBINED ||
         condition === CONDITION_MULTIPLE) &&
-      openingResponseDone
+      openingResponseDone &&
+      !openingComplete
     ) {
       handleOpeningContinue(trimmed)
       return
@@ -1582,6 +1664,8 @@ export default function MainInteraction() {
 
           // Jordan uses prerecorded audio.
           setActiveSpeaker('Jordan')
+          playGesture('stopAlexGesture')
+          swivelAlexTowardJordan(true)
 
           try {
             await speakWithLipsyncStatic(
@@ -1592,22 +1676,15 @@ export default function MainInteraction() {
               setJordanSubtitle,
             )
           } finally {
+            swivelAlexTowardJordan(false)
             setActiveSpeaker(null)
           }
         }
 
         fillerSubtitle('')
 
-        const jordanWaitStart = performance.now()
-
         // Wait for the LLM response and prepared audio, if needed.
         const { data, prepared } = await responsePromise
-
-        console.log(
-          'Jordan wait for prepared audio after filler:',
-          ((performance.now() - jordanWaitStart) / 1000).toFixed(2),
-          'seconds',
-        )
 
         console.log('Study backend response:', data)
 
@@ -1631,8 +1708,6 @@ export default function MainInteraction() {
           playGesture('alexLookAtJordan')
         }
 
-        const jordanSpeechStart = performance.now()
-
         setActiveSpeaker(speaker)
 
         try {
@@ -1644,11 +1719,6 @@ export default function MainInteraction() {
           setActiveSpeaker(null)
         }
 
-        console.log(
-          'Jordan prepared speech playback:',
-          ((performance.now() - jordanSpeechStart) / 1000).toFixed(2),
-          'seconds',
-        )
         // Clean up subtitles and gestures
         setSubtitle('')
 
@@ -1678,7 +1748,6 @@ export default function MainInteraction() {
       }
 
       // OLD BACKEND — Conditions 1 and 2
-      console.log('Sending users message ...')
 
       const response = await fetch(`${BASE_URL}/jordan/turn`, {
         method: 'POST',
@@ -2636,6 +2705,8 @@ export default function MainInteraction() {
               <div
                 className={`mi-character-zone mi-character-zone-alex ${
                   activeSpeaker === 'Jordan' ||
+                  (condition === CONDITION_MULTIPLE &&
+                    awaitingTopicElaboration) ||
                   (condition === CONDITION_MULTIPLE && showQuestions)
                     ? 'character-dimmed'
                     : ''
@@ -2675,6 +2746,20 @@ export default function MainInteraction() {
                       </div>
                     </div>
                   )}
+
+                  {condition === CONDITION_MULTIPLE &&
+                    awaitingTopicElaboration && (
+                      <button
+                        type="button"
+                        className="alex-transition-bubble"
+                        disabled={isResponding}
+                        onClick={() => {
+                          console.log('Participant ready to hear from Dr. Alex')
+                        }}
+                      >
+                        Explore information
+                      </button>
+                    )}
 
                   {showSwipingCards && <SwipingCards />}
                   {showThinkingBubble && (
@@ -2799,7 +2884,13 @@ export default function MainInteraction() {
                       : activeSpeaker === 'Alex'
                         ? 'character-dimmed'
                         : ''
-                  } ${activeSpeaker === 'Jordan' ? 'character-speaking' : ''}`}
+                  } ${
+                    activeSpeaker === 'Jordan' ||
+                    (condition === CONDITION_MULTIPLE &&
+                      awaitingTopicElaboration)
+                      ? 'character-speaking'
+                      : ''
+                  }`}
                 >
                   <div className="mi-character-content">
                     <div
@@ -2994,15 +3085,27 @@ export default function MainInteraction() {
               ) : topicState?.phase === 'wrapup' ? (
                 <div className="full-input-area" />
               ) : (
-                <ChatInput
-                  input={input}
-                  textareaRef={textareaRef}
-                  onChange={setInput}
-                  onSubmit={handleSend}
-                  onHandleKeyDown={handleKeyDown}
-                  sentMessageAnimation={sentMessageAnimation}
-                  isResponding={isResponding}
-                />
+                <div className="full-input-area">
+                  <ChatInput
+                    input={input}
+                    textareaRef={textareaRef}
+                    onChange={setInput}
+                    onSubmit={handleSend}
+                    onHandleKeyDown={handleKeyDown}
+                    sentMessageAnimation={sentMessageAnimation}
+                    isResponding={isResponding}
+                    awaitingTopicElaboration={awaitingTopicElaboration}
+                  />
+
+                  {condition === CONDITION_MULTIPLE &&
+                    awaitingTopicElaboration && (
+                      <div className="jordan-ask-transition">
+                        <span className="jordan-ask-keyboard-hint">
+                          Enter to send · Shift + Enter for newline
+                        </span>
+                      </div>
+                    )}
+                </div>
               )}
             </div>
           </section>
@@ -3170,9 +3273,10 @@ function ChatInput({
   onHandleKeyDown,
   sentMessageAnimation,
   isResponding,
+  awaitingTopicElaboration,
 }) {
   return (
-    <div className="full-input-area">
+    <>
       {sentMessageAnimation && (
         <div className="sent-message-animation">{sentMessageAnimation}</div>
       )}
@@ -3185,7 +3289,9 @@ function ChatInput({
             placeholder={
               isResponding
                 ? 'Please wait for the virtual character to finish speaking...'
-                : 'Type a message...'
+                : awaitingTopicElaboration
+                  ? "Share what's important to you so Jordan can help you figure out what information you'd want to know ..."
+                  : 'Type a message...'
             }
             rows={3}
             onKeyDown={onHandleKeyDown}
@@ -3203,8 +3309,10 @@ function ChatInput({
         </button>
       </form>
 
-      <p>Press enter to send, or Shift + Enter for newline</p>
-    </div>
+      {!awaitingTopicElaboration && (
+        <p>Press enter to send, or Shift + Enter for newline</p>
+      )}
+    </>
   )
 }
 

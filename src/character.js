@@ -1,5 +1,6 @@
 import { TalkingHead } from './talkinghead-files/talkinghead.mjs'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { Group } from 'three'
 
 // ============================================================
 // Config
@@ -15,6 +16,10 @@ const BASE_URL = 'http://127.0.0.1:8000'
 
 let head = null // Dr. Alex (doctor) TalkingHead instance
 let head1 = null // Jordan (companion) TalkingHead instance
+let alexChair = null
+let alexSwivelGroup = null
+let jordanChair = null
+let jordanSwivelGroup = null
 
 let onSubtitleCallback = null
 let subtitleRunId = 0
@@ -38,6 +43,10 @@ document.addEventListener(
 
 const gltfLoader = new GLTFLoader()
 
+function getDoctorHead() {
+  return head
+}
+
 function addChairBehindAvatar(
   head,
   url = '/assets/office_chair_green_reference.glb',
@@ -46,6 +55,29 @@ function addChairBehindAvatar(
     const chair = gltf.scene
     chair.position.set(0, 0, -0.35) // push further back, no rotation needed
     head.scene.add(chair)
+
+    if (head === getDoctorHead()) {
+      alexChair = chair
+
+      // Create a shared rotation pivot for Alex and the chair.
+      alexSwivelGroup = new Group()
+      head.scene.add(alexSwivelGroup)
+
+      // Preserve both objects' current world positions.
+      alexSwivelGroup.attach(head.armature)
+      alexSwivelGroup.attach(chair)
+    }
+
+    if (head === head1) {
+      jordanChair = chair
+
+      // Create a shared rotation pivot for Jordan and the chair.
+      jordanSwivelGroup = new Group()
+      head.scene.add(jordanSwivelGroup)
+
+      jordanSwivelGroup.attach(head.armature)
+      jordanSwivelGroup.attach(chair)
+    }
   })
 }
 
@@ -69,8 +101,8 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   })
 
   await head.showAvatar({
-    url: '/character-models/female.glb',
-    body: 'F',
+    url: '/character-models/test.glb',
+    body: 'M',
     avatarMood: 'neutral',
     ttsLang: 'en-GB',
     ttsVoice: 'en-GB-Standard-A',
@@ -256,6 +288,68 @@ export async function lookright() {
 export async function alexLookAtJordan() {
   head?.stopGesture(1500)
   head?.playGesture('lookright', Infinity, true, 1500)
+}
+
+let alexSwivelAnimation = null
+
+export function swivelAlexTowardJordan(turn = true) {
+  if (!alexSwivelGroup) return
+
+  // Cancel any unfinished swivel animation.
+  if (alexSwivelAnimation) {
+    cancelAnimationFrame(alexSwivelAnimation)
+  }
+
+  const start = alexSwivelGroup.rotation.y
+  const target = turn ? Math.PI / 25 : 0
+  const duration = 700
+  const startTime = performance.now()
+
+  function animate(now) {
+    const progress = Math.min((now - startTime) / duration, 1)
+    const eased = 0.5 - Math.cos(progress * Math.PI) / 2
+
+    alexSwivelGroup.rotation.y = start + (target - start) * eased
+
+    if (progress < 1) {
+      alexSwivelAnimation = requestAnimationFrame(animate)
+    } else {
+      alexSwivelAnimation = null
+    }
+  }
+
+  alexSwivelAnimation = requestAnimationFrame(animate)
+}
+
+let jordanSwivelAnimation = null
+
+export function swivelJordanTowardAlex(turn = true) {
+  if (!jordanSwivelGroup) return
+
+  // Cancel any unfinished swivel animation.
+  if (jordanSwivelAnimation) {
+    cancelAnimationFrame(jordanSwivelAnimation)
+  }
+
+  const start = jordanSwivelGroup.rotation.y
+  const target = turn ? -Math.PI / 25 : 0
+  const duration = 700
+  const startTime = performance.now()
+
+  function animate(now) {
+    const progress = Math.min((now - startTime) / duration, 1)
+    const eased = 0.5 - Math.cos(progress * Math.PI) / 2
+
+    jordanSwivelGroup.rotation.y = start + (target - start) * eased
+
+    if (progress < 1) {
+      jordanSwivelAnimation = requestAnimationFrame(animate)
+    } else {
+      jordanSwivelAnimation = null
+    }
+  }
+
+  jordanSwivelAnimation = requestAnimationFrame(animate)
 }
 
 export async function jordanLookAtAlex() {

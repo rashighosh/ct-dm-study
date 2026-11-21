@@ -217,14 +217,11 @@
   box-shadow: -10px 0 30px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(12px);
 
-  /* No movement or scaling */
+  /* Hidden until the drawer opens */
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-
   transform: translateX(100%);
-  visibility: hidden;
-  pointer-events: none;
 
   transition: 0.3s ease-in-out;
 }
@@ -236,8 +233,6 @@
   transform: translateX(0);
   visibility: visible;
   pointer-events: auto;
-
-  transition: 0.3s ease-in-out;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -414,16 +409,6 @@
 
   background: rgba(0, 0, 0, 0.18);
 
-  pointer-events: none;
-}
-
-.scene-loading-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 199;
-
-  background: rgba(0, 0, 0, 0.18);
-
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -479,7 +464,9 @@
   transition: 0.3s ease-in-out;
 }
 
-.mi-character-zone.character-dimmed {
+.mi-character-zone.character-dimmed
+  .mi-character-content
+  :is(.virtual-doctor, .virtual-companion) {
   filter: brightness(0.75);
 }
 
@@ -513,6 +500,25 @@
 
 .main-interaction1 .mi-character-zone-jordan .mi-character-content {
   transform: translateX(-20%);
+}
+
+/* Smooth camera-like movement when Jordan speaks */
+.main-interaction1 .mi-character-zone .mi-character-content {
+  transition: transform 650ms ease-in-out;
+}
+
+/* Alex shifts slightly left */
+.main-interaction1
+  .mi-character-zone-alex:has(~ .mi-character-zone-jordan.character-speaking)
+  .mi-character-content {
+  transform: translateX(-3%);
+}
+
+/* Jordan shifts slightly left and becomes 5% larger */
+.main-interaction1
+  .mi-character-zone-jordan.character-speaking
+  .mi-character-content {
+  transform: translateX(-35%) scale(1.05);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -615,31 +621,23 @@
 }
 
 .character-subtitle {
+  position: absolute;
+  top: 45%;
+  z-index: 10;
+
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.subtitle-speaker {
-  font-size: 0.75rem;
-  font-weight: 700;
-  opacity: 0.75;
-}
-
-.character-subtitle {
-  position: absolute;
-  top: 45%;
 
   width: 210px;
   max-width: 35%;
-
   box-sizing: border-box;
   padding: 14px 16px;
 
+  border: 3px solid white;
   border-radius: 15px;
 
   background: white;
-  border: 3px solid white;
   backdrop-filter: blur(6px);
 
   color: black;
@@ -647,9 +645,14 @@
   line-height: 1.45;
   text-align: left;
 
-  z-index: 10;
   pointer-events: none;
   box-shadow: 0 5px 15px rgb(0, 0, 0, 0.35);
+}
+
+.subtitle-speaker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0.75;
 }
 
 /* Alex: bubble on her OUTER / left side */
@@ -701,15 +704,16 @@
 .mi-bottom-panel {
   position: relative;
   z-index: 110;
-  height: 160px;
-  flex: 0 0 160px;
+  height: auto;
+  flex: 0 0 auto;
   min-height: 0;
   overflow: visible;
-
+  gap: 5px;
   background: #fbfaf8;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: 5px 0;
 }
 
 .mi-bottom-panel > .full-input-area {
@@ -729,7 +733,7 @@
   flex-direction: column;
   gap: 5px;
 
-  padding: 15px 19px;
+  padding: 9px 25px;
   background: #fbfaf8;
 }
 
@@ -742,28 +746,25 @@
 }
 
 .mi-input-row {
+  position: relative;
   display: flex;
   align-items: stretch;
   gap: 13px;
-}
-
-.mi-input-stack {
-  flex: 1;
-
-  display: flex;
-  flex-direction: column;
+  width: 100%;
 }
 
 .mi-input-row textarea {
   flex: 1;
+  width: 100%;
+  box-sizing: border-box;
 
-  min-height: 66px;
-  padding: 11px 14px;
+  min-height: 95px;
+  padding: 14px 100px 48px 14px;
 
   resize: none;
 
   border: 1px solid #d4d0c8;
-  border-radius: 10px;
+  border-radius: 14px;
   outline: none;
 
   background: #fff;
@@ -782,8 +783,13 @@
 }
 
 .send-button {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+
   width: auto;
-  padding: 0 25px;
+  padding: 9px 15px;
 
   display: flex;
   align-items: center;
@@ -791,14 +797,15 @@
   gap: 5px;
 
   border: none;
-  border-radius: 15px;
+  border-radius: 9px;
 
   background: var(--green1);
   color: #fff;
 
   font-family: inherit;
-  box-shadow: #5d5d5d 0 10px 20px -10px;
+  box-shadow: none;
   cursor: pointer;
+
   transition:
     transform 0.2s ease-in-out,
     box-shadow 0.2s ease-in-out;
@@ -988,10 +995,7 @@
   letter-spacing: 1px;
 }
 
-.history-message-jordan strong {
-  color: white;
-}
-
+.history-message-jordan strong,
 .history-message-alex strong {
   color: white;
 }
@@ -1415,30 +1419,24 @@
   justify-content: space-between;
 }
 
-/* Gray connecting line */
-.topic-progress-line {
+.topic-progress-line,
+.topic-progress-line-fill {
   position: absolute;
   top: 1rem;
-
   left: calc(50% / var(--topic-count));
   right: calc(50% / var(--topic-count));
-
   height: 3px;
-  background: white;
   border-radius: 999px;
+}
+
+/* Gray connecting line */
+.topic-progress-line {
+  background: white;
   z-index: 0;
 }
 
 .topic-progress-line-fill {
-  position: absolute;
-  top: 1rem;
-
-  left: calc(50% / var(--topic-count));
-  right: calc(50% / var(--topic-count));
-
-  height: 3px;
   background: var(--green2);
-  border-radius: 999px;
   box-shadow: 0 3px 15px #02521759;
 
   transform: scaleX(var(--progress));
@@ -1487,30 +1485,23 @@
 /* Active topic                                                               */
 /* -------------------------------------------------------------------------- */
 
-.topic-progress-item.active .topic-progress-number {
+.topic-progress-item:is(.active, .completed) .topic-progress-number {
   background: var(--green2);
   color: white;
   box-shadow: 0 3px 15px #02521759;
 }
 
-.topic-progress-item.active .topic-progress-name {
+.topic-progress-item:is(.active, .completed) .topic-progress-name {
   color: black;
+}
+
+.topic-progress-item.active .topic-progress-name {
   font-weight: 700;
 }
 
 /* -------------------------------------------------------------------------- */
 /* Completed topics                                                           */
 /* -------------------------------------------------------------------------- */
-
-.topic-progress-item.completed .topic-progress-number {
-  background: var(--green2);
-  box-shadow: 0 3px 15px #02521759;
-  color: white;
-}
-
-.topic-progress-item.completed .topic-progress-name {
-  color: black;
-}
 
 .topic-progress-hidden {
   opacity: 0;
@@ -1596,10 +1587,6 @@
 
   z-index: 20;
 
-  animation: pulse-animation 2s infinite;
-}
-
-.finish-button:not(:disabled):hover {
   animation: pulse-animation 2s infinite;
 }
 
@@ -1909,7 +1896,7 @@
 
 /* Respect reduced-motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .mi-chat-card > .full-input-area {
+  .mi-bottom-panel > .full-input-area {
     animation: none;
   }
 }
@@ -2115,10 +2102,6 @@
 /* ==========================================
    INTRO VISUAL CUES
    ========================================== */
-
-.mi-character-content {
-  position: relative;
-}
 
 /* Overall visual cue container */
 .intro-visual-cue {
@@ -2336,6 +2319,9 @@
   pointer-events: none;
 
   animation: miInstructionAppear 0.5s ease-out both;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 @keyframes miInstructionAppear {
@@ -2355,12 +2341,6 @@
     animation: none;
     transform: translateX(-50%);
   }
-}
-
-.mi-intro-instruction {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 .mi-intro-instruction-line {
@@ -2450,12 +2430,6 @@
   outline-offset: 2px;
 }
 
-@media (max-width: 650px) {
-  .topic-selection-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Expand chat panel during topic selection */
 
 .mi-bottom-panel.mi-bottom-panel-topic-selection {
@@ -2475,4 +2449,64 @@
   transform: none;
   width: 100%;
   margin: 0 auto;
+}
+
+/* Ask → Tell transition */
+
+.jordan-ask-transition {
+  width: 100%;
+}
+
+.jordan-ask-keyboard-hint {
+  font-size: 11px;
+  color: #888780;
+}
+
+/* Chat input with Send button inside */
+.mi-input-stack {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* Clickable speech bubble for transitioning to Alex */
+
+.alex-transition-bubble {
+  position: absolute;
+  top: 55%;
+  left: 15%;
+  z-index: 155;
+
+  width: fit-content;
+  padding: 13px 16px;
+
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 15px 0 15px 15px;
+  border: none;
+
+  color: black;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: normal;
+  text-align: left;
+
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.alex-transition-bubble:hover:not(:disabled) {
+  background: white;
+  transform: translateY(-2px);
+}
+
+.alex-transition-bubble:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
