@@ -101,7 +101,7 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   })
 
   await head.showAvatar({
-    url: '/character-models/test.glb',
+    url: '/character-models/older.glb',
     body: 'M',
     avatarMood: 'neutral',
     ttsLang: 'en-GB',

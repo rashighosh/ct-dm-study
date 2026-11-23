@@ -2,121 +2,121 @@
   {
     "word": "You",
     "start": 0,
-    "end": 0.316
+    "end": 0.289
   },
   {
     "word": "can",
-    "start": 0.316,
-    "end": 0.632
+    "start": 0.289,
+    "end": 0.578
   },
   {
     "word": "keep",
-    "start": 0.632,
-    "end": 0.948
+    "start": 0.578,
+    "end": 0.867
   },
   {
     "word": "these",
-    "start": 0.948,
-    "end": 1.264
+    "start": 0.867,
+    "end": 1.156
   },
   {
     "word": "suggestions",
-    "start": 1.264,
-    "end": 1.58
+    "start": 1.156,
+    "end": 1.4449999999999998
   },
   {
     "word": "or",
-    "start": 1.58,
-    "end": 1.896
+    "start": 1.4449999999999998,
+    "end": 1.734
   },
   {
     "word": "change",
-    "start": 1.896,
-    "end": 2.212
+    "start": 1.734,
+    "end": 2.0229999999999997
   },
   {
     "word": "any",
-    "start": 2.212,
-    "end": 2.528
+    "start": 2.0229999999999997,
+    "end": 2.312
   },
   {
     "word": "of",
-    "start": 2.528,
-    "end": 2.844
+    "start": 2.312,
+    "end": 2.601
   },
   {
     "word": "them",
-    "start": 2.844,
-    "end": 3.16
+    "start": 2.601,
+    "end": 2.8899999999999997
   },
   {
     "word": "using",
-    "start": 3.16,
-    "end": 3.476
+    "start": 2.8899999999999997,
+    "end": 3.179
   },
   {
     "word": "the",
-    "start": 3.476,
-    "end": 3.792
+    "start": 3.179,
+    "end": 3.468
   },
   {
     "word": "options",
-    "start": 3.792,
-    "end": 4.108
+    "start": 3.468,
+    "end": 3.7569999999999997
   },
   {
     "word": "above.",
-    "start": 4.108,
-    "end": 4.424
+    "start": 3.7569999999999997,
+    "end": 4.045999999999999
   },
   {
     "word": "Once",
-    "start": 4.424,
-    "end": 4.74
+    "start": 4.045999999999999,
+    "end": 4.335
   },
   {
     "word": "you're",
-    "start": 4.74,
-    "end": 5.056
+    "start": 4.335,
+    "end": 4.624
   },
   {
     "word": "satisfied",
-    "start": 5.056,
-    "end": 5.372
+    "start": 4.624,
+    "end": 4.912999999999999
   },
   {
     "word": "with",
-    "start": 5.372,
-    "end": 5.688
+    "start": 4.912999999999999,
+    "end": 5.202
   },
   {
     "word": "your",
-    "start": 5.688,
-    "end": 6.0040000000000004
+    "start": 5.202,
+    "end": 5.491
   },
   {
     "word": "selections,",
-    "start": 6.0040000000000004,
-    "end": 6.32
+    "start": 5.491,
+    "end": 5.779999999999999
   },
   {
     "word": "click",
-    "start": 6.32,
-    "end": 6.636
+    "start": 5.779999999999999,
+    "end": 6.069
   },
   {
     "word": "Continue",
-    "start": 6.636,
-    "end": 6.952
+    "start": 6.069,
+    "end": 6.358
   },
   {
     "word": "to",
-    "start": 6.952,
-    "end": 7.268
+    "start": 6.358,
+    "end": 6.646999999999999
   },
   {
     "word": "begin.",
-    "start": 7.268,
-    "end": 7.584
+    "start": 6.646999999999999,
+    "end": 6.936
   }
 ]

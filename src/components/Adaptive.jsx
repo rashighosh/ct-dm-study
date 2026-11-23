@@ -160,6 +160,7 @@ export default function MainInteraction() {
   const historyBodyRef = useRef(null)
   const conversationStartedRef = useRef(false)
   const introStartedRef = useRef(false)
+  const skipIntroRef = useRef(false)
   const startFirstTopicResolverRef = useRef(null)
 
   const SESSION_KEY = `studySession-${participantId}-${condition}`
@@ -239,6 +240,7 @@ export default function MainInteraction() {
   const transcriptLoggingQueueRef = useRef(Promise.resolve())
   const [previewResource, setPreviewResource] = useState(null)
   const [activeSpeaker, setActiveSpeaker] = useState(null)
+  const [focusedCharacter, setFocusedCharacter] = useState('Jordan')
   const [introVisuals, setIntroVisuals] = useState({
     Alex: null,
     Jordan: null,
@@ -405,8 +407,7 @@ export default function MainInteraction() {
   }, [SESSION_KEY])
 
   useEffect(() => {
-    if (!started || !topicState) return
-
+    if (!started || !topicState || condition === CONDITION_MULTIPLE) return
     async function loadTopicState() {
       try {
         const response = await fetch(
@@ -730,6 +731,19 @@ export default function MainInteraction() {
     })
   }
 
+  function handleSkipIntro() {
+    skipIntroRef.current = true
+
+    // Reveal the chat area.
+    setShowChatInput(true)
+
+    // Show Jordan's opening instructions.
+    setIntroInstruction([
+      "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
+      "Feel free to share what's on your mind! There are no right or wrong answers.",
+    ])
+  }
+
   async function playCharacterIntro(startIndex = 0) {
     const introSequence = introSequences[condition]
 
@@ -738,6 +752,8 @@ export default function MainInteraction() {
     }
 
     for (let index = startIndex; index < introSequence.length; index++) {
+      if (skipIntroRef.current) break
+
       const intro = introSequence[index]
       if (intro.beforeGesture) {
         playGesture(intro.beforeGesture)
@@ -949,6 +965,63 @@ export default function MainInteraction() {
     )
   }
 
+  async function handleStartAlexTopic() {
+    if (isResponding || focusedCharacter === 'Alex') return
+
+    setIsResponding(true)
+    setResponseStatus('Preparing information')
+
+    try {
+      const response = await fetch(`${BASE_URL}/study/alex-topic-intro`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Alex topic introduction failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      console.log('Alex topic introduction:', data)
+
+      // Switch the participant's focus to Alex.
+      setFocusedCharacter('Alex')
+      setAwaitingTopicElaboration(false)
+
+      // Save Alex's introduction in the transcript.
+      setMessages((previous) => [
+        ...previous,
+        {
+          from: 'Alex',
+          text: data.alex_reply,
+        },
+      ])
+
+      setResponseStatus('')
+
+      // Have Alex deliver the introduction.
+      playGesture('stopAlexGesture')
+      playGesture('jordanLookAtAlex')
+
+      await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
+
+      setAlexSubtitle('')
+      playGesture('stopCompanionGesture')
+    } catch (error) {
+      console.error('Could not start Alex topic:', error)
+      alert('Could not load the topic information. Please try again.')
+    } finally {
+      setIsResponding(false)
+      setResponseStatus('')
+    }
+  }
+
   async function handleConfirmTopics() {
     if (
       isResponding ||
@@ -1076,6 +1149,99 @@ export default function MainInteraction() {
 
   async function handleNextTopic() {
     if (isResponding || !topicState || topicState.conversation_complete) return
+
+    // NEW STUDY FLOW — Condition 3
+    if (condition === CONDITION_MULTIPLE) {
+      setIsResponding(true)
+      setResponseStatus('Preparing next topic')
+      setShowQuestions(false)
+
+      try {
+        // Advance the active topic in the study backend.
+        const response = await fetch(`${BASE_URL}/study/advance-topic`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Topic advancement failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        setTopicState({
+          current_topic_index: data.current_topic_index,
+          conversation_complete: data.conversation_complete,
+          phase: data.phase,
+          topics: data.topics,
+        })
+
+        // We'll implement the final closing sequence separately.
+        if (data.conversation_complete) {
+          setAwaitingTopicElaboration(false)
+          setShowResourceChoice(true)
+          return
+        }
+
+        // Reset to Jordan for the new topic.
+        setFocusedCharacter('Jordan')
+        setAwaitingTopicElaboration(false)
+
+        // Generate Jordan's opening question using the evolving profile.
+        const openingResponse = await fetch(`${BASE_URL}/study/topic-opening`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+          }),
+        })
+
+        if (!openingResponse.ok) {
+          throw new Error(`Topic opening failed: ${openingResponse.status}`)
+        }
+
+        const openingData = await openingResponse.json()
+
+        setResponseStatus('')
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            from: 'Jordan',
+            text: openingData.jordan_reply,
+          },
+        ])
+
+        playGesture('stopCompanionGesture')
+        playGesture('alexLookAtJordan')
+
+        await speakWithHighlight(
+          openingData.jordan_reply,
+          'companion',
+          setJordanSubtitle,
+        )
+
+        setJordanSubtitle('')
+        playGesture('stopAlexGesture')
+
+        // Participant can elaborate or choose to explore information.
+        setAwaitingTopicElaboration(true)
+      } catch (error) {
+        console.error('Could not advance study topic:', error)
+      } finally {
+        setIsResponding(false)
+        setResponseStatus('')
+      }
+
+      return
+    }
 
     const conversationMessages = messages.filter(
       (message) => message.from !== 'system',
@@ -1747,6 +1913,103 @@ export default function MainInteraction() {
         return
       }
 
+      // NEW STUDY FLOW — Jordan's topic elicitation
+      if (
+        condition === CONDITION_MULTIPLE &&
+        topicState?.phase === 'topics' &&
+        focusedCharacter === 'Jordan'
+      ) {
+        const response = await fetch(`${BASE_URL}/study/jordan-topic-turn`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            message: trimmed,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Jordan topic turn failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        console.log('Updated user profile:', data.user_profile)
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            from: 'Jordan',
+            text: data.jordan_reply,
+          },
+        ])
+
+        setShowThinkingBubble(false)
+
+        playGesture('stopCompanionGesture')
+        playGesture('alexLookAtJordan')
+
+        await speakWithHighlight(
+          data.jordan_reply,
+          'companion',
+          setJordanSubtitle,
+        )
+
+        setJordanSubtitle('')
+        playGesture('stopAlexGesture')
+
+        return
+      }
+
+      // NEW STUDY FLOW — Alex's ongoing factual conversation
+      if (
+        condition === CONDITION_MULTIPLE &&
+        topicState?.phase === 'topics' &&
+        focusedCharacter === 'Alex'
+      ) {
+        const response = await fetch(`${BASE_URL}/study/alex-topic-turn`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            message: trimmed,
+            history: conversationMessages,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error(`Alex topic turn failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        console.log('Alex topic response:', data)
+
+        setMessages((previous) => [
+          ...previous,
+          {
+            from: 'Alex',
+            text: data.alex_reply,
+          },
+        ])
+
+        setShowThinkingBubble(false)
+
+        playGesture('stopAlexGesture')
+        playGesture('jordanLookAtAlex')
+
+        await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
+
+        setAlexSubtitle('')
+        playGesture('stopCompanionGesture')
+
+        return
+      }
+
       // OLD BACKEND — Conditions 1 and 2
 
       const response = await fetch(`${BASE_URL}/jordan/turn`, {
@@ -2406,7 +2669,7 @@ export default function MainInteraction() {
           <div className="mi-start-overlay-content">
             <img src={logo} className="logo" alt="Study logo" />
 
-            <h2>Clinical Trials Education</h2>
+            <h2>Understanding Clinical Trials</h2>
             {!isSingleAgent ? (
               <h1>Chat with Virtual Characters</h1>
             ) : (
@@ -2459,10 +2722,12 @@ export default function MainInteraction() {
               <div className="mi-privacy-reminder">
                 <strong>Friendly Privacy Reminder</strong>
                 <p>
-                  Please avoid sharing personally identifying information, such
-                  as your full name, address, phone number, or medical record
-                  numbers. You can discuss your questions and concerns without
-                  providing these details.
+                  No microphone or voice input is used, only text input. This
+                  study uses University of Florida AI models which have data
+                  security requirements designed to protect sensitive
+                  information. Still, for your privacy & security, please avoid
+                  sharing identifying information such as your name, address, or
+                  contact details.
                 </p>
               </div>
             </div>
@@ -2566,6 +2831,33 @@ export default function MainInteraction() {
         </div>
       )}
 
+      {condition === CONDITION_MULTIPLE &&
+        started &&
+        !introDone &&
+        !showStartOverlay &&
+        !showSceneLoading &&
+        ['localhost', '127.0.0.1'].includes(window.location.hostname) && (
+          <button
+            type="button"
+            onClick={handleSkipIntro}
+            style={{
+              position: 'fixed',
+              top: '80px',
+              right: '20px',
+              zIndex: 9999,
+              padding: '10px 16px',
+              background: '#333',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'none',
+            }}
+          >
+            Skip Intro (Dev)
+          </button>
+        )}
+
       <div className="mi-root main-interaction1">
         <div className="tool-header">
           <img src={logo} className="logo" alt="Study logo" />
@@ -2660,9 +2952,10 @@ export default function MainInteraction() {
                   </span>
                 </button>
               ) : (
-                false &&
                 topicState?.phase === 'topics' &&
-                introDone && (
+                introDone &&
+                !showTopicSelection &&
+                !awaitingTopicElaboration && (
                   <button
                     type="button"
                     className="cssbuttons-io-button next-topic-button"
@@ -2703,10 +2996,26 @@ export default function MainInteraction() {
               )}
 
               <div
+                onClick={() => {
+                  if (
+                    condition === CONDITION_MULTIPLE &&
+                    topicState?.phase === 'topics' &&
+                    focusedCharacter === 'Jordan' &&
+                    !awaitingTopicElaboration &&
+                    !isResponding
+                  ) {
+                    setFocusedCharacter('Alex')
+                  }
+                }}
                 className={`mi-character-zone mi-character-zone-alex ${
                   activeSpeaker === 'Jordan' ||
                   (condition === CONDITION_MULTIPLE &&
-                    awaitingTopicElaboration) ||
+                    topicState?.phase === 'topics' &&
+                    focusedCharacter === 'Jordan' &&
+                    activeSpeaker !== 'Alex') ||
+                  (condition === CONDITION_MULTIPLE &&
+                    awaitingTopicElaboration &&
+                    focusedCharacter !== 'Alex') ||
                   (condition === CONDITION_MULTIPLE && showQuestions)
                     ? 'character-dimmed'
                     : ''
@@ -2753,9 +3062,7 @@ export default function MainInteraction() {
                         type="button"
                         className="alex-transition-bubble"
                         disabled={isResponding}
-                        onClick={() => {
-                          console.log('Participant ready to hear from Dr. Alex')
-                        }}
+                        onClick={handleStartAlexTopic}
                       >
                         Explore information
                       </button>
@@ -2878,16 +3185,30 @@ export default function MainInteraction() {
 
               {!isSingleAgent && (
                 <div
+                  onClick={() => {
+                    if (
+                      condition === CONDITION_MULTIPLE &&
+                      topicState?.phase === 'topics' &&
+                      !isResponding
+                    ) {
+                      setFocusedCharacter('Jordan')
+                    }
+                  }}
                   className={`mi-character-zone mi-character-zone-jordan ${
                     condition === CONDITION_MULTIPLE && showQuestions
                       ? 'character-speaking'
-                      : activeSpeaker === 'Alex'
+                      : activeSpeaker === 'Alex' ||
+                          (condition === CONDITION_MULTIPLE &&
+                            topicState?.phase === 'topics' &&
+                            focusedCharacter === 'Alex' &&
+                            activeSpeaker !== 'Jordan')
                         ? 'character-dimmed'
                         : ''
                   } ${
                     activeSpeaker === 'Jordan' ||
                     (condition === CONDITION_MULTIPLE &&
-                      awaitingTopicElaboration)
+                      awaitingTopicElaboration &&
+                      focusedCharacter === 'Jordan')
                       ? 'character-speaking'
                       : ''
                   }`}

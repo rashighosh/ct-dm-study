@@ -27,8 +27,8 @@
 
   /* background: var(--background-gradient); */
 
-  --sans: 'Funnel Sans', sans-serif;
-  --heading: 'Funnel Sans', sans-serif;
+  --sans: 'Urbanist', sans-serif;
+  --heading: 'Urbanist', sans-serif;
   --mono: 'Epilogue', sans-serif;
 
   font: 18px/145% var(--sans);

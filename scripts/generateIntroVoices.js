@@ -118,6 +118,21 @@ async function generateAllIntros() {
       text: JORDAN_INTRO_1_MULTIPLE_5,
       character: 'companion',
     },
+    {
+      name: 'ALEX_TOPIC_FILLER',
+      text: ALEX_TOPIC_FILLER,
+      character: 'doctor',
+    },
+    {
+      name: 'ALEX_TOPIC_SELECTION_INSTRUCTIONS',
+      text: ALEX_TOPIC_SELECTION_INSTRUCTIONS,
+      character: 'doctor',
+    },
+    {
+      name: 'JORDAN_OPENING_FILLER',
+      text: JORDAN_OPENING_FILLER,
+      character: 'companion',
+    },
   ]
 
   for (const intro of intros) {
@@ -131,16 +146,16 @@ async function generateAllIntros() {
 // Choose what to run
 // --------------------------------------------------------------------------
 
-// generateAllIntros().catch((err) => {
-//   console.error('❌ Intro generation failed:', err)
-//   process.exitCode = 1
-// })
-
-generateOneIntro(
-  'JORDAN_OPENING_FILLER',
-  JORDAN_OPENING_FILLER,
-  'companion',
-).catch((err) => {
+generateAllIntros().catch((err) => {
   console.error('❌ Intro generation failed:', err)
   process.exitCode = 1
 })
+
+// generateOneIntro(
+//   'JORDAN_OPENING_FILLER',
+//   JORDAN_OPENING_FILLER,
+//   'companion',
+// ).catch((err) => {
+//   console.error('❌ Intro generation failed:', err)
+//   process.exitCode = 1
+// })

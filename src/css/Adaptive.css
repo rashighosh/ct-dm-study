@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 
 #root {
-  background: #f8f7f4;
+  background: white;
 }
 
 .mi-root {
@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 18px;
 
-  background: #f8f7f4;
+  background: white;
 }
 
 .mi-main {
@@ -709,11 +709,10 @@
   min-height: 0;
   overflow: visible;
   gap: 5px;
-  background: #fbfaf8;
+  background: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 5px 0;
 }
 
 .mi-bottom-panel > .full-input-area {
@@ -734,7 +733,7 @@
   gap: 5px;
 
   padding: 9px 25px;
-  background: #fbfaf8;
+  background: white;
 }
 
 .full-input-area > p {
@@ -1087,7 +1086,7 @@
 
   border-radius: 25px;
 
-  background: rgba(255, 255, 255, 0.75);
+  background: white;
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.25);
 
   line-height: 1.5;

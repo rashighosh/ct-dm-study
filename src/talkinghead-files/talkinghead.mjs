@@ -807,18 +807,15 @@ class TalkingHead {
           'Spine2.rotation': { x: 0, y: 0, z: 0 },
           'Neck.rotation': { x: 0, y: 0, z: 0 },
           'Head.rotation': { x: 0, y: 0, z: 0 },
-
           // Arms resting on lap, elbows widened out toward armrests
-          'LeftShoulder.rotation': { x: 1.72, y: -0.1, z: -1.45 },
-          'LeftArm.rotation': { x: 1.15, y: 0.35, z: 0.08 },
-          'LeftForeArm.rotation': { x: -0.05, y: 0.05, z: 1.35 },
+          'LeftShoulder.rotation': { x: 1.82, y: -0.1, z: -1.45 },
+          'LeftArm.rotation': { x: 1.27, y: 0.35, z: 0.08 },
+          'LeftForeArm.rotation': { x: -0.05, y: 0.05, z: 1.42 },
           'LeftHand.rotation': { x: -0.1, y: -0.35, z: 0.15 },
-
-          'RightShoulder.rotation': { x: 1.72, y: 0.1, z: 1.45 },
-          'RightArm.rotation': { x: 1.15, y: -0.35, z: -0.08 },
-          'RightForeArm.rotation': { x: -0.05, y: -0.05, z: -1.35 },
+          'RightShoulder.rotation': { x: 1.82, y: 0.1, z: 1.45 },
+          'RightArm.rotation': { x: 1.27, y: -0.35, z: -0.08 },
+          'RightForeArm.rotation': { x: -0.05, y: -0.05, z: -1.42 },
           'RightHand.rotation': { x: -0.1, y: 0.35, z: -0.15 },
-
           // Loose finger curl so hands interlace instead of clipping as flat planes
           'LeftHandThumb1.rotation': { x: 0.2, y: -0.05, z: 0.3 },
           'LeftHandThumb2.rotation': { x: 0.1, y: 0, z: -0.15 },
@@ -834,7 +831,6 @@ class TalkingHead {
           'LeftHandPinky1.rotation': { x: 0.35, y: 0, z: 0.05 },
           'LeftHandPinky2.rotation': { x: 0.4, y: 0, z: 0 },
           'LeftHandPinky3.rotation': { x: 0.25, y: 0, z: 0 },
-
           'RightHandThumb1.rotation': { x: 0.2, y: 0.05, z: -0.3 },
           'RightHandThumb2.rotation': { x: 0.1, y: 0, z: 0.15 },
           'RightHandIndex1.rotation': { x: 0.35, y: 0, z: 0.05 },
@@ -849,9 +845,9 @@ class TalkingHead {
           'RightHandPinky1.rotation': { x: 0.35, y: 0, z: -0.05 },
           'RightHandPinky2.rotation': { x: 0.4, y: 0, z: 0 },
           'RightHandPinky3.rotation': { x: 0.25, y: 0, z: 0 },
-
-          'LeftUpLeg.rotation': { x: -1.55, y: 0, z: -3.14 },
-          'RightUpLeg.rotation': { x: -1.55, y: 0, z: 3.14 },
+          // Knees ~13cm wider than before; shins stay vertical (feet under knees)
+          'LeftUpLeg.rotation': { x: -1.55, y: 0, z: -3.0 },
+          'RightUpLeg.rotation': { x: -1.55, y: 0, z: 3.0 },
           'LeftLeg.rotation': { x: -1.55, y: 0, z: 0 },
           'RightLeg.rotation': { x: -1.55, y: 0, z: 0 },
           'LeftFoot.rotation': { x: 0, y: 0, z: 0 },
