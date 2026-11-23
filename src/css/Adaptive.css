@@ -584,6 +584,7 @@
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
+  font-family: var(--mono);
 }
 
 .subtitle-name-pill-alex {
@@ -621,6 +622,7 @@
 }
 
 .character-subtitle {
+  font-family: var(--mono);
   position: absolute;
   top: 45%;
   z-index: 10;
@@ -768,7 +770,7 @@
 
   background: #fff;
 
-  font-family: inherit;
+  font-family: var(--mono);
   font-size: 14px;
 
   transition:

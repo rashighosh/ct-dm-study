@@ -732,16 +732,11 @@ export default function MainInteraction() {
   }
 
   function handleSkipIntro() {
+    // Stop the intro after the current audio segment finishes.
     skipIntroRef.current = true
 
-    // Reveal the chat area.
-    setShowChatInput(true)
-
-    // Show Jordan's opening instructions.
-    setIntroInstruction([
-      "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
-      "Feel free to share what's on your mind! There are no right or wrong answers.",
-    ])
+    // Don't reveal the chat yet. The intro must finish first.
+    // Otherwise, the user can interact while isResponding is still true.
   }
 
   async function playCharacterIntro(startIndex = 0) {
@@ -906,6 +901,14 @@ export default function MainInteraction() {
           introStartedRef.current = true
 
           await playCharacterIntro(introNextIndex)
+          if (skipIntroRef.current) {
+            setShowChatInput(true)
+
+            setIntroInstruction([
+              "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
+              "Feel free to share what's on your mind! There are no right or wrong answers.",
+            ])
+          }
 
           // Log when the introduction finishes
           try {
@@ -965,14 +968,17 @@ export default function MainInteraction() {
     )
   }
 
-  async function handleStartAlexTopic() {
-    if (isResponding || focusedCharacter === 'Alex') return
+  async function handleStartAlexTopic(force = false) {
+    if ((isResponding && !force) || (focusedCharacter === 'Alex' && !force))
+      return
 
+    setFocusedCharacter('Alex')
+    setAwaitingTopicElaboration(false)
     setIsResponding(true)
     setResponseStatus('Preparing information')
 
     try {
-      const response = await fetch(`${BASE_URL}/study/alex-topic-intro`, {
+      const response = await fetch(`${BASE_URL}/study/alex-topic-response`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1960,6 +1966,12 @@ export default function MainInteraction() {
         setJordanSubtitle('')
         playGesture('stopAlexGesture')
 
+        // Once Jordan finishes the closing handoff,
+        // automatically switch to Alex.
+        if (data.elicitation_complete) {
+          await handleStartAlexTopic(true)
+        }
+
         return
       }
 
@@ -2851,7 +2863,7 @@ export default function MainInteraction() {
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              display: 'none',
+              display: 'flex',
             }}
           >
             Skip Intro (Dev)
@@ -2861,7 +2873,7 @@ export default function MainInteraction() {
       <div className="mi-root main-interaction1">
         <div className="tool-header">
           <img src={logo} className="logo" alt="Study logo" />
-          <h2>Clinical Trials Education</h2>
+          <h2>Understanding Clinical Trials</h2>
           {!isSingleAgent ? (
             <h1>Chat with Virtual Characters</h1>
           ) : (

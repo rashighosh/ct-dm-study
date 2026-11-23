@@ -101,7 +101,7 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   })
 
   await head.showAvatar({
-    url: '/character-models/older.glb',
+    url: '/character-models/test.glb',
     body: 'M',
     avatarMood: 'neutral',
     ttsLang: 'en-GB',
@@ -130,7 +130,7 @@ export async function initCompanionCharacter(containerNode) {
   })
 
   await head1.showAvatar({
-    url: '/character-models/male.glb',
+    url: '/character-models/male_sweater.glb',
     body: 'M',
     avatarMood: 'neutral',
     ttsLang: 'en-GB',
