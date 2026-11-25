@@ -7,6 +7,7 @@ import Adaptive from './components/Adaptive.jsx'
 import SelectTopics from './components/SelectTopics.jsx'
 import SelectResources from './components/SelectResources'
 import IntroWalkthrough from './components/IntroWalkthrough'
+import { CompanionPreviewPage } from './components/CompanionPreview'
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/" element={<Adaptive />} />
         <Route path="/topics" element={<SelectTopics />} />
         <Route path="/resources" element={<SelectResources />} />
+        <Route path="/companion-preview" element={<CompanionPreviewPage />} />
       </Routes>
     </Suspense>
   </BrowserRouter>,

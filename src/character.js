@@ -164,7 +164,11 @@ export async function initCompanionCharacter(containerNode, selectedCompanion) {
     lipsyncLang: 'en',
   })
   addChairBehindAvatar(head1, '/assets/office_chair_green_reference.glb')
-  head1.playPose('chair2')
+  head1.playPose(
+    ['jordan1', 'jordan2'].includes(activeCompanionId)
+      ? 'chair2_female'
+      : 'chair2',
+  )
 
   return head1
 }

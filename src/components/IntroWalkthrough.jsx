@@ -87,8 +87,8 @@ const INTRO_PAGES = {
 const COMPANION_OPTIONS = [
   { id: 'jordan1', image: jordan1Image },
   { id: 'jordan2', image: jordan2Image },
-  { id: 'jordan3', image: jordan4Image },
-  { id: 'jordan4', image: jordan3Image },
+  { id: 'jordan3', image: jordan3Image },
+  { id: 'jordan4', image: jordan4Image },
 ]
 
 export default function IntroWalkthrough() {

@@ -40,8 +40,8 @@ export default function CompanionPreview({ model, body }) {
     <div
       ref={containerRef}
       style={{
-        width: '350px',
-        height: '350px',
+        width: '550px',
+        height: '550px',
         position: 'relative',
         border: 'none',
         background: '#f4f3ec',
@@ -49,5 +49,35 @@ export default function CompanionPreview({ model, body }) {
           'rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.3) 0 5px 25px -3px',
       }}
     />
+  )
+}
+
+export function CompanionPreviewPage() {
+  const companions = [
+    { name: 'F1', model: 'f1.glb', body: 'F' },
+    { name: 'F2', model: 'f2.glb', body: 'F' },
+    { name: 'M1', model: 'm1.glb', body: 'M' },
+    { name: 'M2', model: 'm2.glb', body: 'M' },
+  ]
+
+  const companion = { name: 'M2', model: 'm2.glb', body: 'M' }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '20px',
+        padding: '30px',
+        textAlign: 'center',
+      }}
+    >
+      <CompanionPreview
+        model={`/character-models/companion-characters/${companion.model}`}
+        body={companion.body}
+      />
+    </div>
   )
 }
