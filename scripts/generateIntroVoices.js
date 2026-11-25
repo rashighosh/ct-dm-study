@@ -33,7 +33,7 @@ const ALEX_TOPIC_SELECTION_INSTRUCTIONS =
 // Generate one intro function
 // --------------------------------------------------------------------------
 
-async function generateOneIntro(name, text, character) {
+async function generateOneIntro(name, text, character, companion = null) {
   console.log(`Generating ${name}...`)
 
   const res = await fetch(`${BASE_URL}/tts`, {
@@ -42,6 +42,7 @@ async function generateOneIntro(name, text, character) {
     body: JSON.stringify({
       text,
       character,
+      companion,
     }),
   })
 
@@ -55,7 +56,12 @@ async function generateOneIntro(name, text, character) {
     throw new Error(`Missing audio or timestamps for ${name}`)
   }
 
-  const prefix = character === 'doctor' ? 'doctor' : 'companion'
+  const prefix =
+    character === 'doctor'
+      ? 'doctor'
+      : ['jordan1', 'jordan2'].includes(companion)
+        ? 'companion-female'
+        : 'companion-male'
 
   fs.mkdirSync('public/intro-voices', { recursive: true })
 
@@ -136,10 +142,14 @@ async function generateAllIntros() {
   ]
 
   for (const intro of intros) {
-    await generateOneIntro(intro.name, intro.text, intro.character)
+    if (intro.character === 'companion') {
+      await generateOneIntro(intro.name, intro.text, intro.character, 'jordan1')
+
+      await generateOneIntro(intro.name, intro.text, intro.character, 'jordan3')
+    }
   }
 
-  console.log('🎉 Done! All 8 intro audio and timestamp files saved!')
+  console.log('🎉 Done! All companion audio and timestamp files saved!')
 }
 
 // --------------------------------------------------------------------------

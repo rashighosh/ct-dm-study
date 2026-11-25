@@ -10,6 +10,27 @@ const BASE_URL = 'http://127.0.0.1:8000'
 // const BASE_URL =
 //   'https://7bnfepvywhuc3ip5onitak3se40hivzn.lambda-url.us-east-1.on.aws'
 
+let activeCompanionId = null
+
+const COMPANION_CHARACTERS = {
+  jordan1: {
+    url: '/character-models/companion-characters/f1.glb',
+    body: 'F',
+  },
+  jordan2: {
+    url: '/character-models/companion-characters/f2.glb',
+    body: 'F',
+  },
+  jordan3: {
+    url: '/character-models/companion-characters/m1.glb',
+    body: 'M',
+  },
+  jordan4: {
+    url: '/character-models/companion-characters/m2.glb',
+    body: 'M',
+  },
+}
+
 // ============================================================
 // Module state
 // ============================================================
@@ -114,7 +135,12 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   return head
 }
 
-export async function initCompanionCharacter(containerNode) {
+export async function initCompanionCharacter(containerNode, selectedCompanion) {
+  activeCompanionId = Object.hasOwn(COMPANION_CHARACTERS, selectedCompanion)
+    ? selectedCompanion
+    : 'jordan1'
+
+  const companion = COMPANION_CHARACTERS[activeCompanionId]
   head1 = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: 'mid', // full, mid, upper, head,
@@ -130,8 +156,8 @@ export async function initCompanionCharacter(containerNode) {
   })
 
   await head1.showAvatar({
-    url: '/character-models/male_sweater.glb',
-    body: 'M',
+    url: companion.url,
+    body: companion.body,
     avatarMood: 'neutral',
     ttsLang: 'en-GB',
     ttsVoice: 'en-GB-Standard-A',
@@ -559,7 +585,11 @@ export async function prepareSpeech(text, character = 'doctor') {
   const ttsRes = await fetch(`${BASE_URL}/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, character }),
+    body: JSON.stringify({
+      text,
+      character,
+      companion: character === 'companion' ? activeCompanionId : null,
+    }),
   })
 
   if (!ttsRes.ok) {
@@ -727,7 +757,11 @@ export async function speakWithLipsync(
   const ttsRes = await fetch(`${BASE_URL}/tts`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, character }),
+    body: JSON.stringify({
+      text,
+      character,
+      companion: character === 'companion' ? activeCompanionId : null,
+    }),
   })
 
   const { audio, timestamps: rawTimestamps = [] } = await ttsRes.json()
@@ -1031,7 +1065,12 @@ function buildGestureMarkers({
     return { markers: [], mtimes: [] }
   }
 
-  const gestureDefinitions = STATIC_GESTURE_MAPS[audioPath] || []
+  const gestureAudioPath = audioPath.replace(
+    /companion-(female|male)-audio-/,
+    'companion-audio-',
+  )
+
+  const gestureDefinitions = STATIC_GESTURE_MAPS[gestureAudioPath] || []
 
   const normalizedTimestampWords = timestamps.map((item) =>
     normalizeWord(item.word),

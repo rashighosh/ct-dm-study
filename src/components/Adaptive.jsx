@@ -144,6 +144,27 @@ export default function MainInteraction() {
   const participantId = searchParams.get('id') || 'navi-test'
 
   const condition = Number(searchParams.get('c') ?? 3)
+  const requestedCompanion = searchParams.get('companion')
+  const selectedCompanion = [
+    'jordan1',
+    'jordan2',
+    'jordan3',
+    'jordan4',
+  ].includes(requestedCompanion)
+    ? requestedCompanion
+    : 'jordan1'
+  const companionAudioPrefix = ['jordan1', 'jordan2'].includes(
+    selectedCompanion,
+  )
+    ? 'companion-female'
+    : 'companion-male'
+
+  function resolveCompanionAudioPath(path) {
+    return path.replace(
+      '/intro-voices/companion-',
+      `/intro-voices/${companionAudioPrefix}-`,
+    )
+  }
 
   const isSingleAgent =
     condition === CONDITION_SINGLE_INFO ||
@@ -268,6 +289,8 @@ export default function MainInteraction() {
             participant_id: participantId,
             c: condition,
             condition_name: CONDITION_NAMES[condition],
+            selected_companion:
+              condition === CONDITION_MULTIPLE ? selectedCompanion : null,
           }),
         },
       )
@@ -579,7 +602,7 @@ export default function MainInteraction() {
         } else {
           await Promise.all([
             initDoctorCharacter(doctorRef.current),
-            initCompanionCharacter(companionRef.current),
+            initCompanionCharacter(companionRef.current, selectedCompanion),
           ])
 
           await Promise.all([
@@ -790,8 +813,8 @@ export default function MainInteraction() {
 
       try {
         await speakWithLipsyncStatic(
-          intro.audio,
-          intro.timestamps,
+          resolveCompanionAudioPath(intro.audio),
+          resolveCompanionAudioPath(intro.timestamps),
           intro.character,
           true,
           setSubtitle,
@@ -1841,8 +1864,10 @@ export default function MainInteraction() {
 
           try {
             await speakWithLipsyncStatic(
-              STUDY_FILLER_AUDIO.jordanOpening.audio,
-              STUDY_FILLER_AUDIO.jordanOpening.timestamps,
+              resolveCompanionAudioPath(STUDY_FILLER_AUDIO.jordanOpening.audio),
+              resolveCompanionAudioPath(
+                STUDY_FILLER_AUDIO.jordanOpening.timestamps,
+              ),
               'companion',
               true,
               setJordanSubtitle,
@@ -2679,56 +2704,21 @@ export default function MainInteraction() {
       {showStartOverlay && (
         <div className="start-overlay">
           <div className="mi-start-overlay-content">
-            <img src={logo} className="logo" alt="Study logo" />
+            <div className="title-area">
+              <img src={logo} className="logo" alt="Study logo" />
+              <p>Understanding Clinical Trials</p>
+            </div>
 
-            <h2>Understanding Clinical Trials</h2>
-            {!isSingleAgent ? (
-              <h1>Chat with Virtual Characters</h1>
-            ) : (
-              <h1>Chat with a Virtual Character</h1>
-            )}
+            <hr />
+            <h1>Get Ready to Meet the Virtual Characters</h1>
 
             <div className="mi-start-information">
-              {!isSingleAgent ? (
-                <p>
-                  You're about to have a conversation about cancer clinical
-                  trials with two AI-powered virtual characters:{' '}
-                  <strong>Alex</strong> and <strong>Jordan</strong>!
-                </p>
-              ) : (
-                <p>
-                  You're about to have a conversation about cancer clinical
-                  trials with an AI-powered virtual character:{' '}
-                  <strong>Alex</strong>!
-                </p>
-              )}
-              <div className="character-images-row">
-                <div>
-                  <img
-                    src={alex}
-                    className="character-preview"
-                    alt="Alex character"
-                  />
-                  <p>Alex</p>
-                </div>
-
-                {!isSingleAgent && (
-                  <div>
-                    <img
-                      src={jordan}
-                      className="character-preview"
-                      alt="Jordan character"
-                    />
-                    <p>Jordan</p>
-                  </div>
-                )}
-              </div>
               <p>
-                During the conversation, feel free to think about your own
-                experiences with cancer and what you would want to understand
-                about clinical trials! You can draw on questions you've had in
-                the past, questions you have now, or things you might want to
-                discuss with others in the future.
+                As you go through the conversation, feel free to think about
+                your own experiences with cancer and what you would want to
+                understand about clinical trials! You can draw on questions
+                you've had in the past, questions you have now, or things you
+                might want to discuss with others in the future.
               </p>
 
               <div className="mi-privacy-reminder">

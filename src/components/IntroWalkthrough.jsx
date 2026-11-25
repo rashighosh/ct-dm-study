@@ -3,7 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router'
 import '../css/IntroWalkthrough.css'
 import logo from '../assets/logo-transparent.png'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import CompanionPreview from './CompanionPreview'
+import alexImage from '../assets/character-images/alex.png'
+import jordan1Image from '../assets/character-images/jordan1.png'
+import jordan2Image from '../assets/character-images/jordan2.png'
+import jordan3Image from '../assets/character-images/jordan3.png'
+import jordan4Image from '../assets/character-images/jordan4.png'
 import {
   faCircleArrowLeft,
   faCircleArrowRight,
@@ -80,19 +84,30 @@ const INTRO_PAGES = {
   ],
 }
 
+const COMPANION_OPTIONS = [
+  { id: 'jordan1', image: jordan1Image },
+  { id: 'jordan2', image: jordan2Image },
+  { id: 'jordan3', image: jordan4Image },
+  { id: 'jordan4', image: jordan3Image },
+]
+
 export default function IntroWalkthrough() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [currentPage, setCurrentPage] = useState(0)
   const [isFading, setIsFading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [selectedCompanion, setSelectedCompanion] = useState(null)
 
   const condition = Number(searchParams.get('c') ?? 3)
 
   const introPages = INTRO_PAGES[condition] ?? INTRO_PAGES[3]
+  const page = introPages[currentPage]
   const isLastPage = currentPage === introPages.length - 1
+  const canContinue = !page.showCompanions || selectedCompanion !== null
+
   function changePage(nextPage) {
-    if (isTransitioning) return
+    if (isTransitioning || !canContinue) return
 
     setIsTransitioning(true)
     setIsFading(true)
@@ -112,12 +127,18 @@ export default function IntroWalkthrough() {
   }
 
   function handleNext() {
-    if (isTransitioning) return
+    if (isTransitioning || !canContinue) return
 
     if (isLastPage) {
+      const updatedParams = new URLSearchParams(searchParams)
+
+      if (condition === 3 && selectedCompanion) {
+        updatedParams.set('companion', selectedCompanion)
+      }
+
       navigate({
         pathname: '/',
-        search: searchParams.toString() ? `?${searchParams.toString()}` : '',
+        search: updatedParams.toString() ? `?${updatedParams.toString()}` : '',
       })
     } else {
       changePage(currentPage + 1)
@@ -142,17 +163,36 @@ export default function IntroWalkthrough() {
         <hr />
         <h1>{page.title}</h1>
         <p className="description">{page.description}</p>
+        {page.showInformationGuide && (
+          <div className="character-preview-container">
+            <img
+              src={alexImage}
+              alt="Virtual information guide"
+              className="character-preview-image"
+            />
+          </div>
+        )}
+
         {page.showCompanions && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              flexWrap: 'wrap',
-              gap: '35px',
-              margin: '20px 0',
-            }}
-          >
-            <CompanionPreview model="/character-models/test.glb" body="M" />
+          <div className="character-preview-container">
+            {COMPANION_OPTIONS.map((companion, index) => (
+              <button
+                key={companion.id}
+                type="button"
+                className={`companion-option ${
+                  selectedCompanion === companion.id ? 'selected' : ''
+                }`}
+                onClick={() => setSelectedCompanion(companion.id)}
+                aria-pressed={selectedCompanion === companion.id}
+                aria-label={`Select virtual companion ${index + 1}`}
+              >
+                <img
+                  src={companion.image}
+                  alt={`Virtual companion ${index + 1}`}
+                  className="character-preview-image"
+                />
+              </button>
+            ))}
           </div>
         )}
         <div className="intro-walkthrough-navigation">
@@ -163,9 +203,18 @@ export default function IntroWalkthrough() {
             </button>
           )}
 
-          <button type="button" onClick={handleNext}>
-            Continue &nbsp;
-            <FontAwesomeIcon icon={faCircleArrowRight} />
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!canContinue || isTransitioning}
+          >
+            {canContinue ? 'Continue' : 'Please select a character'}
+            {canContinue && (
+              <>
+                &nbsp;
+                <FontAwesomeIcon icon={faCircleArrowRight} />
+              </>
+            )}
           </button>
         </div>
       </div>
