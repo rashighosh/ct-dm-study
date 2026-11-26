@@ -3,21 +3,21 @@ import fs from 'fs'
 
 const BASE_URL = 'http://127.0.0.1:8000'
 
-const ALEX_INTRO_1_MULTIPLE_1 = `Hi there, I am Doctor Alex, and this is Jordan. We are AI-powered virtual characters here to help you understand clinical trial participation so you can evaluate whether participating in one might be right for you.`
+const ALEX_INTRO_1_MULTIPLE_1 = `Hello, I am Doctor Alex, and this is Jordan. We are AI-powered virtual characters designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.`
 
-const ALEX_INTRO_1_MULTIPLE_2 = `When considering a clinical trial, having accurate, reliable information is essential. However, there is a great deal of information available, and it can be challenging to know where to look or how to make sense of it all.`
+const ALEX_INTRO_1_MULTIPLE_2 = `When considering a clinical trial, it is important to have accurate and reliable information. However, the amount of information available can be substantial, and it is not always clear which sources to consult or how to interpret what you find.`
 
-const ALEX_INTRO_1_MULTIPLE_3 = `My role is to help you navigate that information by drawing from a large collection of trusted medical sources, such as the National Health Institute. These sources were curated by real human health communication experts for this website. From these sources, I identify relevant information to provide clear, evidence-based answers to your questions.`
+const ALEX_INTRO_1_MULTIPLE_3 = `Hence, my goal is to assist you in navigating that information. My role is inspired by that of a healthcare provider who provides patients with medical information. I draw from a collection of trusted medical sources, such as the National Cancer Institute, which were selected by health communication experts for this website. Using these sources, I provide clear, evidence-based answers to address your information needs.`
 
-const JORDAN_INTRO_1_MULTIPLE_1 = `But even the most reliable information is most useful when it addresses what's important to you! Everyone has different experiences, needs, and concerns, so what matters most can be different for each person. We want to make sure the information you get matches your individual needs.`
+const JORDAN_INTRO_1_MULTIPLE_1 = `Thanks for kicking this off Doctor Alex! Now, the thing is, having reliable info is great, but what's most helpful really depends on what you need. After all, nobody knows your experiences better than you, and that's just as valuable as anything Doctor Alex can look up.`
 
-const JORDAN_INTRO_1_MULTIPLE_2 = `That's where I come in! My role is to support you in expressing your own needs and concerns. Throughout the conversation, I'll invite you to share your perspectives and help you think through what's important to you, so your voice can guide the information Dr. Alex finds and shares with you.`
+const JORDAN_INTRO_1_MULTIPLE_2 = `That's where I come in! I'm here to make sure your story is heard. My role is inspired by patient navigators, who work alongside people to voice their needs.  During our chat, I'll ask about your experiences and perspectives so we can learn what's important to you -- and then, that'll help guide the info that Doctor Alex finds and shares with you.`
 
-const JORDAN_INTRO_1_MULTIPLE_3 = `So, let’s start by learning a little bit about what matters to you so Doctor Alex can help suggest some topics to explore.`
+const JORDAN_INTRO_1_MULTIPLE_3 = `Alright, we've talked a lot at this point, so now let's hear a bit about you!`
 
-const JORDAN_INTRO_1_MULTIPLE_4 = `Before looking into any particular study, what are the top three things you'd want to understand better or think through to decide whether clinical trials are something you'd want to explore further?`
+const JORDAN_INTRO_1_MULTIPLE_4 = `When you think back on your healthcare experiences, what kinds of things were super important when making health-related decisions?`
 
-const JORDAN_INTRO_1_MULTIPLE_5 = `Feel free to share your concerns or anything that would be important to you personally.`
+const JORDAN_INTRO_1_MULTIPLE_5 = `Maybe you can share things that helped you feel more sure, made it harder, or things you wish you'd had. Take your time in thinking about this -- whatever comes to mind is a great place to start!`
 
 const JORDAN_OPENING_FILLER =
   "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you."
@@ -143,13 +143,20 @@ async function generateAllIntros() {
 
   for (const intro of intros) {
     if (intro.character === 'companion') {
+      // Generate female companion voice
       await generateOneIntro(intro.name, intro.text, intro.character, 'jordan1')
 
+      // Generate male companion voice
       await generateOneIntro(intro.name, intro.text, intro.character, 'jordan3')
+    } else {
+      // Generate doctor voice
+      await generateOneIntro(intro.name, intro.text, intro.character)
     }
   }
 
-  console.log('🎉 Done! All companion audio and timestamp files saved!')
+  console.log(
+    '🎉 Done! All doctor and companion audio and timestamp files saved!',
+  )
 }
 
 // --------------------------------------------------------------------------

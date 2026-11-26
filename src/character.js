@@ -958,9 +958,9 @@ const STATIC_GESTURE_MAPS = {
 
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_1.mp3': [
     {
-      at: 1,
+      at: 0,
       target: 'companion',
-      gesture: 'leftGesture',
+      gesture: 'lookLeft',
       dur: 3,
       transition: 500,
       reset: true,

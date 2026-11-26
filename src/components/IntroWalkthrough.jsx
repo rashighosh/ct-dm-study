@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import '../css/IntroWalkthrough.css'
 import logo from '../assets/logo-transparent.png'
@@ -12,6 +12,14 @@ import {
   faCircleArrowLeft,
   faCircleArrowRight,
 } from '@fortawesome/free-solid-svg-icons'
+
+const BASE_URL = 'http://127.0.0.1:8000'
+
+const CONDITION_NAMES = {
+  1: 'Single Info Only',
+  2: 'Single Combined',
+  3: 'Multiple',
+}
 
 const INTRO_PAGES = {
   // CONDITION 1 — Baseline (Information Only)
@@ -98,8 +106,54 @@ export default function IntroWalkthrough() {
   const [isFading, setIsFading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [selectedCompanion, setSelectedCompanion] = useState(null)
+  const [shuffledCompanions] = useState(() => {
+    const shuffled = [...COMPANION_OPTIONS]
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+
+    return shuffled
+  })
 
   const condition = Number(searchParams.get('c') ?? 3)
+
+  const participantId = searchParams.get('id') || 'navi-test'
+
+  const entryLogPromiseRef = useRef(null)
+
+  useEffect(() => {
+    if (entryLogPromiseRef.current) return
+
+    entryLogPromiseRef.current = fetch(
+      `${BASE_URL}/logs/log-conversation-entered`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+          c: condition,
+          condition_name: CONDITION_NAMES[condition],
+        }),
+      },
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Entry logging failed: ${response.status}`)
+        }
+
+        console.log('Conversation entry logged')
+        return true
+      })
+      .catch((error) => {
+        console.error('Could not log conversation entry:', error)
+        entryLogPromiseRef.current = null
+        return false
+      })
+  }, [participantId, condition])
 
   const introPages = INTRO_PAGES[condition] ?? INTRO_PAGES[3]
   const page = introPages[currentPage]
@@ -126,14 +180,46 @@ export default function IntroWalkthrough() {
     }, 250)
   }
 
-  function handleNext() {
+  async function handleNext() {
     if (isTransitioning || !canContinue) return
 
     if (isLastPage) {
+      setIsTransitioning(true)
+
       const updatedParams = new URLSearchParams(searchParams)
 
       if (condition === 3 && selectedCompanion) {
         updatedParams.set('companion', selectedCompanion)
+
+        try {
+          const entryLogged = await entryLogPromiseRef.current
+
+          if (!entryLogged) {
+            throw new Error('Participant entry was not logged')
+          }
+
+          const response = await fetch(
+            `${BASE_URL}/logs/log-companion-selected`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                participant_id: participantId,
+                selected_companion: selectedCompanion,
+              }),
+            },
+          )
+
+          if (!response.ok) {
+            throw new Error(`Companion logging failed: ${response.status}`)
+          }
+
+          console.log('Companion selection logged:', selectedCompanion)
+        } catch (error) {
+          console.error('Could not log companion selection:', error)
+        }
       }
 
       navigate({
@@ -175,7 +261,7 @@ export default function IntroWalkthrough() {
 
         {page.showCompanions && (
           <div className="character-preview-container">
-            {COMPANION_OPTIONS.map((companion, index) => (
+            {shuffledCompanions.map((companion, index) => (
               <button
                 key={companion.id}
                 type="button"

@@ -229,7 +229,6 @@ export default function MainInteraction() {
   const [showChatInput, setShowChatInput] = useState(
     condition !== CONDITION_MULTIPLE,
   )
-  const [introInstruction, setIntroInstruction] = useState([])
   const [waitingForFirstTopic, setWaitingForFirstTopic] = useState(false)
   const canStart = entryLogged && Object.values(startChecks).every(Boolean)
   const [showTopics, setShowTopics] = useState(false)
@@ -289,8 +288,6 @@ export default function MainInteraction() {
             participant_id: participantId,
             c: condition,
             condition_name: CONDITION_NAMES[condition],
-            selected_companion:
-              condition === CONDITION_MULTIPLE ? selectedCompanion : null,
           }),
         },
       )
@@ -374,34 +371,6 @@ export default function MainInteraction() {
           restoredIntroIndex >= 7,
       )
 
-      // Restore opening instructions only if the user hasn't responded.
-      const hasUserResponded = restoredMessages.some(
-        (message) => message.from === 'user',
-      )
-
-      if (
-        condition === CONDITION_MULTIPLE &&
-        !hasUserResponded &&
-        !session.openingComplete
-      ) {
-        const instructions = []
-
-        if (restoredIntroIndex >= 7) {
-          instructions.push(
-            "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
-          )
-        }
-
-        if (restoredIntroIndex >= 8 || session.introDone) {
-          instructions.push(
-            "Feel free to share what's on your mind! There are no right or wrong answers.",
-          )
-        }
-
-        setIntroInstruction(instructions)
-      } else {
-        setIntroInstruction([])
-      }
       setShowResourceChoice(session.showResourceChoice ?? false)
       setResourceChoice(session.resourceChoice ?? null)
       setShowSurveyButton(session.showSurveyButton ?? false)
@@ -822,29 +791,6 @@ export default function MainInteraction() {
             playIntroVisualCues(intro)
 
             if (condition === CONDITION_MULTIPLE) {
-              if (
-                intro.audio ===
-                '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3'
-              ) {
-                setIntroInstruction([
-                  "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
-                ])
-              } else if (
-                intro.audio ===
-                '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_5.mp3'
-              ) {
-                setIntroInstruction((previous) => {
-                  const instruction =
-                    "Feel free to share what's on your mind! There are no right or wrong answers."
-
-                  return previous.includes(instruction)
-                    ? previous
-                    : [...previous, instruction]
-                })
-              }
-            }
-
-            if (condition === CONDITION_MULTIPLE) {
               const isJordanIntro4 =
                 intro.audio ===
                 '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3'
@@ -924,13 +870,9 @@ export default function MainInteraction() {
           introStartedRef.current = true
 
           await playCharacterIntro(introNextIndex)
+
           if (skipIntroRef.current) {
             setShowChatInput(true)
-
-            setIntroInstruction([
-              "What are your top 3 questions, concerns, or things you'd like to understand about clinical trials?",
-              "Feel free to share what's on your mind! There are no right or wrong answers.",
-            ])
           }
 
           // Log when the introduction finishes
@@ -991,7 +933,29 @@ export default function MainInteraction() {
     )
   }
 
-  async function handleStartAlexTopic(force = false) {
+  async function prepareAlexTopicResponse() {
+    const response = await fetch(`${BASE_URL}/study/alex-topic-response`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        participant_id: participantId,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Alex topic response failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    const prepared = await prepareSpeech(data.alex_reply, 'doctor')
+
+    return { data, prepared }
+  }
+
+  async function handleStartAlexTopic(force = false, responsePromise = null) {
     if ((isResponding && !force) || (focusedCharacter === 'Alex' && !force))
       return
 
@@ -1001,29 +965,12 @@ export default function MainInteraction() {
     setResponseStatus('Preparing information')
 
     try {
-      const response = await fetch(`${BASE_URL}/study/alex-topic-response`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          participant_id: participantId,
-        }),
-      })
+      const { data, prepared } = await (responsePromise ??
+        prepareAlexTopicResponse())
 
-      if (!response.ok) {
-        throw new Error(`Alex topic introduction failed: ${response.status}`)
-      }
+      console.log('Alex topic response:', data)
 
-      const data = await response.json()
-
-      console.log('Alex topic introduction:', data)
-
-      // Switch the participant's focus to Alex.
-      setFocusedCharacter('Alex')
-      setAwaitingTopicElaboration(false)
-
-      // Save Alex's introduction in the transcript.
+      // Save Alex's response in the transcript.
       setMessages((previous) => [
         ...previous,
         {
@@ -1034,14 +981,24 @@ export default function MainInteraction() {
 
       setResponseStatus('')
 
-      // Have Alex deliver the introduction.
+      // Alex faces forward while Jordan listens.
       playGesture('stopAlexGesture')
       playGesture('jordanLookAtAlex')
 
-      await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
+      setActiveSpeaker('Alex')
+      swivelJordanTowardAlex(true)
 
-      setAlexSubtitle('')
-      playGesture('stopCompanionGesture')
+      try {
+        await playPreparedSpeech({
+          prepared,
+          onSubtitle: setAlexSubtitle,
+        })
+      } finally {
+        swivelJordanTowardAlex(false)
+        setActiveSpeaker(null)
+        setAlexSubtitle('')
+        playGesture('stopCompanionGesture')
+      }
     } catch (error) {
       console.error('Could not start Alex topic:', error)
       alert('Could not load the topic information. Please try again.')
@@ -1062,6 +1019,26 @@ export default function MainInteraction() {
 
     setIsResponding(true)
     setResponseStatus('Starting conversation')
+
+    // Log the participant's final confirmed topic selections.
+    fetch(`${BASE_URL}/logs/log-selected-topics`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        participant_id: participantId,
+        selected_topics: [...selectedTopics],
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Selected topics logging failed: ${response.status}`)
+        }
+      })
+      .catch((error) => {
+        console.error('Could not log selected topics:', error)
+      })
 
     try {
       // Initialize the confirmed topics in the backend.
@@ -1202,6 +1179,28 @@ export default function MainInteraction() {
         }
 
         const data = await response.json()
+
+        // Log completion of the previous topic.
+        fetch(`${BASE_URL}/logs/log-topic-covered`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            topic_number: topicState.current_topic_index + 1,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                `Topic completion logging failed: ${response.status}`,
+              )
+            }
+          })
+          .catch((error) => {
+            console.error('Could not log topic completion:', error)
+          })
 
         setTopicState({
           current_topic_index: data.current_topic_index,
@@ -1577,6 +1576,34 @@ export default function MainInteraction() {
       // Initialize the participant's editable selections.
       setSelectedTopics((data.selected_topics ?? []).map((topic) => topic.id))
 
+      // Log Alex's original suggested topics.
+      const suggestedTopicIds = (data.selected_topics ?? []).map(
+        (topic) => topic.id,
+      )
+
+      if (suggestedTopicIds.length === 3) {
+        fetch(`${BASE_URL}/logs/log-suggested-topics`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            participant_id: participantId,
+            suggested_topics: suggestedTopicIds,
+          }),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(
+                `Suggested topics logging failed: ${response.status}`,
+              )
+            }
+          })
+          .catch((error) => {
+            console.error('Could not log suggested topics:', error)
+          })
+      }
+
       // Hide the regular progress bar during topic selection.
       setShowTopics(false)
       setHighlightCurrentTopic(false)
@@ -1712,7 +1739,6 @@ export default function MainInteraction() {
     if (text) {
       setMessages(updatedMessages)
       setInput('')
-      setIntroInstruction([])
     }
 
     console.log('Opening elicitation completed', {
@@ -1722,6 +1748,40 @@ export default function MainInteraction() {
     })
 
     setOpeningComplete(true)
+
+    // Collect the participant's opening responses.
+    const openingResponses = updatedMessages
+      .filter((message) => message.from === 'user')
+      .map((message) => message.text)
+
+    // Find the generated opening summary following the filler.
+    const fillerIndex = updatedMessages.findIndex(
+      (message) => message.text === JORDAN_OPENING_FILLER,
+    )
+
+    const openingSummary =
+      fillerIndex !== -1 ? updatedMessages[fillerIndex + 1]?.text || '' : ''
+
+    // Log the completed opening elicitation.
+    fetch(`${BASE_URL}/logs/log-opening-completed`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        participant_id: participantId,
+        opening_responses: openingResponses,
+        opening_summary: openingSummary,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Opening logging failed: ${response.status}`)
+        }
+      })
+      .catch((error) => {
+        console.error('Could not log opening elicitation:', error)
+      })
 
     // Move to the next stage with the full conversation history
     startTopicPreparation(updatedMessages)
@@ -1748,8 +1808,6 @@ export default function MainInteraction() {
       handleOpeningContinue(trimmed)
       return
     }
-
-    setIntroInstruction([])
 
     // Slide the question list closed when the user sends a message
     setShowQuestions(false)
@@ -1968,6 +2026,13 @@ export default function MainInteraction() {
         const data = await response.json()
 
         console.log('Updated user profile:', data.user_profile)
+        // Prepare Alex's response and audio during Jordan's handoff.
+        const alexResponsePromise = data.elicitation_complete
+          ? prepareAlexTopicResponse()
+          : null
+
+        // Prevent an unhandled rejection while Jordan is speaking.
+        alexResponsePromise?.catch(() => {})
 
         setMessages((previous) => [
           ...previous,
@@ -1994,7 +2059,7 @@ export default function MainInteraction() {
         // Once Jordan finishes the closing handoff,
         // automatically switch to Alex.
         if (data.elicitation_complete) {
-          await handleStartAlexTopic(true)
+          await handleStartAlexTopic(true, alexResponsePromise)
         }
 
         return
@@ -2901,22 +2966,6 @@ export default function MainInteraction() {
                 charactersReady ? 'characters-ready' : 'characters-loading'
               } ${isSingleAgent ? 'single-agent' : ''}`}
             >
-              {introInstruction.length > 0 && (
-                <div className="mi-intro-instruction" role="note">
-                  {introInstruction.map((instruction, index) => (
-                    <div
-                      key={index}
-                      className="mi-intro-instruction-line"
-                      style={{
-                        animationDelay: `${index * 0.15}s`,
-                      }}
-                    >
-                      {instruction}
-                    </div>
-                  ))}
-                </div>
-              )}
-
               <div
                 className="mi-shared-stage-background"
                 style={{
@@ -3418,6 +3467,11 @@ export default function MainInteraction() {
                     sentMessageAnimation={sentMessageAnimation}
                     isResponding={isResponding}
                     awaitingTopicElaboration={awaitingTopicElaboration}
+                    isOpening={
+                      condition === CONDITION_MULTIPLE &&
+                      !openingResponseDone &&
+                      !openingComplete
+                    }
                   />
 
                   {condition === CONDITION_MULTIPLE &&
@@ -3597,6 +3651,7 @@ function ChatInput({
   sentMessageAnimation,
   isResponding,
   awaitingTopicElaboration,
+  isOpening,
 }) {
   return (
     <>
@@ -3612,9 +3667,11 @@ function ChatInput({
             placeholder={
               isResponding
                 ? 'Please wait for the virtual character to finish speaking...'
-                : awaitingTopicElaboration
-                  ? "Share what's important to you so Jordan can help you figure out what information you'd want to know ..."
-                  : 'Type a message...'
+                : isOpening
+                  ? "Share what's important to you when making health-related decisions"
+                  : awaitingTopicElaboration
+                    ? "Share what's important to you so Jordan can help you figure out what information you'd want to know ..."
+                    : 'Type a message...'
             }
             rows={3}
             onKeyDown={onHandleKeyDown}

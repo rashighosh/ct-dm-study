@@ -1269,6 +1269,9 @@ class TalkingHead {
       lookright: {
         'Neck.rotation': { x: 0.027, y: -0.5, z: 0 },
       },
+      lookleft: {
+        'Neck.rotation': { x: 0.027, y: 0.5, z: 0 },
+      },
       oneQuestion: {
         // Shoulder barely lifts — much less dramatic raise
         // Arm comes up only partway, more relaxed

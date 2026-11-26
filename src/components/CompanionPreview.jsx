@@ -60,7 +60,7 @@ export function CompanionPreviewPage() {
     { name: 'M2', model: 'm2.glb', body: 'M' },
   ]
 
-  const companion = { name: 'M2', model: 'm2.glb', body: 'M' }
+  const companion = { name: 'F2', model: 'f2.glb', body: 'F' }
 
   return (
     <div

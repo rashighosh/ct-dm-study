@@ -1,162 +1,97 @@
 [
   {
-    "word": "Before",
+    "word": "When",
     "start": 0,
-    "end": 0.309
+    "end": 0.3726315789473684
   },
   {
-    "word": "looking",
-    "start": 0.309,
-    "end": 0.618
-  },
-  {
-    "word": "into",
-    "start": 0.618,
-    "end": 0.927
-  },
-  {
-    "word": "any",
-    "start": 0.927,
-    "end": 1.236
-  },
-  {
-    "word": "particular",
-    "start": 1.236,
-    "end": 1.545
-  },
-  {
-    "word": "study,",
-    "start": 1.545,
-    "end": 1.854
-  },
-  {
-    "word": "what",
-    "start": 1.854,
-    "end": 2.163
-  },
-  {
-    "word": "are",
-    "start": 2.163,
-    "end": 2.472
-  },
-  {
-    "word": "the",
-    "start": 2.472,
-    "end": 2.781
-  },
-  {
-    "word": "top",
-    "start": 2.781,
-    "end": 3.09
-  },
-  {
-    "word": "three",
-    "start": 3.09,
-    "end": 3.399
-  },
-  {
-    "word": "things",
-    "start": 3.399,
-    "end": 3.708
-  },
-  {
-    "word": "you'd",
-    "start": 3.708,
-    "end": 4.017
-  },
-  {
-    "word": "want",
-    "start": 4.017,
-    "end": 4.326
-  },
-  {
-    "word": "to",
-    "start": 4.326,
-    "end": 4.635
-  },
-  {
-    "word": "understand",
-    "start": 4.635,
-    "end": 4.944
-  },
-  {
-    "word": "better",
-    "start": 4.944,
-    "end": 5.253
-  },
-  {
-    "word": "or",
-    "start": 5.253,
-    "end": 5.562
+    "word": "you",
+    "start": 0.3726315789473684,
+    "end": 0.7452631578947368
   },
   {
     "word": "think",
-    "start": 5.562,
-    "end": 5.8709999999999996
+    "start": 0.7452631578947368,
+    "end": 1.1178947368421053
   },
   {
-    "word": "through",
-    "start": 5.8709999999999996,
-    "end": 6.18
+    "word": "back",
+    "start": 1.1178947368421053,
+    "end": 1.4905263157894737
   },
   {
-    "word": "to",
-    "start": 6.18,
-    "end": 6.489
+    "word": "on",
+    "start": 1.4905263157894737,
+    "end": 1.8631578947368421
   },
   {
-    "word": "decide",
-    "start": 6.489,
-    "end": 6.798
+    "word": "your",
+    "start": 1.8631578947368421,
+    "end": 2.2357894736842105
   },
   {
-    "word": "whether",
-    "start": 6.798,
-    "end": 7.107
+    "word": "healthcare",
+    "start": 2.2357894736842105,
+    "end": 2.608421052631579
   },
   {
-    "word": "clinical",
-    "start": 7.107,
-    "end": 7.416
+    "word": "experiences,",
+    "start": 2.608421052631579,
+    "end": 2.9810526315789474
   },
   {
-    "word": "trials",
-    "start": 7.416,
-    "end": 7.725
+    "word": "what",
+    "start": 2.9810526315789474,
+    "end": 3.353684210526316
   },
   {
-    "word": "are",
-    "start": 7.725,
-    "end": 8.034
+    "word": "kinds",
+    "start": 3.353684210526316,
+    "end": 3.7263157894736842
   },
   {
-    "word": "something",
-    "start": 8.034,
-    "end": 8.343
+    "word": "of",
+    "start": 3.7263157894736842,
+    "end": 4.098947368421053
   },
   {
-    "word": "you'd",
-    "start": 8.343,
-    "end": 8.652
+    "word": "things",
+    "start": 4.098947368421053,
+    "end": 4.471578947368421
   },
   {
-    "word": "want",
-    "start": 8.652,
-    "end": 8.961
+    "word": "were",
+    "start": 4.471578947368421,
+    "end": 4.8442105263157895
   },
   {
-    "word": "to",
-    "start": 8.961,
-    "end": 9.27
+    "word": "super",
+    "start": 4.8442105263157895,
+    "end": 5.216842105263158
   },
   {
-    "word": "explore",
-    "start": 9.27,
-    "end": 9.579
+    "word": "important",
+    "start": 5.216842105263158,
+    "end": 5.589473684210526
   },
   {
-    "word": "further?",
-    "start": 9.579,
-    "end": 9.888
+    "word": "when",
+    "start": 5.589473684210526,
+    "end": 5.962105263157895
+  },
+  {
+    "word": "making",
+    "start": 5.962105263157895,
+    "end": 6.334736842105263
+  },
+  {
+    "word": "health-related",
+    "start": 6.334736842105263,
+    "end": 6.707368421052632
+  },
+  {
+    "word": "decisions?",
+    "start": 6.707368421052632,
+    "end": 7.08
   }
 ]

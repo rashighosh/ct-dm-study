@@ -589,7 +589,7 @@
 
 .subtitle-name-pill-alex {
   left: 15%;
-  background: rgb(var(--primary-orange));
+  background: rgb(var(--primary-blue));
 }
 
 .subtitle-name-pill-alex::after {
@@ -606,7 +606,7 @@
 
 .subtitle-name-pill-jordan {
   left: 19%;
-  background: rgb(var(--primary-blue));
+  background: rgb(var(--primary-purple));
 }
 
 .subtitle-name-pill-jordan::after {
@@ -771,7 +771,8 @@
   background: #fff;
 
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 13px;
+  font-style: italic;
 
   transition:
     border-color 0.15s,
@@ -1134,7 +1135,7 @@
 
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 15px;
 
   margin: 1rem 0 1.5rem;
 }
@@ -1150,7 +1151,7 @@
   border-radius: 14px;
 
   background: #fff;
-  box-shadow: 0 15px 25px rgba(15, 23, 42, 0.15);
+  box-shadow: -5px 5px 15px rgba(15, 23, 42, 0.25);
 
   cursor: pointer;
 
@@ -1161,7 +1162,7 @@
 
 .mi-start-check:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.18);
+  box-shadow: -5px 5px 15px rgba(33, 108, 68, 0.25);
 }
 
 .mi-start-check-label {
@@ -2075,7 +2076,7 @@
 
   /* Position in front of character */
   left: 50%;
-  bottom: 30%;
+  bottom: 33%;
   z-index: 20;
 
   display: flex;
@@ -2113,11 +2114,11 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.13);
 
   font-size: 38px;
-  color: rgb(var(--primary-blue));
+  color: rgb(var(--primary-purple));
 }
 
 .intro-visual-cue-alex .intro-visual-icon {
-  color: rgb(var(--primary-orange));
+  color: rgb(var(--primary-blue));
 }
 
 /* Icons pop in individually, using staggered delays from JSX */
@@ -2218,38 +2219,42 @@
    CHAT PANEL INTRO REVEAL
    ========================================== */
 
-/* Normal visible panel */
 .mi-bottom-panel {
+  opacity: 1;
+  max-height: 400px;
+  transform: translateY(0);
+  visibility: visible;
+
   transition:
-    flex-basis 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    height 0.75s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.45s ease,
-    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+    max-height 1s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.5s ease;
 }
 
-/* Hidden during the introduction */
 .mi-bottom-panel.mi-bottom-panel-hidden {
-  flex: 0 0 0px;
-  height: 0;
-  min-height: 0;
-
+  max-height: 0;
   opacity: 0;
-  transform: translateY(30px);
-
+  transform: translateY(100%);
   overflow: hidden;
   pointer-events: none;
   visibility: hidden;
 }
 
-/* Keep hidden until the panel begins revealing */
-.mi-bottom-panel:not(.mi-bottom-panel-hidden) {
-  visibility: visible;
+@keyframes chat-panel-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
   .mi-bottom-panel {
-    transition: none;
+    animation: none;
   }
 }
 
@@ -2415,6 +2420,13 @@
   transform: none;
   width: 100%;
   margin: 0 auto;
+  animation: chat-panel-slide-up 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mi-bottom-panel-topic-selection .topic-selection {
+    animation: none;
+  }
 }
 
 /* Ask → Tell transition */
