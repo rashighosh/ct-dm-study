@@ -110,3 +110,39 @@ export const INTRO_VISUAL_CUES = {
 
 INTRO_VISUAL_CUES['/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE_1.mp3'] =
   INTRO_VISUAL_CUES['/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_1.mp3']
+
+INTRO_VISUAL_CUES['/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_1.mp3'] = [
+  {
+    at: 2,
+    duration: 3,
+    icons: [faFileCircleCheck, faHandHoldingHeart],
+    stagger: 0.5,
+  },
+  {
+    at: 6,
+    duration: 3,
+    icons: [faUser, faLightbulb],
+    stagger: 0.5,
+  },
+]
+
+INTRO_VISUAL_CUES['/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_2.mp3'] = [
+  {
+    at: 3,
+    duration: 3,
+    icons: [faHandHoldingHeart, faCommentDots],
+    stagger: 0.3,
+  },
+  {
+    at: 7,
+    duration: 3,
+    icons: [faUser, faLightbulb],
+    stagger: 0.5,
+  },
+  {
+    at: 12,
+    duration: 3,
+    icons: [faUser, faArrowRight, faFileLines],
+    stagger: 0.3,
+  },
+]

@@ -222,9 +222,7 @@ export default function MainInteraction() {
   const [availableTopics, setAvailableTopics] = useState([])
   const [selectedTopics, setSelectedTopics] = useState([])
   const [showTopicSelection, setShowTopicSelection] = useState(false)
-  const [showChatInput, setShowChatInput] = useState(
-    condition === CONDITION_SINGLE_COMBINED,
-  )
+  const [showChatInput, setShowChatInput] = useState(false)
   const [waitingForFirstTopic, setWaitingForFirstTopic] = useState(false)
   const canStart = entryLogged && Object.values(startChecks).every(Boolean)
   const [showTopics, setShowTopics] = useState(false)
@@ -263,17 +261,9 @@ export default function MainInteraction() {
   const [suggestedResources, setSuggestedResources] = useState([])
   const [shuffledResources] = useState(() => shuffleArray(RESOURCES))
   const displayedResources =
-    condition === CONDITION_MULTIPLE
-      ? suggestedResources.slice(0, 3)
-      : condition === CONDITION_SINGLE_INFO
-        ? shuffledResources
-        : [
-            ...suggestedResources,
-            ...shuffledResources.filter(
-              (resource) =>
-                !suggestedResources.some((r) => r.id === resource.id),
-            ),
-          ]
+    condition === CONDITION_SINGLE_INFO
+      ? shuffledResources
+      : suggestedResources.slice(0, 3)
   const [openedResources, setOpenedResources] = useState([])
   const openedResourcesRef = useRef([])
   const resourceLoggingQueueRef = useRef(Promise.resolve())
@@ -396,9 +386,7 @@ export default function MainInteraction() {
               session.showTopicSelection ||
               (condition === CONDITION_SINGLE_INFO
                 ? restoredTopicState?.phase === 'topics'
-                : condition === CONDITION_SINGLE_COMBINED ||
-                  session.introDone === true ||
-                  restoredIntroIndex >= 7),
+                : session.introDone === true || restoredIntroIndex >= 7),
       )
 
       setShowResourceChoice(session.showResourceChoice ?? false)
@@ -470,30 +458,6 @@ export default function MainInteraction() {
       setSessionRestored(true)
     }
   }, [SESSION_KEY])
-
-  useEffect(() => {
-    if (!started || !topicState || condition !== CONDITION_SINGLE_COMBINED)
-      return
-    async function loadTopicState() {
-      try {
-        const response = await fetch(
-          `${BASE_URL}/jordan/state/${participantId}`,
-        )
-
-        if (!response.ok) {
-          throw new Error(`Topic state request failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-
-        setTopicState(data)
-      } catch (error) {
-        console.error('Could not load topic state:', error)
-      }
-    }
-
-    loadTopicState()
-  }, [started, participantId])
 
   async function refreshSavedQuestions() {
     try {
@@ -885,7 +849,14 @@ export default function MainInteraction() {
           setSubtitle,
           () => {
             playIntroVisualCues(intro)
-
+            // Reveal the chat panel during Alex's opening question.
+            if (
+              condition === CONDITION_SINGLE_COMBINED &&
+              intro.audio ===
+                '/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_4.mp3'
+            ) {
+              setShowChatInput(true)
+            }
             if (condition === CONDITION_MULTIPLE) {
               const isJordanIntro4 =
                 intro.audio ===
@@ -1246,7 +1217,7 @@ export default function MainInteraction() {
       // Condition 3 begins with needs elicitation.
       if (condition === CONDITION_SINGLE_INFO) {
         await handleStartAlexTopic(true, null, data.current_topic_index)
-      } else if (condition === CONDITION_MULTIPLE) {
+      } else {
         const openingResponse = await fetch(`${BASE_URL}/study/topic-opening`, {
           method: 'POST',
           headers: {
@@ -1266,17 +1237,23 @@ export default function MainInteraction() {
 
         setMessages((previous) => [
           ...previous,
-          { from: 'Jordan', text: openingData.jordan_reply },
+          {
+            from: conversationalSpeaker,
+            text: openingData.jordan_reply,
+          },
         ])
 
-        playGesture('alexLookAtJordan')
+        if (condition === CONDITION_MULTIPLE) {
+          playGesture('alexLookAtJordan')
+        }
 
         await speakWithHighlight(
           openingData.jordan_reply,
-          'companion',
-          setJordanSubtitle,
+          isSingleAgent ? 'doctor' : 'companion',
+          isSingleAgent ? setAlexSubtitle : setJordanSubtitle,
         )
 
+        setAlexSubtitle('')
         setJordanSubtitle('')
         playGesture('stopAlexGesture')
         setAwaitingTopicElaboration(true)
@@ -1318,7 +1295,7 @@ export default function MainInteraction() {
     try {
       // Prepare Alex's personalized resource recommendations.
       const alexClosingPromise =
-        condition === CONDITION_MULTIPLE
+        condition !== CONDITION_SINGLE_INFO
           ? fetch(`${BASE_URL}/study/alex-closing`, {
               method: 'POST',
               headers: {
@@ -1361,7 +1338,7 @@ export default function MainInteraction() {
 
       // Prepare Jordan's closing response while Alex speaks.
       const jordanClosingPromise =
-        condition === CONDITION_MULTIPLE
+        condition !== CONDITION_SINGLE_INFO
           ? fetch(`${BASE_URL}/study/jordan-closing`, {
               method: 'POST',
               headers: {
@@ -1388,7 +1365,7 @@ export default function MainInteraction() {
 
                 jordanMaterialSpeechRef.current = prepareSpeech(
                   combinedOverview,
-                  'companion',
+                  isSingleAgent ? 'doctor' : 'companion',
                 ).catch((error) => {
                   console.error(
                     'Could not prepare Jordan material overview:',
@@ -1471,7 +1448,10 @@ export default function MainInteraction() {
 
           const jordanClosingInvitation =
             "And you know, sometimes it's helpful to have a few questions in mind so you know what to look into next. " +
-            "Thinking back on some of the things you shared with us today, I've come up with a few questions that might be helpful for you personally. " +
+            (isSingleAgent
+              ? 'Thinking back on some of the things you shared with me today, '
+              : 'Thinking back on some of the things you shared with us today, ') +
+            "I've come up with a few questions that might be helpful for you personally. " +
             'You could look into them on your own or even talk them through with a friend, a family member, or your healthcare provider. ' +
             "Feel free to check these out too if you're curious!"
 
@@ -1491,11 +1471,13 @@ export default function MainInteraction() {
           // Invite the participant to view their personalized questions.
           setMessages((previous) => [
             ...previous,
-            { from: 'Jordan', text: jordanClosingInvitation },
+            { from: conversationalSpeaker, text: jordanClosingInvitation },
           ])
 
-          playGesture('stopCompanionGesture')
-          playGesture('alexLookAtJordan')
+          if (!isSingleAgent) {
+            playGesture('stopCompanionGesture')
+            playGesture('alexLookAtJordan')
+          }
 
           setTimeout(() => {
             setShowDiscussionOption(true)
@@ -1503,10 +1485,11 @@ export default function MainInteraction() {
 
           await speakWithHighlight(
             jordanClosingInvitation,
-            'companion',
-            setJordanSubtitle,
+            isSingleAgent ? 'doctor' : 'companion',
+            isSingleAgent ? setAlexSubtitle : setJordanSubtitle,
           )
 
+          setAlexSubtitle('')
           setJordanSubtitle('')
           playGesture('stopAlexGesture')
           setShowClosingInstructions(true)
@@ -1616,9 +1599,10 @@ export default function MainInteraction() {
   async function handleNextTopic() {
     if (isResponding || !topicState || topicState.conversation_complete) return
 
-    // Shared study flow — Conditions 1 and 3
+    // Shared study flow — all three conditions
     if (
       condition === CONDITION_SINGLE_INFO ||
+      condition === CONDITION_SINGLE_COMBINED ||
       condition === CONDITION_MULTIPLE
     ) {
       setIsResponding(true)
@@ -1684,8 +1668,8 @@ export default function MainInteraction() {
           return
         }
 
-        // Reset to Jordan for the new topic.
-        setFocusedCharacter('Jordan')
+        // Reset to the conversational role for the new topic.
+        setFocusedCharacter(conversationalSpeaker)
         setAwaitingTopicElaboration(false)
 
         // Generate Jordan's opening question using the evolving profile.
@@ -1710,20 +1694,23 @@ export default function MainInteraction() {
         setMessages((previous) => [
           ...previous,
           {
-            from: 'Jordan',
+            from: conversationalSpeaker,
             text: openingData.jordan_reply,
           },
         ])
 
-        playGesture('stopCompanionGesture')
-        playGesture('alexLookAtJordan')
+        if (condition === CONDITION_MULTIPLE) {
+          playGesture('stopCompanionGesture')
+          playGesture('alexLookAtJordan')
+        }
 
         await speakWithHighlight(
           openingData.jordan_reply,
-          'companion',
-          setJordanSubtitle,
+          isSingleAgent ? 'doctor' : 'companion',
+          isSingleAgent ? setAlexSubtitle : setJordanSubtitle,
         )
 
+        setAlexSubtitle('')
         setJordanSubtitle('')
         playGesture('stopAlexGesture')
 
@@ -1737,168 +1724,6 @@ export default function MainInteraction() {
       }
 
       return
-    }
-
-    const conversationMessages = messages.filter(
-      (message) => message.from !== 'system',
-    )
-
-    setIsResponding(true)
-    setShowQuestions(false)
-    setResponseStatus(
-      topicState.current_topic_index === 2
-        ? 'Finishing topics'
-        : 'Preparing next topic',
-    )
-
-    try {
-      const response = await fetch(`${BASE_URL}/jordan/advance-topic`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          participant_id: participantId,
-          conversation_history: conversationMessages,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Topic advancement failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      console.log('Topic advanced:', data)
-      // Update the topic progress and conversation phase
-      setTopicState({
-        current_topic_index: data.current_topic_index,
-        conversation_complete: data.conversation_complete,
-        phase: data.phase,
-        topics: data.topics,
-      })
-
-      // Log completion of the previous topic
-      fetch(`${BASE_URL}/logs/log-topic-covered`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          participant_id: participantId,
-          topic_number: data.completed_topic_number,
-        }),
-      }).catch((error) => {
-        console.error('Could not log topic completion:', error)
-      })
-
-      // Introduce the next topic only if one remains
-      if (data.prepare_next_topic) {
-        const nextTopicResponse = await fetch(
-          `${BASE_URL}/jordan/prepare-next-topic`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              participant_id: participantId,
-              conversation_history: conversationMessages,
-              condition,
-            }),
-          },
-        )
-
-        if (!nextTopicResponse.ok) {
-          throw new Error(
-            `Preparing next topic failed: ${nextTopicResponse.status}`,
-          )
-        }
-
-        const nextTopicData = await nextTopicResponse.json()
-        setResponseStatus('')
-
-        // Generate the conversational follow-up while Alex speaks.
-        const followUpPromise =
-          condition !== CONDITION_SINGLE_INFO
-            ? fetch(`${BASE_URL}/jordan/after-alex`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  participant_id: participantId,
-                  conversation_history: [
-                    { from: 'Alex', text: nextTopicData.alex_reply },
-                  ],
-                  after_topic_intro: true,
-                }),
-              })
-                .then(async (response) => {
-                  if (!response.ok) {
-                    throw new Error(
-                      `Topic follow-up failed: ${response.status}`,
-                    )
-                  }
-                  return response.json()
-                })
-                .then(
-                  (data) => ({ data, error: null }),
-                  (error) => ({ data: null, error }),
-                )
-            : null
-
-        // Alex introduces the new topic
-        setMessages((previous) => [
-          ...previous,
-          { from: 'Alex', text: nextTopicData.alex_reply },
-        ])
-
-        await speakWithHighlight(
-          nextTopicData.alex_reply,
-          'doctor',
-          setAlexSubtitle,
-        )
-
-        setAlexSubtitle('')
-
-        // Speak the follow-up once Alex has finished.
-        if (followUpPromise) {
-          const { data: followUpData, error: followUpError } =
-            await followUpPromise
-
-          if (followUpError) throw followUpError
-
-          if (followUpData.jordan_reply) {
-            setMessages((previous) => [
-              ...previous,
-              { from: conversationalSpeaker, text: followUpData.jordan_reply },
-            ])
-
-            await speakWithHighlight(
-              followUpData.jordan_reply,
-              condition === CONDITION_SINGLE_COMBINED ? 'doctor' : 'companion',
-              condition === CONDITION_SINGLE_COMBINED
-                ? setAlexSubtitle
-                : setJordanSubtitle,
-            )
-
-            setAlexSubtitle('')
-            setJordanSubtitle('')
-          }
-        }
-      }
-
-      // After the final topic, play the closing dialogue
-      // Begin the shared closing conversation.
-      if (data.conversation_complete) {
-        await handleConversationClosing(data)
-      }
-    } catch (error) {
-      console.error('Could not advance topic:', error)
-    } finally {
-      setIsResponding(false)
-      setResponseStatus('')
     }
   }
 
@@ -1963,8 +1788,9 @@ export default function MainInteraction() {
       setShowChatInput(false)
 
       // Alex faces forward while Jordan looks at him.
+      playGesture('stopAlexGesture')
+
       if (condition === CONDITION_MULTIPLE) {
-        playGesture('stopAlexGesture')
         playGesture('jordanLookAtAlex')
       }
 
@@ -2260,8 +2086,6 @@ export default function MainInteraction() {
 
     setIsResponding(true)
 
-    let questionAdded = false
-
     try {
       // Opening needs elicitation — only the first user message
       if (
@@ -2317,13 +2141,14 @@ export default function MainInteraction() {
 
         setShowThinkingBubble(false)
 
-        playGesture('thinking')
+        playGesture(isCombined ? 'thinkingDoctor' : 'thinking')
 
         // Give the participant a moment before responding.
         await new Promise((resolve) => setTimeout(resolve, 3000))
 
         if (isCombined) {
-          // In the single-agent condition, Alex speaks the filler.
+          playGesture('stopAlexGesture')
+
           await speakWithHighlight(
             JORDAN_OPENING_FILLER,
             fillerSpeaker,
@@ -2397,7 +2222,9 @@ export default function MainInteraction() {
         setSubtitle('')
 
         // Scripted follow-up
-        const followUp = `Did I get that right? Anything else you’d like to add before we see what topics Doctor Alex suggests based on what you’ve shared?`
+        const followUp = isCombined
+          ? `Did I get that right? Is there anything else you’d like to add before I suggest some topics based on what you’ve shared?`
+          : `Did I get that right? Anything else you’d like to add before we see what topics Doctor Alex suggests based on what you’ve shared?`
 
         setMessages((previous) => [
           ...previous,
@@ -2420,11 +2247,11 @@ export default function MainInteraction() {
         return
       }
 
-      // NEW STUDY FLOW — Jordan's topic elicitation
+      // Shared study flow — topic needs elicitation
       if (
-        condition === CONDITION_MULTIPLE &&
         topicState?.phase === 'topics' &&
-        focusedCharacter === 'Jordan'
+        ((condition === CONDITION_MULTIPLE && focusedCharacter === 'Jordan') ||
+          (condition === CONDITION_SINGLE_COMBINED && awaitingTopicElaboration))
       ) {
         const response = await fetch(`${BASE_URL}/study/jordan-topic-turn`, {
           method: 'POST',
@@ -2455,12 +2282,24 @@ export default function MainInteraction() {
         setMessages((previous) => [
           ...previous,
           {
-            from: 'Jordan',
+            from: conversationalSpeaker,
             text: data.jordan_reply,
           },
         ])
 
         setShowThinkingBubble(false)
+
+        if (condition === CONDITION_SINGLE_COMBINED) {
+          await speakWithHighlight(data.jordan_reply, 'doctor', setAlexSubtitle)
+
+          setAlexSubtitle('')
+
+          if (data.elicitation_complete) {
+            await handleStartAlexTopic(true, alexResponsePromise)
+          }
+
+          return
+        }
 
         playGesture('stopCompanionGesture')
 
@@ -2504,11 +2343,12 @@ export default function MainInteraction() {
         return
       }
 
-      // NEW STUDY FLOW — Alex's ongoing factual conversation
       // Shared study flow — Alex's ongoing factual conversation
       if (
         topicState?.phase === 'topics' &&
         (condition === CONDITION_SINGLE_INFO ||
+          (condition === CONDITION_SINGLE_COMBINED &&
+            !awaitingTopicElaboration) ||
           (condition === CONDITION_MULTIPLE && focusedCharacter === 'Alex'))
       ) {
         playGesture('thinkingDoctor')
@@ -2565,250 +2405,12 @@ export default function MainInteraction() {
 
         return
       }
-
-      // LEGACY BACKEND — Condition 2 only
-
-      const response = await fetch(`${BASE_URL}/jordan/turn`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          participant_id: participantId,
-          user_message: trimmed,
-          conversation_history: conversationMessages,
-          condition,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error(`Conversation request failed: ${response.status}`)
-      }
-
-      const data = await response.json()
-      // Count engagement once the backend accepts the user's message.
-      if (topicState?.phase === 'topics') {
-        const topicIndex = topicState.current_topic_index
-
-        setEngagedTopics((previous) => {
-          if (previous.includes(topicIndex)) return previous
-
-          const updated = [...previous, topicIndex]
-          sessionStorage.setItem(ENGAGEMENT_KEY, JSON.stringify(updated))
-          return updated
-        })
-      }
-      console.log('Captured question from Jordan turn:', {
-        question: data.question_saved,
-        type: data.question_type,
-      })
-
-      // Refresh the question list and log the captured question
-      if (data.question_saved) {
-        logQuestionAdded(data.question_saved, data.question_type, trimmed)
-
-        await refreshSavedQuestions()
-        questionAdded = true
-      }
-
-      // 2. If Alex sent a direct reply, let Alex respond
-      if (data.alex_reply) {
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: data.alex_reply,
-          },
-        ])
-
-        setShowThinkingBubble(false)
-
-        await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
-
-        setAlexSubtitle('')
-        playGesture('stopAlexGesture')
-
-        return
-      }
-
-      // 2. If Alex is needed, let Alex respond directly
-      if (data.alex_info_needed) {
-        playGesture('stopAlexGesture')
-        setShowThinkingBubble(false)
-        setShowSwipingCards(true)
-        startSwiping()
-        const alexResponse = await fetch(`${BASE_URL}/alex/conversation-alex`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: trimmed,
-            history: data.shared_history,
-            earlier_memory: data.shared_memory,
-            prior_topic_summaries: data.prior_topic_summaries,
-            condition,
-          }),
-        })
-
-        if (!alexResponse.ok) {
-          throw new Error(`Alex request failed: ${alexResponse.status}`)
-        }
-
-        const alexData = await alexResponse.json()
-
-        // Add Alex's response to chat
-        setMessages((previous) => [
-          ...previous,
-          {
-            from: 'Alex',
-            text: alexData.answer,
-          },
-        ])
-
-        // Start generating Jordan's follow-up while Alex speaks
-        const jordanAfterAlexPromise =
-          condition !== CONDITION_SINGLE_INFO
-            ? fetch(`${BASE_URL}/jordan/after-alex`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  participant_id: participantId,
-                  earlier_memory: data.shared_memory,
-                  conversation_history: [
-                    ...data.shared_history,
-                    { from: 'user', text: trimmed },
-                    { from: 'Alex', text: alexData.answer },
-                  ],
-                }),
-              })
-            : null
-
-        if (!isSingleAgent) {
-          playGesture('jordanLookAtAlex')
-        }
-
-        setShowThinkingBubble(false)
-        stopSwiping()
-        setShowSwipingCards(false)
-
-        // Alex speaks
-        await speakWithHighlight(alexData.answer, 'doctor', setAlexSubtitle)
-
-        setAlexSubtitle('')
-
-        // Conversational follow-up for c=2 and c=3
-        if (jordanAfterAlexPromise) {
-          const jordanAfterAlexResponse = await jordanAfterAlexPromise
-
-          if (!jordanAfterAlexResponse.ok) {
-            throw new Error(
-              `Jordan after Alex request failed: ${jordanAfterAlexResponse.status}`,
-            )
-          }
-
-          const jordanAfterAlexData = await jordanAfterAlexResponse.json()
-          console.log('Captured question after Alex:', {
-            question: jordanAfterAlexData.question_saved,
-            type: jordanAfterAlexData.question_type,
-          })
-
-          // Refresh the list and log the captured question
-          if (jordanAfterAlexData.question_saved) {
-            logQuestionAdded(
-              jordanAfterAlexData.question_saved,
-              jordanAfterAlexData.question_type,
-              trimmed,
-            )
-
-            await refreshSavedQuestions()
-            questionAdded = true
-          }
-
-          setMessages((previous) => [
-            ...previous,
-            {
-              from: conversationalSpeaker,
-              text: jordanAfterAlexData.jordan_reply,
-            },
-          ])
-
-          if (condition === CONDITION_SINGLE_COMBINED) {
-            setShowThinkingBubble(false)
-            await speakWithHighlight(
-              jordanAfterAlexData.jordan_reply,
-              'doctor',
-              setAlexSubtitle,
-            )
-
-            setAlexSubtitle('')
-          } else {
-            playGesture('alexLookAtJordan')
-
-            setShowThinkingBubble(false)
-            await speakWithHighlight(
-              jordanAfterAlexData.jordan_reply,
-              'companion',
-              setJordanSubtitle,
-            )
-
-            setJordanSubtitle('')
-          }
-        }
-
-        playGesture('stopAlexGesture')
-        if (!isSingleAgent) {
-          playGesture('stopCompanionGesture')
-        }
-
-        return
-      }
-
-      // 3. Otherwise, conversational response
-      setMessages((previous) => [
-        ...previous,
-        {
-          from: conversationalSpeaker,
-          text: data.jordan_reply,
-        },
-      ])
-
-      if (condition === CONDITION_SINGLE_COMBINED) {
-        setShowThinkingBubble(false)
-        await speakWithHighlight(data.jordan_reply, 'doctor', setAlexSubtitle)
-
-        setAlexSubtitle('')
-      } else {
-        playGesture('alexLookAtJordan')
-
-        setShowThinkingBubble(false)
-        await speakWithHighlight(
-          data.jordan_reply,
-          'companion',
-          setJordanSubtitle,
-        )
-
-        setJordanSubtitle('')
-      }
-
-      playGesture('stopAlexGesture')
-      if (!isSingleAgent) {
-        playGesture('stopCompanionGesture')
-      }
     } catch (error) {
       console.error('Conversation error:', error)
     } finally {
-      await stopSwiping()
-      setShowSwipingCards(false)
       setShowThinkingBubble(false)
       setIsResponding(false)
       setResponseStatus('')
-
-      if (questionAdded) {
-        setShowQuestions(true)
-      }
     }
   }
 
@@ -2886,8 +2488,11 @@ export default function MainInteraction() {
 
       if (isAlex) {
         playGesture('stopAlexGesture')
-        playGesture('jordanLookAtAlex')
-        swivelJordanTowardAlex(true)
+
+        if (!isSingleAgent) {
+          playGesture('jordanLookAtAlex')
+          swivelJordanTowardAlex(true)
+        }
       } else {
         playGesture('stopCompanionGesture')
         playGesture('alexLookAtJordan')
@@ -2910,11 +2515,13 @@ export default function MainInteraction() {
       setSubtitle('')
       setActiveSpeaker(null)
 
-      swivelAlexTowardJordan(false)
-      swivelJordanTowardAlex(false)
-
       playGesture('stopAlexGesture')
-      playGesture('stopCompanionGesture')
+
+      if (!isSingleAgent) {
+        swivelAlexTowardJordan(false)
+        swivelJordanTowardAlex(false)
+        playGesture('stopCompanionGesture')
+      }
     }
   }
 
@@ -2987,10 +2594,10 @@ export default function MainInteraction() {
         setResourceChoice('no')
       }
 
-      // Jordan introduces the selected discussion questions.
+      // The supportive role introduces the selected discussion questions.
       if (viewQuestions) {
         await introduceMaterials(
-          'Jordan',
+          conversationalSpeaker,
           jordanMaterialOverview,
           jordanMaterialSpeechRef,
           () => setShowDiscussionQuestions(true),
@@ -3032,7 +2639,6 @@ export default function MainInteraction() {
 
       if (sendResources) {
         const resourceText = displayedResources
-          .slice(0, 3)
           .map(
             (resource, index) =>
               `${index + 1}. ${resource.title}\n` +
@@ -3593,8 +3199,7 @@ export default function MainInteraction() {
         </div>
       )}
 
-      {condition === CONDITION_MULTIPLE &&
-        started &&
+      {started &&
         !introDone &&
         !showStartOverlay &&
         !showSceneLoading &&
@@ -3684,9 +3289,7 @@ export default function MainInteraction() {
                 introDone &&
                 !showTopicSelection &&
                 !awaitingTopicElaboration &&
-                (condition === CONDITION_SINGLE_COMBINED ||
-                  completedAlexIntroTopic ===
-                    topicState.current_topic_index) && (
+                completedAlexIntroTopic === topicState.current_topic_index && (
                   <button
                     type="button"
                     className="cssbuttons-io-button next-topic-button"
@@ -3758,13 +3361,12 @@ export default function MainInteraction() {
                     id="virtualdoctor"
                     ref={doctorRef}
                   />
-                  {condition === CONDITION_MULTIPLE &&
-                    resourceChoice === 'yes' &&
-                    suggestedResources.length > 0 && (
+                  {resourceChoice === 'yes' &&
+                    displayedResources.length > 0 && (
                       <div className="closing-materials closing-materials-alex">
                         <h3>More Information Resources</h3>
 
-                        {suggestedResources.slice(0, 3).map((resource) => (
+                        {displayedResources.map((resource) => (
                           <div
                             key={resource.id}
                             className="closing-material-card"
@@ -3779,6 +3381,23 @@ export default function MainInteraction() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                  {condition === CONDITION_SINGLE_COMBINED &&
+                    showDiscussionQuestions &&
+                    discussionQuestions.length > 0 && (
+                      <div className="closing-materials closing-materials-jordan">
+                        <h3>Questions to Discuss with Others</h3>
+
+                        {discussionQuestions
+                          .slice(0, 3)
+                          .map((question, index) => (
+                            <div key={index} className="closing-material-card">
+                              <FontAwesomeIcon icon={faCommentDots} />
+                              <span>{question}</span>
+                            </div>
+                          ))}
                       </div>
                     )}
 
@@ -4093,7 +3712,11 @@ export default function MainInteraction() {
                           aria-pressed={selectedDelivery.questions}
                           onClick={() => {
                             if (!selectedDelivery.questions) {
-                              playGesture('thumbsupQuick')
+                              playGesture(
+                                isSingleAgent
+                                  ? 'thumbsupDoctorQuick'
+                                  : 'thumbsupQuick',
+                              )
                             }
 
                             setSelectedDelivery((previous) => ({
@@ -4109,7 +3732,11 @@ export default function MainInteraction() {
                                 : faCommentDots
                             }
                           />
-                          <strong>Send me Jordan's discussion questions</strong>
+                          <strong>
+                            Send me{' '}
+                            {isSingleAgent ? "Doctor Alex's" : "Jordan's"}{' '}
+                            discussion questions
+                          </strong>
                         </button>
                       )}
                     </div>
@@ -4167,7 +3794,7 @@ export default function MainInteraction() {
                         type="button"
                         disabled={
                           isResponding ||
-                          (condition === CONDITION_MULTIPLE &&
+                          (condition !== CONDITION_SINGLE_INFO &&
                             suggestedResources.length === 0)
                         }
                         className={`next-step-card alex
@@ -4198,7 +3825,7 @@ export default function MainInteraction() {
                           Prepared by <b>Doctor Alex</b>
                         </small>
                       </button>
-                      {condition === CONDITION_MULTIPLE && (
+                      {condition !== CONDITION_SINGLE_INFO && (
                         <button
                           type="button"
                           disabled={
@@ -4211,7 +3838,11 @@ export default function MainInteraction() {
                           aria-pressed={selectedNextSteps.questions}
                           onClick={() => {
                             if (!selectedNextSteps.questions) {
-                              playGesture('thumbsupQuick')
+                              playGesture(
+                                isSingleAgent
+                                  ? 'thumbsupDoctorQuick'
+                                  : 'thumbsupQuick',
+                              )
                             }
 
                             setSelectedNextSteps((previous) => ({
@@ -4230,8 +3861,9 @@ export default function MainInteraction() {
 
                           <strong>View Questions to Discuss with Others</strong>
 
-                          <small class="jordan">
-                            Prepared by <b>Jordan</b>
+                          <small className="jordan">
+                            Prepared by{' '}
+                            <b>{isSingleAgent ? 'Doctor Alex' : 'Jordan'}</b>
                           </small>
                         </button>
                       )}
@@ -4340,7 +3972,8 @@ export default function MainInteraction() {
                     isResponding={isResponding}
                     awaitingTopicElaboration={awaitingTopicElaboration}
                     isOpening={
-                      condition === CONDITION_MULTIPLE &&
+                      (condition === CONDITION_SINGLE_COMBINED ||
+                        condition === CONDITION_MULTIPLE) &&
                       !openingResponseDone &&
                       !openingComplete
                     }

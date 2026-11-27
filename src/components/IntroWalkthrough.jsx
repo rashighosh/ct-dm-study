@@ -65,6 +65,12 @@ const INTRO_PAGES = {
       description:
         "First, the virtual character will introduce themselves and their role. Then, you'll share what's on your mind, and they'll suggest three topics for you to explore. For each topic, you can ask questions you'd like answered or just share your thoughts, concerns, and circumstances to help the character provide information that's relevant to you.",
     },
+    {
+      title: 'The Virtual Information Guide',
+      description:
+        'The character you will interact with is your virtual information guide. This character is designed to draw from trusted medical sources curated by health communication experts to provide relevant, evidence-based information. The character will also help you share your health-related perspectives and experiences so that you can play a role in shaping the direction of the conversation.',
+      showInformationGuide: true,
+    },
   ],
 
   // CONDITION 3 — Multiple Distributed

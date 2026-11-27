@@ -5,6 +5,16 @@ const BASE_URL = 'http://127.0.0.1:8000'
 
 const ALEX_INTRO_1_SINGLE_1 = `Hello, I am Doctor Alex. I am an AI-powered virtual character designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.`
 
+const ALEX_INTRO_1_COMBINED_1 = `However, having reliable information is only part of the process. What information is most helpful depends on your individual needs and experiences. After all, you know your own experiences better than anyone else.`
+
+const ALEX_INTRO_1_COMBINED_2 = `In addition to providing information, my role is to help you express your needs and perspectives. Throughout our conversation, I will ask about your experiences and what is important to you so that I can identify and share information that is relevant to you.`
+
+const ALEX_INTRO_1_COMBINED_3 = `Now that I have introduced myself, I would like to hear a little about you.`
+
+const ALEX_INTRO_1_COMBINED_4 = `When you think back on your healthcare experiences, what kinds of things were important to you when making health-related decisions?`
+
+const ALEX_INTRO_1_COMBINED_5 = `Perhaps you can share things that helped you feel more certain, made decisions more difficult, or things you wish you had. Take your time and feel free to share whatever comes to mind.`
+
 const ALEX_INTRO_1_MULTIPLE_1 = `Hello, I am Doctor Alex, and this is Jordan. We are AI-powered virtual characters designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.`
 
 const ALEX_INTRO_1_MULTIPLE_2 = `When considering a clinical trial, it is important to have accurate and reliable information. However, the amount of information available can be substantial, and it is not always clear which sources to consult or how to interpret what you find.`
@@ -170,11 +180,30 @@ async function generateAllIntros() {
 //   process.exitCode = 1
 // })
 
-generateOneIntro(
-  'ALEX_INTRO_1_SINGLE_1',
-  ALEX_INTRO_1_SINGLE_1,
-  'doctor',
-).catch((err) => {
+// generateOneIntro(
+//   'ALEX_INTRO_1_SINGLE_1',
+//   ALEX_INTRO_1_SINGLE_1,
+//   'doctor',
+// ).catch((err) => {
+//   console.error('❌ Intro generation failed:', err)
+//   process.exitCode = 1
+// })
+
+async function generateCombinedIntros() {
+  const intros = [
+    ['ALEX_INTRO_1_COMBINED_1', ALEX_INTRO_1_COMBINED_1],
+    ['ALEX_INTRO_1_COMBINED_2', ALEX_INTRO_1_COMBINED_2],
+    ['ALEX_INTRO_1_COMBINED_3', ALEX_INTRO_1_COMBINED_3],
+    ['ALEX_INTRO_1_COMBINED_4', ALEX_INTRO_1_COMBINED_4],
+    ['ALEX_INTRO_1_COMBINED_5', ALEX_INTRO_1_COMBINED_5],
+  ]
+
+  for (const [name, text] of intros) {
+    await generateOneIntro(name, text, 'doctor')
+  }
+}
+
+generateCombinedIntros().catch((err) => {
   console.error('❌ Intro generation failed:', err)
   process.exitCode = 1
 })

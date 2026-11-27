@@ -25,38 +25,59 @@
   "2": [
     {
       "from": "Alex",
-      "text": "Hi there, I’m Alex. I am an AI-powered virtual character here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_SINGLE.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "Hello, I am Doctor Alex. I am an AI-powered virtual character designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE_1.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_SINGLE_1.json"
     },
     {
       "from": "Alex",
-      "text": "I'll also help you think about how each topic relates to what matters to you. As we explore each topic, I'll help keep track of questions or concerns you might want to discuss with a healthcare provider or clinical trial team if you ever consider a clinical trial. You can see these anytime by clicking on the question list next to me.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_2_SINGLE_COMBINED.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_2_SINGLE_COMBINED.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "When considering a clinical trial, it is important to have accurate and reliable information. However, the amount of information available can be substantial, and it is not always clear which sources to consult or how to interpret what you find.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_2.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_MULTIPLE_2.json"
     },
     {
       "from": "Alex",
-      "text": "Now, before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "Hence, my goal is to assist you in navigating that information. My role is inspired by that of a healthcare provider who provides patients with medical information. I draw from a collection of trusted medical sources, such as the National Cancer Institute, curated specifically for this website. Using these sources, I provide clear, evidence-based answers to address your information needs.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_3.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_MULTIPLE_3.json"
     },
     {
       "from": "Alex",
-      "text": "If you have questions that depend on a specific clinical trial or your personal situation, I'll save them to your tailored question list so you can revisit them if you ever consider a trial. And after we've covered your three topics, I'll also suggest some useful next steps for you based on what you share during our conversation.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE_COMBINED.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE_COMBINED.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "However, having reliable information is only part of the process. What information is most helpful depends on your individual needs and experiences. After all, you know your own experiences better than anyone else.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_1.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_COMBINED_1.json"
     },
     {
       "from": "Alex",
-      "text": "Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button next to me. Let's try it now! Click the button to get started with your first topic.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "In addition to providing information, my role is to help you express your needs and perspectives. Throughout our conversation, I will ask about your experiences and what is important to you so that I can identify and share information that is relevant to you.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_2.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_COMBINED_2.json"
+    },
+    {
+      "from": "Alex",
+      "character": "doctor",
+      "text": "Now that I have introduced myself, I would like to hear a little about you.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_3.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_COMBINED_3.json"
+    },
+    {
+      "from": "Alex",
+      "character": "doctor",
+      "text": "When you think back on your healthcare experiences, what kinds of things were important to you when making health-related decisions?",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_4.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_COMBINED_4.json"
+    },
+    {
+      "from": "Alex",
+      "character": "doctor",
+      "text": "Perhaps you can share things that helped you feel more certain, made decisions more difficult, or things you wish you had. Take your time and feel free to share whatever comes to mind.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_COMBINED_5.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_COMBINED_5.json"
     }
   ],
 
