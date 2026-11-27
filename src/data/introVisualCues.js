@@ -107,3 +107,6 @@ export const INTRO_VISUAL_CUES = {
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3': [],
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_5.mp3': [],
 }
+
+INTRO_VISUAL_CUES['/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE_1.mp3'] =
+  INTRO_VISUAL_CUES['/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_1.mp3']

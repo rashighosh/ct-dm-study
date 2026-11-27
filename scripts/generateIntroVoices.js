@@ -3,6 +3,8 @@ import fs from 'fs'
 
 const BASE_URL = 'http://127.0.0.1:8000'
 
+const ALEX_INTRO_1_SINGLE_1 = `Hello, I am Doctor Alex. I am an AI-powered virtual character designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.`
+
 const ALEX_INTRO_1_MULTIPLE_1 = `Hello, I am Doctor Alex, and this is Jordan. We are AI-powered virtual characters designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.`
 
 const ALEX_INTRO_1_MULTIPLE_2 = `When considering a clinical trial, it is important to have accurate and reliable information. However, the amount of information available can be substantial, and it is not always clear which sources to consult or how to interpret what you find.`
@@ -169,8 +171,8 @@ async function generateAllIntros() {
 // })
 
 generateOneIntro(
-  'ALEX_INTRO_1_MULTIPLE_3',
-  ALEX_INTRO_1_MULTIPLE_3,
+  'ALEX_INTRO_1_SINGLE_1',
+  ALEX_INTRO_1_SINGLE_1,
   'doctor',
 ).catch((err) => {
   console.error('❌ Intro generation failed:', err)

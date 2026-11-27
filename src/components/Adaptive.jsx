@@ -223,7 +223,7 @@ export default function MainInteraction() {
   const [selectedTopics, setSelectedTopics] = useState([])
   const [showTopicSelection, setShowTopicSelection] = useState(false)
   const [showChatInput, setShowChatInput] = useState(
-    condition !== CONDITION_MULTIPLE,
+    condition === CONDITION_SINGLE_COMBINED,
   )
   const [waitingForFirstTopic, setWaitingForFirstTopic] = useState(false)
   const canStart = entryLogged && Object.values(startChecks).every(Boolean)
@@ -280,7 +280,9 @@ export default function MainInteraction() {
   const transcriptLoggingQueueRef = useRef(Promise.resolve())
   const [previewResource, setPreviewResource] = useState(null)
   const [activeSpeaker, setActiveSpeaker] = useState(null)
-  const [focusedCharacter, setFocusedCharacter] = useState('Jordan')
+  const [focusedCharacter, setFocusedCharacter] = useState(
+    condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex',
+  )
   const [introVisuals, setIntroVisuals] = useState({
     Alex: null,
     Jordan: null,
@@ -385,15 +387,18 @@ export default function MainInteraction() {
       setAvailableTopics(session.availableTopics ?? [])
       setSelectedTopics(session.selectedTopics ?? [])
       setShowTopicSelection(session.showTopicSelection ?? false)
-      // Restore the chat panel based on intro progress.
+      // Restore the chat panel based on conversation progress.
       setShowChatInput(
         session.showSurveyButton
           ? false
           : session.showDeliveryChoice ||
               session.showResourceChoice ||
-              condition !== CONDITION_MULTIPLE ||
-              session.introDone === true ||
-              restoredIntroIndex >= 7,
+              session.showTopicSelection ||
+              (condition === CONDITION_SINGLE_INFO
+                ? restoredTopicState?.phase === 'topics'
+                : condition === CONDITION_SINGLE_COMBINED ||
+                  session.introDone === true ||
+                  restoredIntroIndex >= 7),
       )
 
       setShowResourceChoice(session.showResourceChoice ?? false)
@@ -467,7 +472,8 @@ export default function MainInteraction() {
   }, [SESSION_KEY])
 
   useEffect(() => {
-    if (!started || !topicState || condition === CONDITION_MULTIPLE) return
+    if (!started || !topicState || condition !== CONDITION_SINGLE_COMBINED)
+      return
     async function loadTopicState() {
       try {
         const response = await fetch(
@@ -948,7 +954,24 @@ export default function MainInteraction() {
       return
 
     if (conversationStartedRef.current) return
-    if (introDone) return
+
+    const needsInfoOnlyTopicPreparation =
+      condition === CONDITION_SINGLE_INFO &&
+      introDone &&
+      !showTopicSelection &&
+      !topicState &&
+      !showResourceChoice &&
+      !showDeliveryChoice &&
+      !showSurveyButton
+
+    const needsInfoOnlyTopicIntro =
+      condition === CONDITION_SINGLE_INFO &&
+      introDone &&
+      topicState?.phase === 'topics' &&
+      completedAlexIntroTopic !== topicState.current_topic_index
+
+    if (introDone && !needsInfoOnlyTopicPreparation && !needsInfoOnlyTopicIntro)
+      return
 
     conversationStartedRef.current = true
 
@@ -997,8 +1020,18 @@ export default function MainInteraction() {
           setIntroDone(true)
         }
 
-        // Introduction finished.
-        // Participant can now respond to the opening question.
+        // Condition 1: Resume the active topic or prepare topic selection.
+        if (condition === CONDITION_SINGLE_INFO) {
+          if (needsInfoOnlyTopicIntro) {
+            await handleStartAlexTopic(
+              true,
+              null,
+              topicState.current_topic_index,
+            )
+          } else {
+            await startTopicPreparation([])
+          }
+        }
       } catch (error) {
         console.error('Could not start introduction:', error)
         introStartedRef.current = false
@@ -1019,6 +1052,12 @@ export default function MainInteraction() {
     condition,
     introNextIndex,
     introDone,
+    showTopicSelection,
+    topicState,
+    completedAlexIntroTopic,
+    showResourceChoice,
+    showDeliveryChoice,
+    showSurveyButton,
   ])
 
   function handleTopicChange(index, newTopicId) {
@@ -1049,7 +1088,11 @@ export default function MainInteraction() {
     return { data, prepared }
   }
 
-  async function handleStartAlexTopic(force = false, responsePromise = null) {
+  async function handleStartAlexTopic(
+    force = false,
+    responsePromise = null,
+    topicIndex = topicState?.current_topic_index,
+  ) {
     if ((isResponding && !force) || (focusedCharacter === 'Alex' && !force))
       return
 
@@ -1077,12 +1120,15 @@ export default function MainInteraction() {
 
       setResponseStatus('')
 
-      // Alex faces forward while Jordan listens.
+      // Alex faces forward.
       playGesture('stopAlexGesture')
-      playGesture('jordanLookAtAlex')
+
+      if (condition === CONDITION_MULTIPLE) {
+        playGesture('jordanLookAtAlex')
+        swivelJordanTowardAlex(true)
+      }
 
       setActiveSpeaker('Alex')
-      swivelJordanTowardAlex(true)
 
       try {
         await playPreparedSpeech({
@@ -1090,12 +1136,15 @@ export default function MainInteraction() {
           onSubtitle: setAlexSubtitle,
         })
         // Allow topic advancement once Alex finishes speaking.
-        setCompletedAlexIntroTopic(topicState.current_topic_index)
+        setCompletedAlexIntroTopic(topicIndex)
       } finally {
-        swivelJordanTowardAlex(false)
+        if (condition === CONDITION_MULTIPLE) {
+          swivelJordanTowardAlex(false)
+          playGesture('stopCompanionGesture')
+        }
+
         setActiveSpeaker(null)
         setAlexSubtitle('')
-        playGesture('stopCompanionGesture')
       }
     } catch (error) {
       console.error('Could not start Alex topic:', error)
@@ -1193,9 +1242,11 @@ export default function MainInteraction() {
       setHighlightCurrentTopic(true)
       setShowChatInput(true)
 
-      // Jordan begins the first topic by referencing the
-      // participant's earlier concern.
-      if (condition === CONDITION_MULTIPLE) {
+      // Condition 1 begins directly with factual information.
+      // Condition 3 begins with needs elicitation.
+      if (condition === CONDITION_SINGLE_INFO) {
+        await handleStartAlexTopic(true, null, data.current_topic_index)
+      } else if (condition === CONDITION_MULTIPLE) {
         const openingResponse = await fetch(`${BASE_URL}/study/topic-opening`, {
           method: 'POST',
           headers: {
@@ -1354,13 +1405,31 @@ export default function MainInteraction() {
               })
           : null
 
+      // Prepare a general resource overview for Condition 1.
+      if (condition === CONDITION_SINGLE_INFO) {
+        const overview =
+          'Here are some credible resources that provide additional information about clinical trial participation. ' +
+          'You can click on any resource to preview it and explore whichever ones interest you.'
+
+        setAlexMaterialOverview(overview)
+
+        alexMaterialSpeechRef.current = prepareSpeech(overview, 'doctor').catch(
+          (error) => {
+            console.error('Could not prepare resource overview:', error)
+            return null
+          },
+        )
+      }
+
       // Alex invites the participant to explore additional resources.
       // Alex concludes the conversation and introduces resources.
       const alexClosingInvitation =
         "Alright, we've now explored all three of your selected topics. " +
         'Our conversation today is just one step in understanding clinical trial participation. ' +
         'I realize that you may have additional questions or areas you wish to learn more about. ' +
-        'Based on our conversation, I have identified a few credible resources that may be relevant to you. ' +
+        (condition === CONDITION_SINGLE_INFO
+          ? 'There are several credible resources available that can help you learn more about clinical trial participation. '
+          : 'Based on our conversation, I have identified a few credible resources that may be relevant to you. ') +
         'If you are interested, you can select the option below to view them.'
 
       setMessages((previous) => [
@@ -1384,6 +1453,10 @@ export default function MainInteraction() {
       await speakWithHighlight(alexClosingInvitation, 'doctor', setAlexSubtitle)
 
       setAlexSubtitle('')
+
+      if (condition === CONDITION_SINGLE_INFO) {
+        setShowClosingInstructions(true)
+      }
 
       if (!isSingleAgent) {
         playGesture('stopCompanionGesture')
@@ -1543,8 +1616,11 @@ export default function MainInteraction() {
   async function handleNextTopic() {
     if (isResponding || !topicState || topicState.conversation_complete) return
 
-    // NEW STUDY FLOW — Condition 3
-    if (condition === CONDITION_MULTIPLE) {
+    // Shared study flow — Conditions 1 and 3
+    if (
+      condition === CONDITION_SINGLE_INFO ||
+      condition === CONDITION_MULTIPLE
+    ) {
       setIsResponding(true)
       setResponseStatus('Preparing next topic')
       setShowQuestions(false)
@@ -1599,6 +1675,12 @@ export default function MainInteraction() {
         // Begin the closing conversation after the final topic.
         if (data.conversation_complete) {
           await handleConversationClosing(data)
+          return
+        }
+
+        // Condition 1: Proceed directly to factual information.
+        if (condition === CONDITION_SINGLE_INFO) {
+          await handleStartAlexTopic(true, null, data.current_topic_index)
           return
         }
 
@@ -1831,17 +1913,23 @@ export default function MainInteraction() {
         text: ALEX_TOPIC_FILLER,
       }
 
-      // Add Alex's scripted statement to the transcript.
-      setMessages((previous) => [...previous, alexFillerMessage])
+      const isInfoOnly = condition === CONDITION_SINGLE_INFO
 
-      // Include it in the history supplied to the backend.
-      const topicPreparationHistory = [
-        ...conversationHistory,
-        alexFillerMessage,
-      ]
+      const topicPreparationHistory = isInfoOnly
+        ? conversationHistory
+        : [...conversationHistory, alexFillerMessage]
+
+      if (!isInfoOnly) {
+        setMessages((previous) => [...previous, alexFillerMessage])
+      }
       // Start selecting the three topics in the background
       // while Alex delivers his scripted transition.
-      const responsePromise = fetch(`${BASE_URL}/study/prepare-topics`, {
+      const topicEndpoint =
+        condition === CONDITION_SINGLE_INFO
+          ? '/study/initialize-info-only'
+          : '/study/prepare-topics'
+
+      const responsePromise = fetch(`${BASE_URL}${topicEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1888,13 +1976,15 @@ export default function MainInteraction() {
       }
 
       try {
-        await speakWithLipsyncStatic(
-          STUDY_FILLER_AUDIO.alexTopic.audio,
-          STUDY_FILLER_AUDIO.alexTopic.timestamps,
-          'doctor',
-          true,
-          setAlexSubtitle,
-        )
+        if (!isInfoOnly) {
+          await speakWithLipsyncStatic(
+            STUDY_FILLER_AUDIO.alexTopic.audio,
+            STUDY_FILLER_AUDIO.alexTopic.timestamps,
+            'doctor',
+            true,
+            setAlexSubtitle,
+          )
+        }
       } finally {
         if (condition === CONDITION_MULTIPLE) {
           swivelJordanTowardAlex(false)
@@ -2415,11 +2505,11 @@ export default function MainInteraction() {
       }
 
       // NEW STUDY FLOW — Alex's ongoing factual conversation
-      // NEW STUDY FLOW — Alex's ongoing factual conversation
+      // Shared study flow — Alex's ongoing factual conversation
       if (
-        condition === CONDITION_MULTIPLE &&
         topicState?.phase === 'topics' &&
-        focusedCharacter === 'Alex'
+        (condition === CONDITION_SINGLE_INFO ||
+          (condition === CONDITION_MULTIPLE && focusedCharacter === 'Alex'))
       ) {
         playGesture('thinkingDoctor')
 
@@ -2460,17 +2550,23 @@ export default function MainInteraction() {
         setShowThinkingBubble(false)
 
         playGesture('stopAlexGesture')
-        playGesture('jordanLookAtAlex')
+
+        if (condition === CONDITION_MULTIPLE) {
+          playGesture('jordanLookAtAlex')
+        }
 
         await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
 
         setAlexSubtitle('')
-        playGesture('stopCompanionGesture')
+
+        if (condition === CONDITION_MULTIPLE) {
+          playGesture('stopCompanionGesture')
+        }
 
         return
       }
 
-      // OLD BACKEND — Conditions 1 and 2
+      // LEGACY BACKEND — Condition 2 only
 
       const response = await fetch(`${BASE_URL}/jordan/turn`, {
         method: 'POST',
@@ -3588,7 +3684,7 @@ export default function MainInteraction() {
                 introDone &&
                 !showTopicSelection &&
                 !awaitingTopicElaboration &&
-                (condition !== CONDITION_MULTIPLE ||
+                (condition === CONDITION_SINGLE_COMBINED ||
                   completedAlexIntroTopic ===
                     topicState.current_topic_index) && (
                   <button
@@ -4062,7 +4158,9 @@ export default function MainInteraction() {
                     <p
                       className={`closing-instructions ${showClosingInstructions ? 'revealed' : ''}`}
                     >
-                      You can select either option, both, or neither.
+                      {condition === CONDITION_SINGLE_INFO
+                        ? 'You can choose to view the resources or continue without viewing them.'
+                        : 'You can select either option, both, or continue without viewing them.'}
                     </p>
                     <div className="next-step-options">
                       <button

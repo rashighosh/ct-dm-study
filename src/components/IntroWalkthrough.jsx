@@ -23,11 +23,12 @@ const CONDITION_NAMES = {
 
 const INTRO_PAGES = {
   // CONDITION 1 — Baseline (Information Only)
+  // CONDITION 1 — Baseline (Information Only)
   1: [
     {
       title: 'Understanding Clinical Trial Participation',
       description:
-        'Considering clinical trials as a treatment option can raise many questions. This website is designed to help you learn more about clinical trial participation and explore information relevant to you.',
+        'Considering clinical trials as a treatment option can raise many questions. This website is designed to help you learn more about clinical trial participation.',
     },
     {
       title: 'Learning with a Virtual Character',
@@ -37,7 +38,13 @@ const INTRO_PAGES = {
     {
       title: 'The Conversation at a Glance',
       description:
-        "First, the virtual character will introduce themselves and their role. Then, you'll explore topics related to clinical trial participation and have the opportunity to ask your own questions.",
+        "First, the virtual character will introduce themselves and their role. Then, you'll explore three topics related to clinical trial participation. For each topic, you'll receive information and have the opportunity to ask your own questions.",
+    },
+    {
+      title: 'The Virtual Information Guide',
+      description:
+        'The character you will interact with is your virtual information guide. This character is designed to draw from trusted medical sources curated by health communication experts to provide relevant, evidence-based information.',
+      showInformationGuide: true,
     },
   ],
 

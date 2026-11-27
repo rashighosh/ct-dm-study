@@ -2,24 +2,24 @@
   "1": [
     {
       "from": "Alex",
-      "text": "Hi there, I’m Alex. I am an AI-powered virtual character here to help you understand clinical trial participation. We’ll go through the topics you chose earlier one at a time. My role is to provide information about each topic from trusted health resources, such as the National Cancer Institute.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_SINGLE.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "Hello, I am Doctor Alex. I am an AI-powered virtual character designed to help you explore how clinical trials work so that you feel well-informed when determining whether taking part in one may be appropriate for you.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_SINGLE_1.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_SINGLE_1.json"
     },
     {
       "from": "Alex",
-      "text": "Now, before we get started, please remember that I don’t have access to specific clinical trials, so I can’t search for or answer questions about specific trials or treatments. I also can’t provide medical advice.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_3_SINGLE.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_3_SINGLE.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "When considering a clinical trial, having accurate, reliable information is essential. However, there is a great deal of information available, and it can be challenging to know where to look or how to make sense of it all.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_2.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_MULTIPLE_2.json"
     },
     {
       "from": "Alex",
-      "text": "Finally, we can spend as much time as you'd like on each topic. Whenever you're ready to move on, just click the button next to me. Let's try it now! Click the button to get started with your first topic.",
-      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_4_SINGLE.mp3",
-      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_4_SINGLE.json",
-      "character": "doctor"
+      "character": "doctor",
+      "text": "My role is to help you navigate that information by drawing from a large collection of trusted medical sources, such as the National Health Institute. These sources were curated by real human health communication experts for this website. From these sources, I identify relevant information to provide clear, evidence-based answers to your questions.",
+      "audio": "/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_3.mp3",
+      "timestamps": "/intro-voices/doctor-timestamps-ALEX_INTRO_1_MULTIPLE_3.json"
     }
   ],
   "2": [
