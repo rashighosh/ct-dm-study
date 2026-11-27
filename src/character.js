@@ -74,7 +74,7 @@ function addChairBehindAvatar(
 ) {
   gltfLoader.load(url, (gltf) => {
     const chair = gltf.scene
-    chair.position.set(0, 0, -0.35) // push further back, no rotation needed
+    chair.position.set(0, -0.05, -0.35) // push further back, no rotation needed
     head.scene.add(chair)
 
     if (head === getDoctorHead()) {
@@ -110,7 +110,7 @@ export async function initDoctorCharacter(containerNode, view = 'mid') {
   head = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: view, // full, mid, upper, head,
-    cameraY: 0.25,
+    cameraY: 0.37,
     cameraDistance: -1,
     cameraRotateEnable: false,
     cameraPanEnable: false,
@@ -141,10 +141,11 @@ export async function initCompanionCharacter(containerNode, selectedCompanion) {
     : 'jordan1'
 
   const companion = COMPANION_CHARACTERS[activeCompanionId]
+  console.log(activeCompanionId)
   head1 = new TalkingHead(containerNode, {
     lipsyncModules: ['en'],
     cameraView: 'mid', // full, mid, upper, head,
-    cameraY: 0.31,
+    cameraY: ['jordan3', 'jordan4'].includes(activeCompanionId) ? 0.37 : 0.31,
     cameraDistance: -1,
     avatarIdleEyeContact: 1,
     avatarIdleHeadMove: 1,
@@ -883,15 +884,15 @@ const STATIC_GESTURE_MAPS = {
       resetTransition: 600,
     },
     {
-      at: 3,
+      at: 2.5,
       target: 'doctor',
       gesture: 'chest',
-      dur: 3,
+      dur: 2,
       transition: 500,
       reset: true,
     },
     {
-      at: 6.5,
+      at: 5,
       target: 'doctor',
       gesture: 'talkopen',
       dur: 1.5,
@@ -899,7 +900,7 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 8.5,
+      at: 7.5,
       target: 'doctor',
       gesture: 'rightGesture',
       dur: 3,
@@ -910,7 +911,7 @@ const STATIC_GESTURE_MAPS = {
 
   '/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_2.mp3': [
     {
-      at: 1.5,
+      at: 2.5,
       target: 'doctor',
       gesture: 'leftGesture',
       dur: 3,
@@ -918,7 +919,7 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 5,
+      at: 6,
       target: 'doctor',
       gesture: 'talkopen',
       dur: 3,
@@ -937,7 +938,31 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 3.3,
+      at: 2,
+      target: 'doctor',
+      gesture: 'talkopen',
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 4,
+      target: 'doctor',
+      gesture: 'leftGesture',
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 7.5,
+      target: 'doctor',
+      gesture: 'talkopen',
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 10.5,
       target: 'doctor',
       gesture: 'talkopen',
       dur: 3,
@@ -945,7 +970,7 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 15,
+      at: 18.5,
       target: 'doctor',
       gesture: 'talkopen',
       dur: 3,
@@ -961,7 +986,15 @@ const STATIC_GESTURE_MAPS = {
       at: 0,
       target: 'companion',
       gesture: 'lookLeft',
-      dur: 3,
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 2,
+      target: 'companion',
+      gesture: 'rightGesture',
+      dur: 1.5,
       transition: 500,
       reset: true,
     },
@@ -974,7 +1007,7 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 10,
+      at: 10.5,
       target: 'companion',
       gesture: 'rightGesture',
       dur: 3,
@@ -996,7 +1029,7 @@ const STATIC_GESTURE_MAPS = {
       at: 2,
       target: 'companion',
       gesture: 'rightGesture',
-      dur: 2,
+      dur: 1.5,
       transition: 500,
       reset: true,
     },
@@ -1004,15 +1037,31 @@ const STATIC_GESTURE_MAPS = {
       at: 5.5,
       target: 'companion',
       gesture: 'talkopen',
-      dur: 3,
+      dur: 1.5,
       transition: 500,
       reset: true,
     },
     {
-      at: 9.5,
+      at: 8.5,
+      target: 'companion',
+      gesture: 'leftGesture',
+      dur: 2.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 11,
       target: 'companion',
       gesture: 'talkopen',
-      dur: 3,
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 13,
+      target: 'companion',
+      gesture: 'rightGesture',
+      dur: 2,
       transition: 500,
       reset: true,
     },
@@ -1020,15 +1069,7 @@ const STATIC_GESTURE_MAPS = {
 
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_3.mp3': [
     {
-      at: 0.5,
-      target: 'companion',
-      gesture: 'leftGesture',
-      dur: 1,
-      transition: 500,
-      reset: true,
-    },
-    {
-      at: 2,
+      at: 0,
       target: 'companion',
       gesture: 'talkopen',
       dur: 1,
@@ -1036,7 +1077,7 @@ const STATIC_GESTURE_MAPS = {
       reset: true,
     },
     {
-      at: 3.5,
+      at: 3,
       target: 'companion',
       gesture: 'rightGesture',
       dur: 1,
@@ -1045,7 +1086,24 @@ const STATIC_GESTURE_MAPS = {
     },
   ],
 
-  '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3': [],
+  '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_4.mp3': [
+    {
+      at: 0,
+      target: 'companion',
+      gesture: 'talkopen',
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+    {
+      at: 3,
+      target: 'companion',
+      gesture: 'rightGesture',
+      dur: 1.5,
+      transition: 500,
+      reset: true,
+    },
+  ],
 
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_5.mp3': [],
 }

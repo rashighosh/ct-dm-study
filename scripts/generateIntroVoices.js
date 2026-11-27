@@ -20,14 +20,14 @@ const JORDAN_INTRO_1_MULTIPLE_4 = `When you think back on your healthcare experi
 const JORDAN_INTRO_1_MULTIPLE_5 = `Maybe you can share things that helped you feel more sure, made it harder, or things you wish you'd had. Take your time in thinking about this -- whatever comes to mind is a great place to start!`
 
 const JORDAN_OPENING_FILLER =
-  "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you."
+  "Gotcha! Let me make sure I'm getting this right by quickly saying that back to you."
 
 const ALEX_TOPIC_FILLER =
-  "I'll review the information available to me and identify a few topics that may be most relevant to your concerns."
+  'Thank you for sharing those thoughts. Let me review the information available to me and identify a few topics that may be most relevant to your concerns.'
 
 const ALEX_TOPIC_SELECTION_INSTRUCTIONS =
-  'You can keep these suggestions or change any of them using the options above. ' +
-  "Once you're satisfied with your selections, click Continue to begin."
+  'You can keep these suggestions or change any of them using the options below. ' +
+  "Once you're satisfied with your selections, click Continue to start exploring these topics."
 
 // --------------------------------------------------------------------------
 // Generate one intro function
@@ -163,16 +163,14 @@ async function generateAllIntros() {
 // Choose what to run
 // --------------------------------------------------------------------------
 
-generateAllIntros().catch((err) => {
-  console.error('❌ Intro generation failed:', err)
-  process.exitCode = 1
-})
-
-// generateOneIntro(
-//   'JORDAN_OPENING_FILLER',
-//   JORDAN_OPENING_FILLER,
-//   'companion',
-// ).catch((err) => {
+// generateAllIntros().catch((err) => {
 //   console.error('❌ Intro generation failed:', err)
 //   process.exitCode = 1
 // })
+
+generateOneIntro('ALEX_TOPIC_FILLER', ALEX_TOPIC_FILLER, 'doctor').catch(
+  (err) => {
+    console.error('❌ Intro generation failed:', err)
+    process.exitCode = 1
+  },
+)

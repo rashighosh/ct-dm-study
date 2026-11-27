@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import logo from '../assets/logo-transparent.png'
-import alex from '../assets/alex.png'
-import jordan from '../assets/jordan.png'
 import stageBackground from '../assets/bg.jpg'
 import { RESOURCES } from '../data/resources.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -13,10 +11,7 @@ import {
   faArrowRight,
   faCheck,
   faClipboardList,
-  faChevronRight,
-  faStar,
 } from '@fortawesome/free-solid-svg-icons'
-import { faCircleCheck } from '@fortawesome/free-regular-svg-icons'
 import {
   initCompanionCharacter,
   initDoctorCharacter,
@@ -50,14 +45,13 @@ const CONDITION_NAMES = {
 }
 
 const JORDAN_OPENING_FILLER =
-  "Gotcha! Let me make sure I'm getting this right by quickly repeating that back to you."
+  "Gotcha! Let me make sure I'm getting this right by quickly saying that back to you."
 
-const ALEX_TOPIC_FILLER =
-  "I'll review the information available to me and identify a few topics that may be most relevant to your concerns."
+const ALEX_TOPIC_FILLER = `Alright, thank you for sharing those thoughts. Based on what you shared and the information available to me, I have identified a few topics that you might find relevant.`
 
 const ALEX_TOPIC_SELECTION_INSTRUCTIONS =
-  'You can keep these suggestions or change any of them using the options above. ' +
-  "Once you're satisfied with your selections, click Continue to begin."
+  'You can keep these suggestions or change any of them using the options below. ' +
+  "Once you're satisfied with your selections, click Continue to start exploring these topics."
 
 const STUDY_FILLER_AUDIO = {
   jordanOpening: {
@@ -806,10 +800,14 @@ export default function MainInteraction() {
                 if (intro.character === 'doctor') {
                   // Alex faces forward while Jordan looks at Alex
                   playGesture('stopAlexGesture')
-                  playGesture('jordanLookAtAlex')
+                  setTimeout(() => {
+                    playGesture('jordanLookAtAlex')
+                  }, 3000)
                 } else {
                   // Jordan faces forward while Alex looks at Jordan
-                  playGesture('stopCompanionGesture')
+                  setTimeout(() => {
+                    playGesture('stopCompanionGesture')
+                  }, 1500)
                   playGesture('alexLookAtJordan')
                 }
               }
@@ -1630,10 +1628,6 @@ export default function MainInteraction() {
 
           if (!speechStarted && subtitle) {
             speechStarted = true
-
-            revealTimer = setTimeout(() => {
-              setShowTopicSelection(true)
-            }, 5000)
           }
         }
 
@@ -1666,13 +1660,9 @@ export default function MainInteraction() {
           // Clear any remaining timer.
           if (revealTimer) clearTimeout(revealTimer)
 
-          // Ensure the cards appear even if Alex finishes early.
-          setShowTopicSelection(true)
           setAlexSubtitle('')
           playGesture('stopAlexGesture')
         }
-      } else {
-        setShowTopicSelection(true)
       }
 
       // Explain that participants can change the suggested topics.
@@ -1696,6 +1686,8 @@ export default function MainInteraction() {
       }
 
       try {
+        setShowTopicSelection(true)
+        setShowChatInput(true)
         await speakWithLipsyncStatic(
           STUDY_FILLER_AUDIO.alexInstructions.audio,
           STUDY_FILLER_AUDIO.alexInstructions.timestamps,
@@ -1748,6 +1740,7 @@ export default function MainInteraction() {
     })
 
     setOpeningComplete(true)
+    setShowChatInput(false)
 
     // Collect the participant's opening responses.
     const openingResponses = updatedMessages
@@ -1978,8 +1971,7 @@ export default function MainInteraction() {
         setSubtitle('')
 
         // Scripted follow-up
-        const followUp =
-          'Did I get that right? If that pretty much covers it, you can hit Continue! Or feel free to add anything else.'
+        const followUp = `Did I get that right? Anything else you’d like to add before we see what topics Doctor Alex suggests based on what you’ve shared?`
 
         setMessages((previous) => [
           ...previous,
@@ -2973,24 +2965,6 @@ export default function MainInteraction() {
                 }}
               />
 
-              {openingResponseDone &&
-                !openingComplete &&
-                (condition === CONDITION_SINGLE_COMBINED ||
-                  condition === CONDITION_MULTIPLE) &&
-                !topicState?.conversation_complete && (
-                  <button
-                    type="button"
-                    className="cssbuttons-io-button continue-intro-button"
-                    disabled={isResponding}
-                    onClick={() => handleOpeningContinue()}
-                  >
-                    Continue
-                    <span className="icon">
-                      <FontAwesomeIcon icon={faArrowRight} size="xs" />
-                    </span>
-                  </button>
-                )}
-
               {waitingForFirstTopic ? (
                 <button
                   type="button"
@@ -3106,18 +3080,6 @@ export default function MainInteraction() {
                       </div>
                     </div>
                   )}
-
-                  {condition === CONDITION_MULTIPLE &&
-                    awaitingTopicElaboration && (
-                      <button
-                        type="button"
-                        className="alex-transition-bubble"
-                        disabled={isResponding}
-                        onClick={handleStartAlexTopic}
-                      >
-                        Explore information
-                      </button>
-                    )}
 
                   {showSwipingCards && <SwipingCards />}
                   {showThinkingBubble && (

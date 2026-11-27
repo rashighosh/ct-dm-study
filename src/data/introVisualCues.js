@@ -30,19 +30,19 @@ export const INTRO_VISUAL_CUES = {
   // DR. ALEX
   '/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_1.mp3': [
     {
-      at: 3.5,
+      at: 2.5,
       duration: 2.5,
       icons: [faCommentNodes, faRobot],
       stagger: 0.5,
     },
     {
-      at: 6.5,
-      duration: 1.5,
+      at: 5,
+      duration: 2,
       icons: [faStethoscope, faClipboardList],
       stagger: 0.3,
     },
     {
-      at: 8.5,
+      at: 7.5,
       duration: 3,
       icons: [faUser, faHeartCircleCheck],
       stagger: 0.3,
@@ -50,13 +50,13 @@ export const INTRO_VISUAL_CUES = {
   ],
   '/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_2.mp3': [
     {
-      at: 1.5,
+      at: 2.5,
       duration: 3,
       icons: [faFileLines, faCheck],
       stagger: 0.3,
     },
     {
-      at: 5,
+      at: 6,
       duration: 6,
       icons: [faMagnifyingGlass, faQuestion],
       stagger: 0.5,
@@ -64,54 +64,48 @@ export const INTRO_VISUAL_CUES = {
   ],
   '/intro-voices/doctor-audio-ALEX_INTRO_1_MULTIPLE_3.mp3': [
     {
-      at: 3.3,
-      duration: 7,
+      at: 10.5,
+      duration: 6,
       icons: [faDatabase, faNotesMedical, faUserCheck],
       stagger: 0.5,
     },
     {
-      at: 15,
-      duration: 4,
+      at: 18.5,
+      duration: 3,
       icons: [faUser, faArrowRight, faFileCircleCheck],
       stagger: 0.3,
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_1.mp3': [
     {
-      at: 1,
-      duration: 3.5,
+      at: 5,
+      duration: 2.5,
       icons: [faFileCircleCheck, faHandHoldingHeart],
       stagger: 0.5,
     },
     {
-      at: 5,
-      duration: 4.5,
-      icons: [faEarthAmericas, faHeart, faCircleExclamation],
+      at: 10.5,
+      duration: 2.5,
+      icons: [faHandHoldingHeart, faMagnifyingGlass],
       stagger: 0.5,
-    },
-    {
-      at: 10,
-      duration: 3,
-      icons: [faUserCheck, faHandHoldingHeart],
-      stagger: 0.3,
     },
   ],
   '/intro-voices/companion-audio-JORDAN_INTRO_1_MULTIPLE_2.mp3': [
     {
-      at: 2,
-      duration: 2,
+      at: 8.5,
+      duration: 1.5,
       icons: [faHandHoldingHeart, faCommentDots],
       stagger: 0.3,
     },
     {
-      at: 5.5,
-      duration: 4,
-      icons: [faUser, faLightbulb, faHeart],
+      at: 11,
+      duration: 1.5,
+      icons: [faUser, faLightbulb],
       stagger: 0.5,
     },
     {
-      at: 9.5,
-      duration: 4,
+      at: 13,
+      duration: 3,
       icons: [faUser, faArrowRight, faFileLines],
       stagger: 0.3,
     },

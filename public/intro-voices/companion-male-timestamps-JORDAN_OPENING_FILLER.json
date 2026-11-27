@@ -2,81 +2,81 @@
   {
     "word": "Gotcha!",
     "start": 0,
-    "end": 0.2655
+    "end": 0.2535
   },
   {
     "word": "Let",
-    "start": 0.2655,
-    "end": 0.531
+    "start": 0.2535,
+    "end": 0.507
   },
   {
     "word": "me",
-    "start": 0.531,
-    "end": 0.7965
+    "start": 0.507,
+    "end": 0.7605
   },
   {
     "word": "make",
-    "start": 0.7965,
-    "end": 1.062
+    "start": 0.7605,
+    "end": 1.014
   },
   {
     "word": "sure",
-    "start": 1.062,
-    "end": 1.3275000000000001
+    "start": 1.014,
+    "end": 1.2675
   },
   {
     "word": "I'm",
-    "start": 1.3275000000000001,
-    "end": 1.593
+    "start": 1.2675,
+    "end": 1.521
   },
   {
     "word": "getting",
-    "start": 1.593,
-    "end": 1.8585
+    "start": 1.521,
+    "end": 1.7745
   },
   {
     "word": "this",
-    "start": 1.8585,
-    "end": 2.124
+    "start": 1.7745,
+    "end": 2.028
   },
   {
     "word": "right",
-    "start": 2.124,
-    "end": 2.3895
+    "start": 2.028,
+    "end": 2.2815
   },
   {
     "word": "by",
-    "start": 2.3895,
-    "end": 2.6550000000000002
+    "start": 2.2815,
+    "end": 2.535
   },
   {
     "word": "quickly",
-    "start": 2.6550000000000002,
-    "end": 2.9205
+    "start": 2.535,
+    "end": 2.7885
   },
   {
-    "word": "repeating",
-    "start": 2.9205,
-    "end": 3.186
+    "word": "saying",
+    "start": 2.7885,
+    "end": 3.042
   },
   {
     "word": "that",
-    "start": 3.186,
-    "end": 3.4515000000000002
+    "start": 3.042,
+    "end": 3.2955
   },
   {
     "word": "back",
-    "start": 3.4515000000000002,
-    "end": 3.717
+    "start": 3.2955,
+    "end": 3.549
   },
   {
     "word": "to",
-    "start": 3.717,
-    "end": 3.9825000000000004
+    "start": 3.549,
+    "end": 3.8025
   },
   {
     "word": "you.",
-    "start": 3.9825000000000004,
-    "end": 4.248
+    "start": 3.8025,
+    "end": 4.056
   }
 ]
