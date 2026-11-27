@@ -11,6 +11,8 @@ import {
   faArrowRight,
   faCheck,
   faClipboardList,
+  faFileLines,
+  faCommentDots,
 } from '@fortawesome/free-solid-svg-icons'
 import {
   initCompanionCharacter,
@@ -226,6 +228,7 @@ export default function MainInteraction() {
   const [waitingForFirstTopic, setWaitingForFirstTopic] = useState(false)
   const canStart = entryLogged && Object.values(startChecks).every(Boolean)
   const [showTopics, setShowTopics] = useState(false)
+  const [completedAlexIntroTopic, setCompletedAlexIntroTopic] = useState(null)
   const [isResponding, setIsResponding] = useState(false)
   const [highlightCurrentTopic, setHighlightCurrentTopic] = useState(false)
   const [responseStatus, setResponseStatus] = useState('')
@@ -235,19 +238,42 @@ export default function MainInteraction() {
   const [showThinkingBubble, setShowThinkingBubble] = useState(false)
   const [finishing, setFinishing] = useState(false)
   const [showResourceChoice, setShowResourceChoice] = useState(false)
+  const [showResourceOption, setShowResourceOption] = useState(false)
+  const [showDiscussionOption, setShowDiscussionOption] = useState(false)
+  const [showClosingInstructions, setShowClosingInstructions] = useState(false)
+  const [discussionQuestions, setDiscussionQuestions] = useState([])
+  const [alexMaterialOverview, setAlexMaterialOverview] = useState('')
+  const [jordanMaterialOverview, setJordanMaterialOverview] = useState('')
+
+  const alexMaterialSpeechRef = useRef(null)
+  const jordanMaterialSpeechRef = useRef(null)
+  const [showDiscussionQuestions, setShowDiscussionQuestions] = useState(false)
+  const [selectedNextSteps, setSelectedNextSteps] = useState({
+    questions: false,
+    resources: false,
+  })
+  const [showDeliveryChoice, setShowDeliveryChoice] = useState(false)
+
+  const [selectedDelivery, setSelectedDelivery] = useState({
+    questions: false,
+    resources: false,
+  })
   const [resourceChoice, setResourceChoice] = useState(null)
   const [showSurveyButton, setShowSurveyButton] = useState(false)
   const [suggestedResources, setSuggestedResources] = useState([])
   const [shuffledResources] = useState(() => shuffleArray(RESOURCES))
   const displayedResources =
-    condition === CONDITION_SINGLE_INFO
-      ? shuffledResources
-      : [
-          ...suggestedResources,
-          ...shuffledResources.filter(
-            (resource) => !suggestedResources.some((r) => r.id === resource.id),
-          ),
-        ]
+    condition === CONDITION_MULTIPLE
+      ? suggestedResources.slice(0, 3)
+      : condition === CONDITION_SINGLE_INFO
+        ? shuffledResources
+        : [
+            ...suggestedResources,
+            ...shuffledResources.filter(
+              (resource) =>
+                !suggestedResources.some((r) => r.id === resource.id),
+            ),
+          ]
   const [openedResources, setOpenedResources] = useState([])
   const openedResourcesRef = useRef([])
   const resourceLoggingQueueRef = useRef(Promise.resolve())
@@ -345,6 +371,7 @@ export default function MainInteraction() {
 
       setMessages(restoredMessages)
       setTopicState(restoredTopicState)
+      setCompletedAlexIntroTopic(session.completedAlexIntroTopic ?? null)
 
       // Keep the start overlay visible until Begin is clicked again.
       // The saved "started" value still tells us whether this is a resume.
@@ -360,17 +387,61 @@ export default function MainInteraction() {
       setShowTopicSelection(session.showTopicSelection ?? false)
       // Restore the chat panel based on intro progress.
       setShowChatInput(
-        condition !== CONDITION_MULTIPLE ||
-          session.introDone === true ||
-          restoredIntroIndex >= 7,
+        session.showSurveyButton
+          ? false
+          : session.showDeliveryChoice ||
+              session.showResourceChoice ||
+              condition !== CONDITION_MULTIPLE ||
+              session.introDone === true ||
+              restoredIntroIndex >= 7,
       )
 
       setShowResourceChoice(session.showResourceChoice ?? false)
+      setShowClosingInstructions(session.showResourceChoice ?? false)
+
+      setShowResourceOption(session.showResourceChoice ?? false)
+
+      setShowDiscussionOption(
+        (session.showResourceChoice ?? false) &&
+          (session.discussionQuestions ?? []).length > 0,
+      )
+
+      setDiscussionQuestions(session.discussionQuestions ?? [])
+      setAlexMaterialOverview(session.alexMaterialOverview ?? '')
+      setJordanMaterialOverview(session.jordanMaterialOverview ?? '')
+
+      setShowDiscussionQuestions(session.showDiscussionQuestions ?? false)
+
+      setSelectedNextSteps(
+        session.selectedNextSteps ?? {
+          questions: false,
+          resources: false,
+        },
+      )
+
+      setShowDeliveryChoice(session.showDeliveryChoice ?? false)
+
+      setSelectedDelivery(
+        session.selectedDelivery ?? {
+          questions: false,
+          resources: false,
+        },
+      )
+
       setResourceChoice(session.resourceChoice ?? null)
       setShowSurveyButton(session.showSurveyButton ?? false)
       setSuggestedResources(
         (session.suggestedResourceIds ?? [])
-          .map((id) => RESOURCES.find((resource) => resource.id === id))
+          .map((id) => {
+            const resource = RESOURCES.find((r) => r.id === id)
+
+            if (!resource) return null
+
+            return {
+              ...resource,
+              explanation: session.suggestedResourceExplanations?.[id] ?? '',
+            }
+          })
           .filter(Boolean),
       )
 
@@ -383,7 +454,10 @@ export default function MainInteraction() {
 
       const hasSelectedTopics = (session.availableTopics ?? []).length === 3
 
-      setShowTopics(topicsStarted || hasSelectedTopics)
+      setShowTopics(
+        !restoredTopicState?.conversation_complete &&
+          (topicsStarted || hasSelectedTopics),
+      )
       setHighlightCurrentTopic(topicsStarted)
     } catch (error) {
       console.error('Could not restore session:', error)
@@ -512,6 +586,7 @@ export default function MainInteraction() {
       started: existingSession.started === true || started,
       messages,
       topicState,
+      completedAlexIntroTopic,
       introDone,
       introNextIndex,
       openingResponseDone,
@@ -521,9 +596,22 @@ export default function MainInteraction() {
       selectedTopics,
       showTopicSelection,
       showResourceChoice,
+      discussionQuestions,
+      alexMaterialOverview,
+      jordanMaterialOverview,
+      showDiscussionQuestions,
+      selectedNextSteps,
+      showDeliveryChoice,
+      selectedDelivery,
       resourceChoice,
       showSurveyButton,
       suggestedResourceIds: suggestedResources.map((resource) => resource.id),
+      suggestedResourceExplanations: Object.fromEntries(
+        suggestedResources.map((resource) => [
+          resource.id,
+          resource.explanation ?? '',
+        ]),
+      ),
       openedResourceIds: openedResources,
     }
 
@@ -536,6 +624,7 @@ export default function MainInteraction() {
     started,
     messages,
     topicState,
+    completedAlexIntroTopic,
     introDone,
     introNextIndex,
     openingResponseDone,
@@ -545,6 +634,13 @@ export default function MainInteraction() {
     selectedTopics,
     showTopicSelection,
     showResourceChoice,
+    discussionQuestions,
+    alexMaterialOverview,
+    jordanMaterialOverview,
+    showDiscussionQuestions,
+    selectedNextSteps,
+    showDeliveryChoice,
+    selectedDelivery,
     resourceChoice,
     showSurveyButton,
     suggestedResources,
@@ -958,6 +1054,8 @@ export default function MainInteraction() {
       return
 
     setFocusedCharacter('Alex')
+    // Alex continues thinking for another 1.5 seconds.
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     setAwaitingTopicElaboration(false)
     setIsResponding(true)
     setResponseStatus('Preparing information')
@@ -991,6 +1089,8 @@ export default function MainInteraction() {
           prepared,
           onSubtitle: setAlexSubtitle,
         })
+        // Allow topic advancement once Alex finishes speaking.
+        setCompletedAlexIntroTopic(topicState.current_topic_index)
       } finally {
         swivelJordanTowardAlex(false)
         setActiveSpeaker(null)
@@ -1087,10 +1187,11 @@ export default function MainInteraction() {
         topics: data.topics,
       })
 
-      // Switch from editable cards to the progress bar.
+      // Transition directly from topic selection to chat input.
       setShowTopicSelection(false)
       setShowTopics(true)
       setHighlightCurrentTopic(true)
+      setShowChatInput(true)
 
       // Jordan begins the first topic by referencing the
       // participant's earlier concern.
@@ -1151,6 +1252,294 @@ export default function MainInteraction() {
     resolve()
   }
 
+  async function handleConversationClosing(data = {}) {
+    setShowTopics(false)
+    setHighlightCurrentTopic(false)
+    setAwaitingTopicElaboration(false)
+    setResponseStatus('')
+    setShowThinkingBubble(false)
+    setShowQuestions(false)
+
+    // Hide the conversation input area.
+    setShowChatInput(false)
+    setShowClosingInstructions(false)
+
+    try {
+      // Prepare Alex's personalized resource recommendations.
+      const alexClosingPromise =
+        condition === CONDITION_MULTIPLE
+          ? fetch(`${BASE_URL}/study/alex-closing`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                participant_id: participantId,
+                history: messages.filter(
+                  (message) => message.from !== 'system',
+                ),
+              }),
+            })
+              .then(async (response) => {
+                if (!response.ok) {
+                  throw new Error(`Alex closing failed: ${response.status}`)
+                }
+
+                const data = await response.json()
+
+                setAlexMaterialOverview(data.spoken_overview)
+
+                alexMaterialSpeechRef.current = prepareSpeech(
+                  data.spoken_overview,
+                  'doctor',
+                ).catch((error) => {
+                  console.error(
+                    'Could not prepare Alex material overview:',
+                    error,
+                  )
+                  return null
+                })
+
+                return data
+              })
+              .catch((error) => {
+                console.error('Could not prepare Alex closing:', error)
+                return null
+              })
+          : null
+
+      // Prepare Jordan's closing response while Alex speaks.
+      const jordanClosingPromise =
+        condition === CONDITION_MULTIPLE
+          ? fetch(`${BASE_URL}/study/jordan-closing`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                participant_id: participantId,
+                history: messages.filter(
+                  (message) => message.from !== 'system',
+                ),
+              }),
+            })
+              .then(async (response) => {
+                if (!response.ok) {
+                  throw new Error(`Jordan closing failed: ${response.status}`)
+                }
+
+                const data = await response.json()
+
+                const combinedOverview =
+                  `${data.reflection} ${data.spoken_overview}`.trim()
+
+                setJordanMaterialOverview(combinedOverview)
+
+                jordanMaterialSpeechRef.current = prepareSpeech(
+                  combinedOverview,
+                  'companion',
+                ).catch((error) => {
+                  console.error(
+                    'Could not prepare Jordan material overview:',
+                    error,
+                  )
+                  return null
+                })
+
+                return { data }
+              })
+              .catch((error) => {
+                console.error('Could not prepare Jordan closing:', error)
+                return null
+              })
+          : null
+
+      // Alex invites the participant to explore additional resources.
+      // Alex concludes the conversation and introduces resources.
+      const alexClosingInvitation =
+        "Alright, we've now explored all three of your selected topics. " +
+        'Our conversation today is just one step in understanding clinical trial participation. ' +
+        'I realize that you may have additional questions or areas you wish to learn more about. ' +
+        'Based on our conversation, I have identified a few credible resources that may be relevant to you. ' +
+        'If you are interested, you can select the option below to view them.'
+
+      setMessages((previous) => [
+        ...previous,
+        { from: 'Alex', text: alexClosingInvitation },
+      ])
+
+      playGesture('stopAlexGesture')
+
+      if (!isSingleAgent) {
+        playGesture('jordanLookAtAlex')
+      }
+
+      setShowResourceChoice(true)
+
+      setTimeout(() => {
+        setShowChatInput(true)
+        setShowResourceOption(true)
+      }, 10000)
+
+      await speakWithHighlight(alexClosingInvitation, 'doctor', setAlexSubtitle)
+
+      setAlexSubtitle('')
+
+      if (!isSingleAgent) {
+        playGesture('stopCompanionGesture')
+      }
+
+      // Deliver Jordan's prepared closing reflection.
+      if (jordanClosingPromise) {
+        const result = await jordanClosingPromise
+
+        if (result) {
+          const { data } = result
+
+          const jordanClosingInvitation =
+            "And you know, sometimes it's helpful to have a few questions in mind so you know what to look into next. " +
+            "Thinking back on some of the things you shared with us today, I've come up with a few questions that might be helpful for you personally. " +
+            'You could look into them on your own or even talk them through with a friend, a family member, or your healthcare provider. ' +
+            "Feel free to check these out too if you're curious!"
+
+          // Store the personalized discussion questions.
+          setDiscussionQuestions(data.discussion_questions ?? [])
+          // Log Jordan's generated discussion questions.
+          setMessages((previous) => [
+            ...previous,
+            {
+              from: 'system',
+              event: 'discussion_questions_generated',
+              questions: data.discussion_questions ?? [],
+              timestamp: new Date().toISOString(),
+            },
+          ])
+
+          // Invite the participant to view their personalized questions.
+          setMessages((previous) => [
+            ...previous,
+            { from: 'Jordan', text: jordanClosingInvitation },
+          ])
+
+          playGesture('stopCompanionGesture')
+          playGesture('alexLookAtJordan')
+
+          setTimeout(() => {
+            setShowDiscussionOption(true)
+          }, 10000)
+
+          await speakWithHighlight(
+            jordanClosingInvitation,
+            'companion',
+            setJordanSubtitle,
+          )
+
+          setJordanSubtitle('')
+          playGesture('stopAlexGesture')
+          setShowClosingInstructions(true)
+        }
+      }
+
+      // Retrieve Alex's personalized resource recommendations.
+      if (alexClosingPromise) {
+        const closingData = await alexClosingPromise
+
+        if (closingData) {
+          const recommendations = (closingData.recommended_resources ?? [])
+            .map((recommendation) => {
+              const resource = RESOURCES.find(
+                (r) => r.id === recommendation.resource_id,
+              )
+
+              if (!resource) return null
+
+              return {
+                ...resource,
+                explanation: recommendation.explanation,
+              }
+            })
+            .filter(Boolean)
+
+          setSuggestedResources(recommendations)
+
+          // Log Alex's personalized resource recommendations.
+          fetch(`${BASE_URL}/logs/log-recommended-resources`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              participant_id: participantId,
+              recommended_resources: closingData.recommended_resources,
+            }),
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(
+                  `Resource recommendation logging failed: ${response.status}`,
+                )
+              }
+            })
+            .catch((error) => {
+              console.error('Could not log recommended resources:', error)
+            })
+
+          // Log Alex's personalized resource recommendations.
+          setMessages((previous) => [
+            ...previous,
+            {
+              from: 'system',
+              event: 'resource_recommendations_generated',
+              recommendations: closingData.recommended_resources,
+              timestamp: new Date().toISOString(),
+            },
+          ])
+
+          console.log('Alex recommended resources:', recommendations)
+        }
+      }
+
+      // Log completion of the conversational portion.
+      fetch(`${BASE_URL}/logs/log-conversation-finished`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          participant_id: participantId,
+        }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(
+              `Conversation completion logging failed: ${response.status}`,
+            )
+          }
+        })
+        .catch((error) => {
+          console.error('Could not log conversation completion:', error)
+        })
+    } catch (error) {
+      console.error('Closing conversation error:', error)
+    } finally {
+      setActiveSpeaker(null)
+      setAlexSubtitle('')
+      setJordanSubtitle('')
+
+      playGesture('stopAlexGesture')
+
+      if (!isSingleAgent) {
+        playGesture('stopCompanionGesture')
+      }
+
+      // Always allow the participant to continue.
+      setShowResourceChoice(true)
+      setShowChatInput(true)
+      // Ensure Alex's option is visible when closing finishes.
+      setShowResourceOption(true)
+    }
+  }
+
   async function handleNextTopic() {
     if (isResponding || !topicState || topicState.conversation_complete) return
 
@@ -1207,10 +1596,9 @@ export default function MainInteraction() {
           topics: data.topics,
         })
 
-        // We'll implement the final closing sequence separately.
+        // Begin the closing conversation after the final topic.
         if (data.conversation_complete) {
-          setAwaitingTopicElaboration(false)
-          setShowResourceChoice(true)
+          await handleConversationClosing(data)
           return
         }
 
@@ -1420,58 +1808,9 @@ export default function MainInteraction() {
       }
 
       // After the final topic, play the closing dialogue
+      // Begin the shared closing conversation.
       if (data.conversation_complete) {
-        // Hide the finishing overlay before the characters speak
-        setResponseStatus('')
-        // Alex closes in all three conditions
-        if (data.alex_reply) {
-          setMessages((previous) => [
-            ...previous,
-            { from: 'Alex', text: data.alex_reply },
-          ])
-
-          await speakWithHighlight(data.alex_reply, 'doctor', setAlexSubtitle)
-
-          setAlexSubtitle('')
-        }
-
-        // Conversational conditions: Jordan (or Alex) invites resources
-        if (data.jordan_reply) {
-          const speaker = condition === CONDITION_MULTIPLE ? 'Jordan' : 'Alex'
-
-          const character =
-            condition === CONDITION_MULTIPLE ? 'companion' : 'doctor'
-
-          const setSubtitle =
-            condition === CONDITION_MULTIPLE
-              ? setJordanSubtitle
-              : setAlexSubtitle
-
-          if (condition === CONDITION_MULTIPLE) {
-            playGesture('alexLookAtJordan')
-          }
-
-          setMessages((previous) => [
-            ...previous,
-            { from: speaker, text: data.jordan_reply },
-          ])
-
-          await speakWithHighlight(
-            data.jordan_reply,
-            condition === CONDITION_MULTIPLE ? 'companion' : 'doctor',
-            setSubtitle,
-          )
-
-          setSubtitle('')
-        }
-
-        playGesture('stopAlexGesture')
-
-        if (!isSingleAgent) {
-          playGesture('stopCompanionGesture')
-        }
-
-        setShowResourceChoice(true)
+        await handleConversationClosing(data)
       }
     } catch (error) {
       console.error('Could not advance topic:', error)
@@ -1484,6 +1823,7 @@ export default function MainInteraction() {
   async function startTopicPreparation(conversationHistory) {
     setIsResponding(true)
     setResponseStatus('Preparing topics')
+    playGesture('thinkingDoctor')
 
     try {
       const alexFillerMessage = {
@@ -1530,6 +1870,9 @@ export default function MainInteraction() {
       // Pause for 5 seconds before Alex starts speaking.
       // The backend continues preparing topics during this pause.
       await new Promise((resolve) => setTimeout(resolve, 3000))
+
+      // Slide the input area away as Alex prepares to speak.
+      setShowChatInput(false)
 
       // Alex faces forward while Jordan looks at him.
       if (condition === CONDITION_MULTIPLE) {
@@ -1740,7 +2083,6 @@ export default function MainInteraction() {
     })
 
     setOpeningComplete(true)
-    setShowChatInput(false)
 
     // Collect the participant's opening responses.
     const openingResponses = updatedMessages
@@ -1826,13 +2168,7 @@ export default function MainInteraction() {
       setSentMessageAnimation('')
     }, 3500)
 
-    if (!isSingleAgent) {
-      playGesture('alexLookAtJordan')
-      playGesture('jordanLookAtAlex')
-    }
-
     setIsResponding(true)
-    setShowThinkingBubble(true)
 
     let questionAdded = false
 
@@ -2037,32 +2373,60 @@ export default function MainInteraction() {
         setShowThinkingBubble(false)
 
         playGesture('stopCompanionGesture')
-        playGesture('alexLookAtJordan')
 
-        await speakWithHighlight(
-          data.jordan_reply,
-          'companion',
-          setJordanSubtitle,
-        )
-
-        setJordanSubtitle('')
-        playGesture('stopAlexGesture')
-
-        // Once Jordan finishes the closing handoff,
-        // automatically switch to Alex.
         if (data.elicitation_complete) {
-          await handleStartAlexTopic(true, alexResponsePromise)
+          // Alex prepares information while Jordan wraps up.
+          playGesture('thinkingDoctor')
+
+          setActiveSpeaker('Jordan')
+
+          try {
+            await speakWithLipsync(
+              data.jordan_reply,
+              'companion',
+              null,
+              null,
+              setJordanSubtitle,
+            )
+
+            setJordanSubtitle('')
+            setActiveSpeaker(null)
+
+            await handleStartAlexTopic(true, alexResponsePromise)
+          } finally {
+            playGesture('stopAlexGesture')
+            setJordanSubtitle('')
+            setActiveSpeaker(null)
+          }
+        } else {
+          playGesture('alexLookAtJordan')
+
+          await speakWithHighlight(
+            data.jordan_reply,
+            'companion',
+            setJordanSubtitle,
+          )
+
+          setJordanSubtitle('')
+          playGesture('stopAlexGesture')
         }
 
         return
       }
 
       // NEW STUDY FLOW — Alex's ongoing factual conversation
+      // NEW STUDY FLOW — Alex's ongoing factual conversation
       if (
         condition === CONDITION_MULTIPLE &&
         topicState?.phase === 'topics' &&
         focusedCharacter === 'Alex'
       ) {
+        playGesture('thinkingDoctor')
+
+        const thinkingDelay = new Promise((resolve) =>
+          setTimeout(resolve, 3000),
+        )
+
         const response = await fetch(`${BASE_URL}/study/alex-topic-turn`, {
           method: 'POST',
           headers: {
@@ -2080,6 +2444,8 @@ export default function MainInteraction() {
         }
 
         const data = await response.json()
+
+        await thinkingDelay
 
         console.log('Alex topic response:', data)
 
@@ -2399,6 +2765,247 @@ export default function MainInteraction() {
       console.error('Could not begin or resume conversation:', error)
       setStarting(false)
     }
+  }
+
+  async function introduceMaterials(speaker, text, speechRef, revealMaterials) {
+    const isAlex = speaker === 'Alex'
+    const character = isAlex ? 'doctor' : 'companion'
+    const setSubtitle = isAlex ? setAlexSubtitle : setJordanSubtitle
+
+    try {
+      // Use the audio prepared during the closing conversation.
+      let prepared = await speechRef.current
+
+      // Prepare audio if unavailable, such as after a refresh.
+      if (!prepared && text) {
+        prepared = await prepareSpeech(text, character)
+      }
+
+      if (!prepared || !text) return
+
+      // Record the spoken overview in the transcript.
+      setMessages((previous) => [...previous, { from: speaker, text }])
+
+      setActiveSpeaker(speaker)
+
+      if (isAlex) {
+        playGesture('stopAlexGesture')
+        playGesture('jordanLookAtAlex')
+        swivelJordanTowardAlex(true)
+      } else {
+        playGesture('stopCompanionGesture')
+        playGesture('alexLookAtJordan')
+        swivelAlexTowardJordan(true)
+      }
+
+      // Reveal the materials as the character begins speaking.
+      revealMaterials()
+
+      await playPreparedSpeech({
+        prepared,
+        onSubtitle: setSubtitle,
+      })
+    } catch (error) {
+      console.error(`Could not introduce ${speaker}'s materials:`, error)
+    } finally {
+      // Ensure materials appear even if audio playback fails.
+      revealMaterials()
+
+      setSubtitle('')
+      setActiveSpeaker(null)
+
+      swivelAlexTowardJordan(false)
+      swivelJordanTowardAlex(false)
+
+      playGesture('stopAlexGesture')
+      playGesture('stopCompanionGesture')
+    }
+  }
+
+  async function handleNextStepSelection() {
+    if (isResponding) return
+
+    const viewQuestions =
+      selectedNextSteps.questions && discussionQuestions.length > 0
+
+    const viewResources = selectedNextSteps.resources
+
+    // Log the participant's confirmed next-step selections.
+    fetch(`${BASE_URL}/logs/log-next-steps-selected`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        participant_id: participantId,
+        questions_available: discussionQuestions.length > 0,
+        questions_selected: viewQuestions,
+        resources_selected: viewResources,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Next-step selection logging failed: ${response.status}`,
+          )
+        }
+
+        console.log('Next-step selections logged successfully')
+      })
+      .catch((error) => {
+        console.error('Could not log next-step selections:', error)
+      })
+
+    // Record the participant's confirmed selections.
+    setMessages((previous) => [
+      ...previous,
+      {
+        from: 'system',
+        event: 'next_steps_selected',
+        questions_available: discussionQuestions.length > 0,
+        questions_selected: viewQuestions,
+        resources_selected: viewResources,
+        timestamp: new Date().toISOString(),
+      },
+    ])
+
+    setIsResponding(true)
+
+    // Slide the selection panel away.
+    setShowChatInput(false)
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      setShowResourceChoice(false)
+
+      // Alex introduces the selected resources.
+      if (viewResources) {
+        await introduceMaterials(
+          'Alex',
+          alexMaterialOverview,
+          alexMaterialSpeechRef,
+          () => setResourceChoice('yes'),
+        )
+      } else {
+        setResourceChoice('no')
+      }
+
+      // Jordan introduces the selected discussion questions.
+      if (viewQuestions) {
+        await introduceMaterials(
+          'Jordan',
+          jordanMaterialOverview,
+          jordanMaterialSpeechRef,
+          () => setShowDiscussionQuestions(true),
+        )
+      } else {
+        setShowDiscussionQuestions(false)
+      }
+    } finally {
+      setSelectedDelivery({
+        questions: false,
+        resources: false,
+      })
+
+      const hasViewedMaterials = viewQuestions || viewResources
+
+      setShowDeliveryChoice(hasViewedMaterials)
+      setShowSurveyButton(!hasViewedMaterials)
+      setShowChatInput(hasViewedMaterials)
+
+      setIsResponding(false)
+    }
+  }
+
+  function handleDeliverySelection() {
+    if (isResponding) return
+
+    const sendQuestions = showDiscussionQuestions && selectedDelivery.questions
+
+    const sendResources = resourceChoice === 'yes' && selectedDelivery.resources
+
+    // Construct the message for manual delivery through Prolific.
+    let prolificMessage = null
+
+    if (sendQuestions || sendResources) {
+      const messageSections = [
+        'Hello!',
+        'Thank you for participating in our research study. As requested, here are the materials from your conversation.',
+      ]
+
+      if (sendResources) {
+        const resourceText = displayedResources
+          .slice(0, 3)
+          .map(
+            (resource, index) =>
+              `${index + 1}. ${resource.title}\n` +
+              `Source: National Cancer Institute (NCI)\n` +
+              resource.url,
+          )
+          .join('\n\n')
+
+        messageSections.push('More Information Resources\n\n' + resourceText)
+      }
+
+      if (sendQuestions) {
+        const questionText = discussionQuestions
+          .slice(0, 3)
+          .map((question, index) => `${index + 1}. ${question}`)
+          .join('\n\n')
+
+        messageSections.push(
+          'Questions to Discuss with Others\n\n' + questionText,
+        )
+      }
+
+      messageSections.push(
+        'Thank you again for your time!\n\nThe Research Team',
+      )
+
+      prolificMessage = messageSections.join('\n\n')
+    }
+
+    // Save delivery preferences and the formatted message.
+    fetch(`${BASE_URL}/logs/log-material-delivery`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        participant_id: participantId,
+        questions_requested: sendQuestions,
+        resources_requested: sendResources,
+        prolific_message: prolificMessage,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Material delivery logging failed: ${response.status}`,
+          )
+        }
+        console.log('Material delivery preferences saved')
+      })
+      .catch((error) => {
+        console.error('Could not log material delivery:', error)
+      })
+
+    // Log the participant's confirmed delivery preferences.
+    setMessages((previous) => [
+      ...previous,
+      {
+        from: 'system',
+        event: 'material_delivery_selected',
+        questions_requested: sendQuestions,
+        resources_requested: sendResources,
+        timestamp: new Date().toISOString(),
+      },
+    ])
+
+    setShowDeliveryChoice(false)
+    setShowChatInput(false)
+    setShowSurveyButton(true)
   }
 
   async function handleResourceChoice(choice) {
@@ -2980,7 +3587,10 @@ export default function MainInteraction() {
                 topicState?.phase === 'topics' &&
                 introDone &&
                 !showTopicSelection &&
-                !awaitingTopicElaboration && (
+                !awaitingTopicElaboration &&
+                (condition !== CONDITION_MULTIPLE ||
+                  completedAlexIntroTopic ===
+                    topicState.current_topic_index) && (
                   <button
                     type="button"
                     className="cssbuttons-io-button next-topic-button"
@@ -3052,6 +3662,29 @@ export default function MainInteraction() {
                     id="virtualdoctor"
                     ref={doctorRef}
                   />
+                  {condition === CONDITION_MULTIPLE &&
+                    resourceChoice === 'yes' &&
+                    suggestedResources.length > 0 && (
+                      <div className="closing-materials closing-materials-alex">
+                        <h3>More Information Resources</h3>
+
+                        {suggestedResources.slice(0, 3).map((resource) => (
+                          <div
+                            key={resource.id}
+                            className="closing-material-card"
+                          >
+                            <FontAwesomeIcon icon={faFileLines} />
+
+                            <div>
+                              <strong>{resource.title}</strong>
+                              <span className="resource-source">
+                                National Cancer Institute (NCI)
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                   {introVisuals.Alex && (
                     <div
@@ -3233,6 +3866,26 @@ export default function MainInteraction() {
                       ref={companionRef}
                     />
 
+                    {condition === CONDITION_MULTIPLE &&
+                      showDiscussionQuestions &&
+                      discussionQuestions.length > 0 && (
+                        <div className="closing-materials closing-materials-jordan">
+                          <h3>Questions to Discuss with Others</h3>
+
+                          {discussionQuestions
+                            .slice(0, 3)
+                            .map((question, index) => (
+                              <div
+                                key={index}
+                                className="closing-material-card"
+                              >
+                                <FontAwesomeIcon icon={faCommentDots} />
+                                <span>{question}</span>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+
                     {introVisuals.Jordan && (
                       <div
                         key={introVisuals.Jordan.id}
@@ -3293,72 +3946,231 @@ export default function MainInteraction() {
                 showChatInput ? '' : 'mi-bottom-panel-hidden'
               } ${showTopicSelection ? 'mi-bottom-panel-topic-selection' : ''}`}
             >
-              {resourceChoice === 'yes' ? (
+              {showDeliveryChoice ? (
                 <div className="full-input-area">
-                  <div className="suggested-resources">
-                    <div className="suggested-resources-list">
-                      {displayedResources.map((resource) => {
-                        const isRecommended =
-                          condition !== CONDITION_SINGLE_INFO &&
-                          suggestedResources.some((r) => r.id === resource.id)
+                  <div className="next-step-selection">
+                    <h3>
+                      Would you like to receive a copy of these materials?
+                    </h3>
 
-                        const isRequested = openedResources.includes(
-                          resource.id,
-                        )
+                    <p>
+                      Select the materials you would like to receive through
+                      Prolific after the study.
+                    </p>
 
-                        return (
-                          <button
-                            key={resource.id}
-                            type="button"
-                            disabled={isResponding}
-                            className={`suggested-resource-card ${
-                              isRecommended ? 'resource-recommended' : ''
-                            }`}
-                            onClick={() => handleResourcePreview(resource)}
-                          >
-                            <FontAwesomeIcon icon={resource.icon} />
+                    <div className="next-step-options">
+                      {resourceChoice === 'yes' && (
+                        <button
+                          type="button"
+                          className={`next-step-card resources alex ${
+                            selectedDelivery.resources ? 'selected' : ''
+                          }`}
+                          aria-pressed={selectedDelivery.resources}
+                          onClick={() => {
+                            if (!selectedDelivery.resources) {
+                              playGesture('thumbsupDoctorQuick')
+                            }
 
-                            <div className="suggested-resource-info">
-                              <strong>{resource.title}</strong>
+                            setSelectedDelivery((previous) => ({
+                              ...previous,
+                              resources: !previous.resources,
+                            }))
+                          }}
+                        >
+                          <FontAwesomeIcon
+                            icon={
+                              selectedDelivery.resources ? faCheck : faFileLines
+                            }
+                          />
+                          <strong>
+                            Send me Doctor Alex's information resources
+                          </strong>
+                        </button>
+                      )}
 
-                              {isRecommended && (
-                                <div className="resource-recommended-label">
-                                  Recommended
-                                </div>
-                              )}
+                      {showDiscussionQuestions && (
+                        <button
+                          type="button"
+                          className={`next-step-card resources jordan ${
+                            selectedDelivery.questions ? 'selected' : ''
+                          }`}
+                          aria-pressed={selectedDelivery.questions}
+                          onClick={() => {
+                            if (!selectedDelivery.questions) {
+                              playGesture('thumbsupQuick')
+                            }
 
-                              {isRequested && (
-                                <span className="resource-opened-label">
-                                  Requested
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        )
-                      })}
+                            setSelectedDelivery((previous) => ({
+                              ...previous,
+                              questions: !previous.questions,
+                            }))
+                          }}
+                        >
+                          <FontAwesomeIcon
+                            icon={
+                              selectedDelivery.questions
+                                ? faCheck
+                                : faCommentDots
+                            }
+                          />
+                          <strong>Send me Jordan's discussion questions</strong>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="closing-button-area">
+                      <button
+                        type="button"
+                        className="cssbuttons-io-button"
+                        disabled={
+                          isResponding ||
+                          (!selectedDelivery.questions &&
+                            !selectedDelivery.resources)
+                        }
+                        onClick={handleDeliverySelection}
+                      >
+                        Finish Conversation
+                        <span className="icon">
+                          <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="skip-delivery-link"
+                        disabled={
+                          isResponding ||
+                          selectedDelivery.questions ||
+                          selectedDelivery.resources
+                        }
+                        onClick={handleDeliverySelection}
+                      >
+                        Click here to continue without selecting anything
+                      </button>
                     </div>
                   </div>
                 </div>
               ) : showResourceChoice ? (
                 <div className="full-input-area">
-                  <div className="resource-choice-buttons">
-                    <button
-                      type="button"
-                      className="cssbuttons-io-button"
-                      disabled={isResponding}
-                      onClick={() => handleResourceChoice('yes')}
+                  <div className="next-step-selection">
+                    <h3
+                      className={`closing-instructions ${showClosingInstructions ? 'revealed' : ''}`}
                     >
-                      Yes, show me
-                    </button>
+                      Would you like to view the materials prepared for you?
+                    </h3>
 
-                    <button
-                      type="button"
-                      className="cssbuttons-io-button"
-                      disabled={isResponding}
-                      onClick={() => handleResourceChoice('no')}
+                    <p
+                      className={`closing-instructions ${showClosingInstructions ? 'revealed' : ''}`}
                     >
-                      No, thanks
-                    </button>
+                      You can select either option, both, or neither.
+                    </p>
+                    <div className="next-step-options">
+                      <button
+                        type="button"
+                        disabled={
+                          isResponding ||
+                          (condition === CONDITION_MULTIPLE &&
+                            suggestedResources.length === 0)
+                        }
+                        className={`next-step-card alex
+                          ${selectedNextSteps.resources ? 'selected' : ''}
+                          ${showResourceOption ? 'option-visible' : 'option-hidden'}
+                        `}
+                        aria-pressed={selectedNextSteps.resources}
+                        onClick={() => {
+                          if (!selectedNextSteps.resources) {
+                            playGesture('thumbsupDoctorQuick')
+                          }
+
+                          setSelectedNextSteps((previous) => ({
+                            ...previous,
+                            resources: !previous.resources,
+                          }))
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={
+                            selectedNextSteps.resources ? faCheck : faFileLines
+                          }
+                        />
+
+                        <strong>View More Information Resources</strong>
+
+                        <small class="alex">
+                          Prepared by <b>Doctor Alex</b>
+                        </small>
+                      </button>
+                      {condition === CONDITION_MULTIPLE && (
+                        <button
+                          type="button"
+                          disabled={
+                            isResponding || discussionQuestions.length === 0
+                          }
+                          className={`next-step-card jordan
+                            ${selectedNextSteps.questions ? 'selected' : ''}
+                            ${showDiscussionOption ? 'option-visible' : 'option-hidden'}
+                          `}
+                          aria-pressed={selectedNextSteps.questions}
+                          onClick={() => {
+                            if (!selectedNextSteps.questions) {
+                              playGesture('thumbsupQuick')
+                            }
+
+                            setSelectedNextSteps((previous) => ({
+                              ...previous,
+                              questions: !previous.questions,
+                            }))
+                          }}
+                        >
+                          <FontAwesomeIcon
+                            icon={
+                              selectedNextSteps.questions
+                                ? faCheck
+                                : faCommentDots
+                            }
+                          />
+
+                          <strong>View Questions to Discuss with Others</strong>
+
+                          <small class="jordan">
+                            Prepared by <b>Jordan</b>
+                          </small>
+                        </button>
+                      )}
+                    </div>
+
+                    <div
+                      className={`closing-button-area closing-instructions ${showClosingInstructions ? 'revealed' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className="cssbuttons-io-button"
+                        disabled={
+                          isResponding ||
+                          (!selectedNextSteps.questions &&
+                            !selectedNextSteps.resources)
+                        }
+                        onClick={handleNextStepSelection}
+                      >
+                        View
+                        <span className="icon">
+                          <FontAwesomeIcon icon={faArrowRight} size="xs" />
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="skip-delivery-link"
+                        disabled={
+                          isResponding ||
+                          selectedNextSteps.questions ||
+                          selectedNextSteps.resources
+                        }
+                        onClick={handleNextStepSelection}
+                      >
+                        Click here to continue without selecting anything
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : showTopicSelection ? (
@@ -3630,10 +4442,10 @@ function ChatInput({
               isResponding
                 ? 'Please wait for the virtual character to finish speaking...'
                 : isOpening
-                  ? "Share what's important to you when making health-related decisions"
+                  ? "Share what's important to you when making health-related decisions ..."
                   : awaitingTopicElaboration
-                    ? "Share what's important to you so Jordan can help you figure out what information you'd want to know ..."
-                    : 'Type a message...'
+                    ? 'Share your experiences and perspectives...'
+                    : 'Type your message...'
             }
             rows={3}
             onKeyDown={onHandleKeyDown}

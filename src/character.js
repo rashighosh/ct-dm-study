@@ -291,6 +291,10 @@ export async function thumbsupQuick() {
   head1.playGesture('thumbup', 2, false, 1000)
 }
 
+export async function thumbsupDoctorQuick() {
+  head?.playGesture('thumbup', 2, false, 1000)
+}
+
 export async function wave() {
   head1.stopGesture(3000)
   head1?.playGesture('handup')
@@ -502,6 +506,7 @@ export const gestures = {
   shrug,
   thumbsup,
   thumbsupQuick,
+  thumbsupDoctorQuick,
   thinking,
   thinkingDoctor,
   thinkingTurn,
@@ -718,10 +723,7 @@ function createSpeechGestures(activeHead, audioBuffer) {
     return { markers, mtimes }
   }
 
-  const numberOfGestures = Math.min(
-    3,
-    Math.max(1, Math.floor(durationMs / 6000)),
-  )
+  const numberOfGestures = Math.max(1, Math.floor(durationMs / 3500))
 
   const usedTimes = []
 
@@ -733,7 +735,7 @@ function createSpeechGestures(activeHead, audioBuffer) {
 
     const time = minTime + Math.random() * (maxTime - minTime)
 
-    const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2500)
+    const tooClose = usedTimes.some((used) => Math.abs(used - time) < 2000)
     if (tooClose) continue
 
     usedTimes.push(time)
